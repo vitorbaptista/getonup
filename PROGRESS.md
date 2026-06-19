@@ -19,10 +19,12 @@
 - **Verified in a real browser** — deployed `counter.tsx`; React mounts, renders, interactive.
 - **Agent integration** — `AGENTS.md` snippet + `skills/conjure` Claude Code skill.
 - **Docs** — README (5-min self-host, CLI, security, hardening), PLAN, LANDINGS, this file.
-- **5 landing-page designs** (`landings/`) — Midnight, Scanini (scanini.app style), Shellshare
-  (shellshare.net style), PostHog, Claude — plus a **gallery** (`gallery/`) that links to all of
-  them and is the homepage. Every page (and the gallery, a multi-file deploy) was **deployed
-  through Conjure's own CLI**. Screenshots in `docs/landings/`, gallery in `docs/gallery.png`.
+- **15 landing-page designs** (`landings/`): **10 shadcn.io DESIGN.md systems** (Linear, Vercel,
+  Stripe, Supabase, Raycast, GitHub, Cursor, Notion, Figma, Hugging Face — each built from the
+  system's real fetched tokens) + **5 originals** (Midnight, Scanini, Shellshare, PostHog,
+  Claude). A **gallery** (`gallery/`) links to all 15 and is the homepage. Every page (and the
+  gallery, a multi-file deploy) was **deployed through Conjure's own CLI**. Screenshots in
+  `docs/landings/`, gallery in `docs/gallery.png`.
 
 ## Verified
 

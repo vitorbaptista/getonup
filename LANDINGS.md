@@ -1,76 +1,55 @@
 # Conjure — landing page designs
 
-Five landing-page directions for Conjure, each a complete self-contained HTML file in
-[`landings/`](./landings). They were **generated and then deployed through Conjure's own CLI** —
-so this whole thing is a live demo of the product (an AI artifact → a live URL, one command).
+Fifteen landing-page directions for Conjure, each a complete self-contained HTML file in
+[`landings/`](./landings). **Ten** are built in real
+[shadcn.io DESIGN.md](https://www.shadcn.io/design) systems (each agent fetched the system's
+exact tokens — colors, typography, components — and applied them); **five** are house originals.
+Every page — and the gallery itself, a multi-file deploy — was **published with
+`conjure deploy`**, so this is also a live demo of the product.
 
-A **gallery** ties them together: it's a single page (itself a multi-file deploy: index + five
-thumbnails) that links to every design. It's the current homepage.
+The **gallery** is the homepage: a single page linking to all fifteen.
 
 ![Gallery](docs/gallery.png)
 
-## View them live
-
 ```bash
-npm run dev        # http://localhost:8787  → the gallery, with links to all five
+npm run dev        # http://localhost:8787  → the gallery, links to all fifteen
 ```
 
-| Page | Source | Live (local) |
+## Design systems (shadcn.io DESIGN.md)
+
+| Design | Source | Live (local) |
 |---|---|---|
-| **Gallery** (homepage) | `gallery/` | http://localhost:8787/ · /s/xr8q6ykn |
+| Linear | `landings/linear.html` | /s/dwsgfkfp |
+| Vercel | `landings/vercel.html` | /s/s7xz56cf |
+| Stripe | `landings/stripe.html` | /s/n9i3egyy |
+| Supabase | `landings/supabase.html` | /s/74bhb7xg |
+| Raycast | `landings/raycast.html` | /s/8v7q8u4c |
+| GitHub | `landings/github.html` | /s/qa56h65n |
+| Cursor | `landings/cursor.html` | /s/ba3p7yka |
+| Notion | `landings/notion.html` | /s/b2bpvhxj |
+| Figma | `landings/figma.html` | /s/wi8ex9pa |
+| Hugging Face | `landings/huggingface.html` | /s/64n3a459 |
+
+## Originals
+
+| Design | Source | Live (local) |
+|---|---|---|
 | Midnight (house style) | `landings/midnight.html` | /s/32c7whv2 |
-| Scanini | `landings/scanini.html` | /s/tunyekjr |
-| Shellshare | `landings/shellshare.html` | /s/y3ynsckc |
+| Scanini (`scanini.app`) | `landings/scanini.html` | /s/tunyekjr |
+| Shellshare (`shellshare.net`) | `landings/shellshare.html` | /s/y3ynsckc |
 | PostHog | `landings/posthog.html` | /s/4dtxiaem |
 | Claude | `landings/claude.html` | /s/gurjmsk7 |
 
-> IDs are from local deploys (they persist in `.wrangler`). If you clear local state or deploy
-> to real Cloudflare, redeploy and the gallery links update accordingly:
-> ```bash
-> CONJURE_URL=http://localhost:8787 CONJURE_TOKEN=dev-local-token-abc123 \
->   node cli/dist/index.js deploy landings/midnight.html --name "Conjure"
-> ```
+Gallery: homepage `/` · also `/s/qrid9qrt`. Individual screenshots in
+[`docs/landings/`](./docs/landings).
 
-**Make a single design the homepage** (instead of the gallery):
+> IDs are local deploys (persisted in `.wrangler`). Cleared local state or a real Cloudflare
+> deploy gives new IDs — redeploy and the gallery links update.
+
+**Make one design the homepage** (instead of the gallery):
 
 ```bash
-cp landings/<key>.html server/public/index.html      # midnight | scanini | shellshare | posthog | claude
-# to restore the gallery as the homepage:
+cp landings/<key>.html server/public/index.html
+# restore the gallery as homepage:
 cp gallery/index.html server/public/index.html && cp gallery/thumbs/*.png server/public/thumbs/
 ```
-
----
-
-## 1. Midnight — the Conjure house style 🌌
-
-Deep near-black, violet→cyan ambient glow, glassy panels, a blinking-caret terminal,
-"materialize" reveals. Premium and a little magical.
-
-![Midnight](docs/landings/midnight.png)
-
-## 2. Scanini — `scanini.app` style ◼︎
-
-Cream paper, a huge Boldonse display serif with a red italic accent, sticker motifs, a dark
-stats band, an auto-scrolling marquee, and a giant outlined "CONJURE" wordmark.
-
-![Scanini](docs/landings/scanini.png)
-
-## 3. Shellshare — `shellshare.net` style ▕
-
-Minimal hacker-docs: white, a monospace wordmark, a spaced "LIVE ARTIFACT HOSTING" tagline,
-the deploy command as a pill, dark terminal blocks, and a tidy FAQ.
-
-![Shellshare](docs/landings/shellshare.png)
-
-## 4. PostHog — bold, playful, dev-native 🟠
-
-Cream canvas, thick black sticker-cards, coral + blue + yellow accents, monospace, hard-edged
-feature grid. Confident and fun.
-
-![PostHog](docs/landings/posthog.png)
-
-## 5. Claude — warm, editorial, calm ☕️
-
-Warm cream, serif display with italic terracotta accents, generous whitespace, soft and human.
-
-![Claude](docs/landings/claude.png)

@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Conjure — Your AI artifact, live in seconds.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#533afd;
+    --primary-deep:#4434d4;
+    --primary-press:#2e2b8c;
+    --primary-soft:#665efd;
+    --primary-subdued:#b9b9f9;
+
+    --canvas:#ffffff;
+    --canvas-soft:#f6f9fc;
+    --canvas-cream:#f5e9d4;
+    --brand-dark:#1c1e54;
+
+    --ink:#0d253d;
+    --ink-2:#273951;
+    --ink-mute:#64748d;
+    --ink-mute-2:#61718a;
+    --on-primary:#ffffff;
+
+    --hairline:#e3e8ee;
+    --hairline-input:#a8c3de;
+
+    --ruby:#ea2261;
+    --magenta:#f96bee;
+
+    --radius:8px;
+    --radius-lg:16px;
+    --radius-pill:999px;
+
+    --shadow-sm:0 1px 2px rgba(13,37,61,.06), 0 1px 1px rgba(13,37,61,.04);
+    --shadow-md:0 2px 5px rgba(13,37,61,.06), 0 8px 20px rgba(13,37,61,.07);
+    --shadow-lg:0 4px 9px rgba(13,37,61,.08), 0 18px 40px rgba(13,37,61,.12);
+    --shadow-btn:0 1px 1px rgba(46,43,140,.18), 0 2px 5px rgba(83,58,253,.28);
+    --shadow-btn-hover:0 2px 3px rgba(46,43,140,.22), 0 8px 18px rgba(83,58,253,.34);
+    --maxw:1120px;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-weight:400;
+    color:var(--ink);
+    background:var(--canvas);
+    line-height:1.5;
+    font-feature-settings:"ss01","tnum";
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    overflow-x:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+
+  /* ---------- Gradient hero band ---------- */
+  .hero-band{
+    position:relative;
+    isolation:isolate;
+    overflow:hidden;
+    background:var(--canvas);
+  }
+  .hero-band::before{
+    content:"";
+    position:absolute;
+    inset:-30% -10% 35% -10%;
+    z-index:-2;
+    background:
+      radial-gradient(60% 80% at 8% 8%, var(--canvas-cream) 0%, rgba(245,233,212,0) 55%),
+      radial-gradient(55% 70% at 30% 0%, #ffb877 0%, rgba(255,184,119,0) 50%),
+      radial-gradient(65% 75% at 62% 10%, #b9a8ff 0%, rgba(185,168,255,0) 55%),
+      radial-gradient(70% 85% at 88% 0%, var(--primary) 0%, rgba(83,58,253,0) 55%),
+      radial-gradient(60% 70% at 100% 30%, var(--ruby) 0%, rgba(234,34,97,0) 50%),
+      linear-gradient(105deg, var(--canvas-cream) 0%, #ffd9b0 18%, #c9b6ff 42%, var(--primary-soft) 66%, var(--magenta) 100%);
+    transform:skewY(-7deg);
+    transform-origin:top left;
+    opacity:.92;
+  }
+  .hero-band::after{
+    content:"";
+    position:absolute;
+    left:0;right:0;bottom:0;
+    height:42%;
+    z-index:-1;
+    background:linear-gradient(to bottom, rgba(255,255,255,0) 0%, var(--canvas) 78%);
+  }
+
+  /* ---------- Nav ---------- */
+  header.nav{
+    position:sticky;top:0;z-index:50;
+  }
+  .nav-inner{
+    display:flex;align-items:center;justify-content:space-between;
+    height:68px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:18px;letter-spacing:-.4px;color:var(--ink)}
+  .brand .mark{
+    width:30px;height:30px;border-radius:9px;
+    display:grid;place-items:center;
+    background:linear-gradient(135deg, var(--primary-soft), var(--primary-deep));
+    box-shadow:var(--shadow-btn);
+    color:#fff;font-size:16px;
+  }
+  .nav-links{display:flex;align-items:center;gap:30px}
+  .nav-links a.link{
+    font-size:15px;font-weight:500;color:var(--ink-2);
+    transition:color .15s ease;
+  }
+  .nav-links a.link:hover{color:var(--primary)}
+  .nav-cta{display:flex;align-items:center;gap:14px}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:inherit;font-weight:600;font-size:15px;letter-spacing:-.1px;
+    padding:9px 18px;border-radius:var(--radius-pill);
+    border:1px solid transparent;cursor:pointer;
+    transition:transform .12s ease, box-shadow .15s ease, background .15s ease, color .15s ease;
+    white-space:nowrap;line-height:1;
+  }
+  .btn-primary{
+    background:var(--primary);color:var(--on-primary);
+    box-shadow:var(--shadow-btn);
+  }
+  .btn-primary:hover{background:var(--primary-deep);box-shadow:var(--shadow-btn-hover);transform:translateY(-1px)}
+  .btn-primary:active{background:var(--primary-press);transform:translateY(0)}
+  .btn-ghost{
+    background:rgba(255,255,255,.7);color:var(--primary-deep);
+    border-color:var(--hairline);box-shadow:var(--shadow-sm);
+    backdrop-filter:blur(6px);
+  }
+  .btn-ghost:hover{background:#fff;color:var(--primary);border-color:var(--primary-subdued);transform:translateY(-1px)}
+  .btn-link{
+    color:var(--primary-deep);font-weight:600;font-size:15px;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn-link .arr{transition:transform .15s ease}
+  .btn-link:hover{color:var(--primary)}
+  .btn-link:hover .arr{transform:translateX(3px)}
+  .btn-lg{padding:13px 26px;font-size:16px}
+
+  /* ---------- Hero ---------- */
+  .hero{padding:78px 0 96px;text-align:center;position:relative}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:13px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;
+    color:var(--primary-deep);
+    background:rgba(255,255,255,.72);
+    border:1px solid var(--hairline);
+    padding:6px 14px;border-radius:var(--radius-pill);
+    box-shadow:var(--shadow-sm);backdrop-filter:blur(6px);
+    margin-bottom:26px;
+  }
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 3px rgba(83,58,253,.18)}
+  h1{
+    font-weight:300;
+    font-size:clamp(40px,7vw,64px);
+    line-height:1.04;
+    letter-spacing:-1.4px;
+    color:var(--ink);
+    max-width:14ch;margin:0 auto;
+  }
+  h1 .grad{
+    font-weight:400;
+    background:linear-gradient(100deg, var(--primary) 0%, var(--magenta) 60%, var(--ruby) 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+  }
+  .subhead{
+    font-size:clamp(17px,2.4vw,21px);font-weight:400;
+    color:var(--ink-mute);line-height:1.5;letter-spacing:-.2px;
+    max-width:50ch;margin:22px auto 0;
+  }
+  .hero-cta{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:34px}
+
+  /* ---------- Terminal ---------- */
+  .terminal{
+    max-width:640px;margin:46px auto 0;text-align:left;
+    border-radius:var(--radius-lg);
+    background:#0e1326;
+    box-shadow:var(--shadow-lg);
+    border:1px solid rgba(83,58,253,.25);
+    overflow:hidden;
+  }
+  .term-bar{
+    display:flex;align-items:center;gap:8px;
+    padding:13px 16px;
+    background:#161c33;
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .term-bar .lights{display:flex;gap:7px}
+  .term-bar .lights i{width:11px;height:11px;border-radius:50%;display:block}
+  .l-r{background:#ff5f57}.l-y{background:#febc2e}.l-g{background:#28c840}
+  .term-title{
+    margin-left:8px;font-family:'JetBrains Mono',monospace;font-size:12px;
+    color:#7b86a8;letter-spacing:.2px;
+  }
+  .term-copy{
+    margin-left:auto;border:none;background:transparent;cursor:pointer;
+    color:#9aa6c8;font-size:12px;font-family:'JetBrains Mono',monospace;
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 9px;border-radius:6px;transition:background .15s,color .15s;
+  }
+  .term-copy:hover{background:rgba(255,255,255,.07);color:#cfd6ec}
+  .term-copy.copied{color:#28c840}
+  .term-body{
+    padding:22px 20px 26px;
+    font-family:'JetBrains Mono',monospace;font-size:14.5px;line-height:1.9;
+    color:#e6eaf6;
+  }
+  .term-body .prompt{color:var(--primary-soft);font-weight:500}
+  .term-body .cmd{color:#e6eaf6}
+  .term-body .flag{color:#9aa6c8}
+  .term-body .ok{color:#28c840}
+  .term-body .arrow{color:#7b86a8}
+  .term-body .url{color:#7bd0ff}
+  .caret{
+    display:inline-block;width:9px;height:18px;
+    background:var(--primary-soft);vertical-align:-3px;margin-left:3px;
+    animation:blink 1.05s steps(1) infinite;border-radius:1px;
+  }
+  @keyframes blink{0%,50%{opacity:1}50.01%,100%{opacity:0}}
+  .term-line2{opacity:0}
+  .term-line2.show{animation:fadeUp .5s ease forwards}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ---------- Section scaffolding ---------- */
+  section{padding:88px 0}
+  .sec-head{text-align:center;max-width:640px;margin:0 auto 56px}
+  .sec-label{
+    font-size:13px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
+    color:var(--primary);margin-bottom:14px;
+  }
+  .sec-head h2{
+    font-weight:300;font-size:clamp(30px,4.5vw,42px);
+    letter-spacing:-1px;line-height:1.1;color:var(--ink);
+  }
+  .sec-head p{margin-top:16px;font-size:18px;color:var(--ink-mute);letter-spacing:-.2px}
+
+  /* ---------- How it works ---------- */
+  .how{background:var(--canvas-soft);border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline)}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .step{
+    background:var(--canvas);border:1px solid var(--hairline);
+    border-radius:var(--radius-lg);padding:30px 28px;
+    box-shadow:var(--shadow-md);position:relative;
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .step:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+  .step .num{
+    width:38px;height:38px;border-radius:11px;
+    display:grid;place-items:center;
+    font-family:'JetBrains Mono',monospace;font-weight:500;font-size:16px;
+    color:#fff;background:linear-gradient(135deg,var(--primary-soft),var(--primary-deep));
+    box-shadow:var(--shadow-btn);margin-bottom:20px;
+  }
+  .step h3{font-size:19px;font-weight:600;letter-spacing:-.3px;margin-bottom:9px}
+  .step p{font-size:15px;color:var(--ink-mute);line-height:1.55}
+  .step code{
+    font-family:'JetBrains Mono',monospace;font-size:13px;
+    background:var(--canvas-soft);border:1px solid var(--hairline);
+    color:var(--primary-deep);padding:1px 6px;border-radius:6px;
+  }
+  .step .line{
+    position:absolute;top:48px;right:-24px;width:24px;height:2px;
+    background:repeating-linear-gradient(90deg,var(--hairline) 0 5px,transparent 5px 10px);
+  }
+
+  /* ---------- Features grid ---------- */
+  .features{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+  .feat{
+    background:var(--canvas);border:1px solid var(--hairline);
+    border-radius:var(--radius-lg);padding:30px;
+    box-shadow:var(--shadow-sm);position:relative;overflow:hidden;
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .feat::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:linear-gradient(var(--primary-soft),var(--ruby));
+    opacity:0;transition:opacity .2s ease;
+  }
+  .feat:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--primary-subdued)}
+  .feat:hover::before{opacity:1}
+  .feat .ic{
+    width:44px;height:44px;border-radius:12px;
+    display:grid;place-items:center;margin-bottom:18px;
+    background:rgba(83,58,253,.08);border:1px solid rgba(83,58,253,.16);
+    color:var(--primary);
+  }
+  .feat .ic svg{width:22px;height:22px}
+  .feat h3{font-size:19px;font-weight:600;letter-spacing:-.3px;margin-bottom:9px}
+  .feat p{font-size:15px;color:var(--ink-mute);line-height:1.58}
+  .feat p b{color:var(--ink-2);font-weight:600}
+
+  /* ---------- CTA strip ---------- */
+  .cta{padding:0 0 96px}
+  .cta-box{
+    position:relative;overflow:hidden;
+    border-radius:24px;padding:60px 40px;text-align:center;
+    background:var(--brand-dark);
+    box-shadow:var(--shadow-lg);
+  }
+  .cta-box::before{
+    content:"";position:absolute;inset:0;z-index:0;opacity:.9;
+    background:
+      radial-gradient(50% 80% at 12% 0%, rgba(255,184,119,.5) 0%, transparent 55%),
+      radial-gradient(55% 90% at 50% -10%, rgba(102,94,253,.7) 0%, transparent 60%),
+      radial-gradient(50% 80% at 92% 10%, rgba(249,107,238,.5) 0%, transparent 55%);
+  }
+  .cta-box>*{position:relative;z-index:1}
+  .cta-box h2{font-weight:300;font-size:clamp(28px,4vw,38px);letter-spacing:-.9px;color:#fff;line-height:1.12}
+  .cta-box p{margin:16px auto 0;color:#c7cbf0;font-size:18px;max-width:46ch;letter-spacing:-.2px}
+  .cta-box .hero-cta{margin-top:30px}
+  .cta-box .btn-ghost{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.25)}
+  .cta-box .btn-ghost:hover{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4)}
+
+  /* ---------- Footer ---------- */
+  footer{border-top:1px solid var(--hairline);background:var(--canvas-soft);padding:40px 0}
+  .foot-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .foot-brand{display:flex;align-items:center;gap:10px;font-weight:600;color:var(--ink);font-size:16px}
+  .foot-meta{display:flex;align-items:center;gap:18px;font-size:14px;color:var(--ink-mute);flex-wrap:wrap}
+  .foot-meta .pill{
+    display:inline-flex;align-items:center;gap:7px;
+    background:var(--canvas);border:1px solid var(--hairline);
+    padding:5px 12px;border-radius:var(--radius-pill);font-weight:500;color:var(--ink-2);
+    box-shadow:var(--shadow-sm);
+  }
+  .foot-meta .pill .dot{width:6px;height:6px;border-radius:50%;background:#28c840}
+  .foot-links{display:flex;gap:22px;font-size:14px;color:var(--ink-mute)}
+  .foot-links a:hover{color:var(--primary)}
+
+  /* ---------- Reveal ---------- */
+  .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+
+  @media (max-width:860px){
+    .steps{grid-template-columns:1fr}
+    .step .line{display:none}
+    .features{grid-template-columns:1fr}
+    .nav-links{display:none}
+  }
+  @media (max-width:520px){
+    .hero{padding:54px 0 70px}
+    section{padding:64px 0}
+    .term-body{font-size:13px}
+    .cta-box{padding:46px 22px}
+    .nav-cta .btn-text-hide{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero-band">
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#"><span class="mark">✦</span>Conjure</a>
+      <nav class="nav-links">
+        <a class="link" href="#how">How it works</a>
+        <a class="link" href="#features">Features</a>
+        <a class="link" href="#self-host">Self-host</a>
+      </nav>
+      <div class="nav-cta">
+        <a class="btn-link btn-text-hide" href="#" aria-label="View on GitHub">GitHub <span class="arr">→</span></a>
+        <a class="btn btn-primary" href="#self-host">Self-host it</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="hero wrap">
+    <span class="eyebrow"><span class="dot"></span>Open source · MIT</span>
+    <h1>Your AI artifact, <span class="grad">live in seconds.</span></h1>
+    <p class="subhead">Turn any AI-generated web artifact — an HTML file, a React or Vue component, a built static folder — into a shareable URL with one CLI command. No database. No always-on server.</p>
+
+    <div class="terminal" role="region" aria-label="Deploy command">
+      <div class="term-bar">
+        <span class="lights"><i class="l-r"></i><i class="l-y"></i><i class="l-g"></i></span>
+        <span class="term-title">conjure — deploy</span>
+        <button class="term-copy" id="copyBtn" aria-label="Copy command">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span id="copyLabel">Copy</span>
+        </button>
+      </div>
+      <div class="term-body">
+        <div><span class="prompt">$</span> <span class="cmd" id="cmdText">conjure deploy counter.tsx</span><span class="caret" id="caret"></span></div>
+        <div class="term-line2" id="line2"><span class="ok">✓</span> <span class="cmd">live</span> <span class="arrow">→</span> <span class="url">https://conjure.example.com/s/iwcmg3dt</span></div>
+      </div>
+    </div>
+
+    <div class="hero-cta">
+      <a class="btn btn-primary btn-lg" href="#self-host">Self-host it</a>
+      <a class="btn btn-ghost btn-lg" href="#">View on GitHub</a>
+    </div>
+  </main>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="sec-label">How it works</div>
+      <h2>From file to live URL in three moves.</h2>
+      <p>Your agent writes the artifact. Conjure handles the rest.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <span class="line"></span>
+        <div class="num">1</div>
+        <h3>Build an artifact</h3>
+        <p>Your coding agent writes a <code>.html</code>, <code>.tsx</code>, or <code>.vue</code> file — a counter, a dashboard, a whole built static folder.</p>
+      </div>
+      <div class="step reveal">
+        <span class="line"></span>
+        <div class="num">2</div>
+        <h3>Run one command</h3>
+        <p>Call <code>conjure deploy</code>. It auto-wraps single components into a runnable page and uploads in seconds.</p>
+      </div>
+      <div class="step reveal">
+        <div class="num">3</div>
+        <h3>Share the link</h3>
+        <p>Get a live URL back. No viewer login, no cold-start wait — and it scales to zero when idle.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="sec-label">Why Conjure</div>
+      <h2>Built lean. Built for agents.</h2>
+      <p>One Worker, one bucket, and a CLI any agent can call.</p>
+    </div>
+    <div class="features">
+      <div class="feat reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16.7A4.5 4.5 0 0 0 18 8h-1.3A7 7 0 1 0 4 14.9"/><path d="m12 12 0 9"/><path d="m8 17 4 4 4-4"/></svg></div>
+        <h3>One Worker + R2</h3>
+        <p>No database, no always-on server. A single Cloudflare Worker fronts an object store and <b>scales to zero — roughly $0 idle.</b></p>
+      </div>
+      <div class="feat reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg></div>
+        <h3>Agent-native</h3>
+        <p>Drop a snippet into <b>AGENTS.md</b> and any coding agent can publish a live preview the moment it finishes writing code.</p>
+      </div>
+      <div class="feat reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 6v6c0 5 3.8 8.5 9 10 5.2-1.5 9-5 9-10V6l-9-4Z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <h3>Auto-wrap</h3>
+        <p>Hand it one <code>.tsx</code> or <code>.vue</code> and it becomes a self-contained page — <b>React 18 + Babel + Tailwind, or Vue 3.</b> Plain HTML ships as-is.</p>
+      </div>
+      <div class="feat reveal">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg></div>
+        <h3>Yours to host</h3>
+        <p>Your Cloudflare account, your token, your domain. Free and <b>MIT licensed</b> — fork it, audit it, run it forever.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta" id="self-host">
+  <div class="wrap">
+    <div class="cta-box reveal">
+      <h2>Conjure it onto your own Cloudflare.</h2>
+      <p>One Worker, one R2 bucket, one CLI. Deploy the backend to your account and start sharing live artifacts today.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg" href="#">Self-host it</a>
+        <a class="btn btn-ghost btn-lg" href="#">View on GitHub</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap foot-inner">
+    <div class="foot-brand"><span class="mark" style="width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary-soft),var(--primary-deep));color:#fff;font-size:14px;box-shadow:var(--shadow-btn)">✦</span>Conjure</div>
+    <div class="foot-meta">
+      <span class="pill"><span class="dot"></span>self-hosted · scale-to-zero</span>
+      <span>MIT Licensed</span>
+    </div>
+    <div class="foot-links">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Copy button
+  (function(){
+    var btn=document.getElementById('copyBtn');
+    var label=document.getElementById('copyLabel');
+    var cmd=document.getElementById('cmdText').textContent.trim();
+    btn.addEventListener('click',function(){
+      navigator.clipboard.writeText(cmd).then(function(){
+        btn.classList.add('copied');label.textContent='Copied';
+        setTimeout(function(){btn.classList.remove('copied');label.textContent='Copy';},1600);
+      }).catch(function(){
+        label.textContent='Copy';
+      });
+    });
+  })();
+
+  // Reveal the success line after a beat, then stop the caret
+  (function(){
+    var line2=document.getElementById('line2');
+    var caret=document.getElementById('caret');
+    setTimeout(function(){
+      caret.style.display='none';
+      line2.classList.add('show');
+    },1100);
+  })();
+
+  // Scroll reveal
+  (function(){
+    var els=document.querySelectorAll('.reveal');
+    if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});return;}
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}
+      });
+    },{threshold:.14});
+    els.forEach(function(e){io.observe(e)});
+  })();
+</script>
+</body>
+</html>

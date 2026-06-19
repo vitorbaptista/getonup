@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Conjure — landing designs</title>
-    <meta name="description" content="Five landing-page directions for Conjure, each generated and then deployed through Conjure's own CLI. Pick a look." />
+    <meta name="description" content="Fifteen landing-page directions for Conjure — ten built in real shadcn.io DESIGN.md systems, five originals — each deployed through Conjure's own CLI." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -22,32 +22,35 @@
           radial-gradient(760px 420px at -5% 4%, rgba(34,211,238,.10), transparent 55%);
         min-height: 100vh;
       }
-      .wrap { max-width: 1180px; margin: 0 auto; padding: 64px 24px 96px; }
+      .wrap { max-width: 1200px; margin: 0 auto; padding: 64px 24px 96px; }
       .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
       .badge {
         display: inline-flex; align-items: center; gap: 8px; padding: 6px 13px; border: 1px solid var(--line);
         border-radius: 999px; background: var(--panel); color: var(--muted); font-size: 13px;
       }
       .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
-      h1 { font-size: clamp(30px, 5vw, 50px); letter-spacing: -.03em; margin: 20px 0 12px; font-weight: 800; }
+      h1 { font-size: clamp(30px, 5vw, 52px); letter-spacing: -.03em; margin: 20px 0 12px; font-weight: 800; }
       h1 .grad { background: linear-gradient(100deg, var(--violet), #b39bff 45%, var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-      .lede { color: var(--muted); max-width: 64ch; font-size: clamp(15px, 2vw, 18px); }
+      .lede { color: var(--muted); max-width: 70ch; font-size: clamp(15px, 2vw, 18px); }
       .lede code { background: #1a1e24; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; font-size: .9em; color: #cfd3da; }
-      .grid { margin-top: 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 22px; }
+      .sec-label { margin: 54px 0 18px; display: flex; align-items: baseline; gap: 12px; }
+      .sec-label h2 { font-size: 15px; font-weight: 700; letter-spacing: .02em; margin: 0; }
+      .sec-label span { color: var(--muted); font-size: 13px; }
+      .sec-label .rule { flex: 1; height: 1px; background: var(--line); }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
       .card {
         display: flex; flex-direction: column; text-decoration: none; color: inherit;
         border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--panel);
         transition: transform .18s ease, border-color .2s ease, box-shadow .25s ease;
       }
       .card:hover { transform: translateY(-4px); border-color: rgba(124,92,255,.5); box-shadow: 0 24px 60px -28px rgba(124,92,255,.5); }
-      .thumb { height: 230px; overflow: hidden; border-bottom: 1px solid var(--line); background: #0e1116; position: relative; }
+      .thumb { height: 210px; overflow: hidden; border-bottom: 1px solid var(--line); background: #0e1116; }
       .thumb img { width: 100%; display: block; object-fit: cover; object-position: top; }
-      .meta { padding: 16px 18px 18px; }
-      .meta h3 { margin: 0 0 5px; font-size: 17px; font-weight: 700; }
-      .meta p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
-      .view { color: var(--cyan); font-size: 14px; font-weight: 600; }
-      footer { margin-top: 56px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 22px; }
-      a.inline { color: var(--cyan); text-decoration: none; }
+      .meta { padding: 15px 17px 17px; }
+      .meta h3 { margin: 0 0 5px; font-size: 16px; font-weight: 700; }
+      .meta p { margin: 0 0 11px; color: var(--muted); font-size: 13.5px; }
+      .view { color: var(--cyan); font-size: 13.5px; font-weight: 600; }
+      footer { margin-top: 60px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 22px; }
     </style>
   </head>
   <body>
@@ -55,37 +58,39 @@
       <span class="badge"><span class="dot"></span> deployed through Conjure itself</span>
       <h1>Pick a look for <span class="grad">Conjure</span>.</h1>
       <p class="lede">
-        Five landing-page directions, each a complete self-contained page — generated, then
-        published with <code>conjure deploy</code>. Click any one to see it live. To make a
-        direction the homepage: <code>cp landings/&lt;key&gt;.html server/public/index.html</code>.
+        Fifteen landing-page directions, each a complete self-contained page — generated, then
+        published with <code>conjure deploy</code>. Ten are built in real
+        <a href="https://www.shadcn.io/design" style="color:var(--cyan);text-decoration:none">shadcn.io DESIGN.md</a>
+        systems (faithful tokens, typography, components); five are originals. Click any to see it live.
       </p>
 
+      <div class="sec-label"><h2>Design systems</h2><span>shadcn.io DESIGN.md</span><span class="rule"></span></div>
       <div class="grid">
-        <a class="card" href="/s/32c7whv2">
-          <div class="thumb"><img src="./thumbs/midnight.png" alt="Midnight design" loading="lazy" /></div>
-          <div class="meta"><h3>Midnight 🌌</h3><p>The house style — dark, violet→cyan glow, glassy panels, a little magical.</p><span class="view">View live →</span></div>
-        </a>
-        <a class="card" href="/s/tunyekjr">
-          <div class="thumb"><img src="./thumbs/scanini.png" alt="Scanini design" loading="lazy" /></div>
-          <div class="meta"><h3>Scanini ◼︎</h3><p>Cream paper, huge Boldonse serif, red italic accent, sticker motif, marquee.</p><span class="view">View live →</span></div>
-        </a>
-        <a class="card" href="/s/y3ynsckc">
-          <div class="thumb"><img src="./thumbs/shellshare.png" alt="Shellshare design" loading="lazy" /></div>
-          <div class="meta"><h3>Shellshare ▕</h3><p>Minimal hacker-docs — white, monospace, terminal blocks, a tidy FAQ.</p><span class="view">View live →</span></div>
-        </a>
-        <a class="card" href="/s/4dtxiaem">
-          <div class="thumb"><img src="./thumbs/posthog.png" alt="PostHog design" loading="lazy" /></div>
-          <div class="meta"><h3>PostHog 🟠</h3><p>Bold and playful — cream + black sticker-cards, coral accent, dev-native.</p><span class="view">View live →</span></div>
-        </a>
-        <a class="card" href="/s/gurjmsk7">
-          <div class="thumb"><img src="./thumbs/claude.png" alt="Claude design" loading="lazy" /></div>
-          <div class="meta"><h3>Claude ☕️</h3><p>Warm and editorial — serif display, terracotta italics, calm whitespace.</p><span class="view">View live →</span></div>
-        </a>
+        <a class="card" href="/s/dwsgfkfp"><div class="thumb"><img src="./thumbs/linear.png" alt="Linear" loading="lazy"/></div><div class="meta"><h3>Linear</h3><p>Strict dark canvas, lavender accent, surface-lift hierarchy.</p><span class="view">View live →</span></div></a>
+        <a class="card" href="/s/s7xz56cf"><div class="thumb"><img src="./thumbs/vercel.png" alt="Vercel" loading="lazy"/></div><div class="meta"><h3>Vercel</h3><p>Extreme minimal, high-contrast ink, geometric Geist energy.</p><span class="view">View live →</span></div></a>
+        <a class="card" href="/s/n9i3egyy"><div class="thumb"><img src="./thumbs/stripe.png" alt="Stripe" loading="lazy"/></div><div class="meta"><h3>Stripe</h3><p>Premium SaaS, indigo, an angled multi-color gradient hero.</p><span class="view">View live →</span></div></a>
+        <a class="card" href="/s/74bhb7xg"><div class="thumb"><img src="./thumbs/supabase.png" alt="Supabase" loading="lazy"/></div><div class="meta"><h3>Supabase</h3><p>Dark developer vibe, emerald green, monospace accents.</p><span class="view">View live →</span></div></a>
+        <a class="card" href="/s/8v7q8u4c"><div class="thumb"><img src="./thumbs/raycast.png" alt="Raycast" loading="lazy"/></div><div class="meta"><h3>Raycast</h3><p>Sleek near-black, spotlight / command-palette aesthetic.</p><span class="view">View live →</span></div></a>
+        <a class="card" href="/s/qa56h65n"><div class="thumb"><img src="./thumbs/github.png" alt="GitHub" loading="lazy"/></div><div class="meta"><h3>GitHub</h3><p>Functional dev-native, dimmed dark, arctic-blue links.</p><span class="view">View live →</span></div></a>
+        <a class="card" href="/s/ba3p7yka"><div class="thumb"><img src="./thumbs/cursor.png" alt="Cursor" loading="lazy"/></div><div class="meta"><h3>Cursor</h3><p>AI-coding dark, Cursor-orange accent, code-forward.</p><span class="view">View live →</span></div></a>
+        <a class="card" href="/s/b2bpvhxj"><div class="thumb"><img src="./thumbs/notion.png" alt="Notion" loading="lazy"/></div><div class="meta"><h3>Notion</h3><p>Light, document-y, friendly purple minimalism.</p><span class="view">View live →</span></div></a>
+        <a class="card" href="/s/wi8ex9pa"><div class="thumb"><img src="./thumbs/figma.png" alt="Figma" loading="lazy"/></div><div class="meta"><h3>Figma</h3><p>Playful design-tool, black with pastel color blocks.</p><span class="view">View live →</span></div></a>
+        <a class="card" href="/s/64n3a459"><div class="thumb"><img src="./thumbs/huggingface.png" alt="Hugging Face" loading="lazy"/></div><div class="meta"><h3>Hugging Face</h3><p>Friendly AI/ML, dark hero, warm yellow accent.</p><span class="view">View live →</span></div></a>
+      </div>
+
+      <div class="sec-label"><h2>Originals</h2><span>house concepts</span><span class="rule"></span></div>
+      <div class="grid">
+        <a class="card" href="/s/32c7whv2"><div class="thumb"><img src="./thumbs/midnight.png" alt="Midnight" loading="lazy"/></div><div class="meta"><h3>Midnight 🌌</h3><p>The house style — violet→cyan glow, glassy, a little magical.</p><span class="view">View live →</span></div></a>
+        <a class="card" href="/s/tunyekjr"><div class="thumb"><img src="./thumbs/scanini.png" alt="Scanini" loading="lazy"/></div><div class="meta"><h3>Scanini ◼︎</h3><p>Cream paper, big Boldonse serif, red, stickers, marquee.</p><span class="view">View live →</span></div></a>
+        <a class="card" href="/s/y3ynsckc"><div class="thumb"><img src="./thumbs/shellshare.png" alt="Shellshare" loading="lazy"/></div><div class="meta"><h3>Shellshare ▕</h3><p>Minimal hacker-docs — white, monospace, terminal blocks.</p><span class="view">View live →</span></div></a>
+        <a class="card" href="/s/4dtxiaem"><div class="thumb"><img src="./thumbs/posthog.png" alt="PostHog" loading="lazy"/></div><div class="meta"><h3>PostHog 🟠</h3><p>Bold and playful — cream sticker-cards, coral accent.</p><span class="view">View live →</span></div></a>
+        <a class="card" href="/s/gurjmsk7"><div class="thumb"><img src="./thumbs/claude.png" alt="Claude" loading="lazy"/></div><div class="meta"><h3>Claude ☕️</h3><p>Warm editorial — serif display, terracotta italics, calm.</p><span class="view">View live →</span></div></a>
       </div>
 
       <footer>
-        Conjure · MIT · self-hosted · scale-to-zero &nbsp;—&nbsp; the individual pages live in
+        Conjure · MIT · self-hosted · scale-to-zero &nbsp;—&nbsp; pages live in
         <span class="mono">landings/</span>, this gallery in <span class="mono">gallery/</span>.
+        Make one the homepage: <span class="mono">cp landings/&lt;key&gt;.html server/public/index.html</span>.
       </footer>
     </main>
   </body>

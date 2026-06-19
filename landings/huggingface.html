@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Conjure — Your AI artifact, live in seconds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    /* Hugging Face tokens */
+    --hero:#0b0f19;
+    --hero-2:#0d1320;
+    --canvas:#ffffff;
+    --surface-light:#e6edf3;
+    --ink:#000000;
+    --ink-soft:#161b22;
+    --ink-elevated:#21262d;
+    --ink-border:#30363d;
+    --muted:#6e7681;
+    --on-hero:#ffffff;
+    --hairline:#e1e1e1;
+    --accent:#FFD21E;
+    --accent-press:#f5c400;
+    --blue:#388bfd;
+    --green:#3fb950;
+    --amber:#d29922;
+    --red:#f85149;
+    --radius:8px;
+    --radius-pill:25.6px;
+    --space:8px;
+    --maxw:1080px;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:"Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:var(--sans);
+    color:var(--ink-soft);
+    background:var(--canvas);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.55;
+    font-size:17px;
+  }
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+
+  /* ---------- NAV ---------- */
+  nav{
+    background:var(--hero);
+    border-bottom:1px solid var(--ink-border);
+    position:sticky;top:0;z-index:50;
+  }
+  .nav-inner{
+    display:flex;align-items:center;justify-content:space-between;
+    height:64px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;color:var(--on-hero);font-weight:700;font-size:20px;letter-spacing:-.01em}
+  .brand .logo{
+    width:34px;height:34px;border-radius:var(--radius);
+    background:var(--accent);
+    display:grid;place-items:center;font-size:19px;
+    box-shadow:0 0 0 1px rgba(255,255,255,.08);
+  }
+  .nav-links{display:flex;align-items:center;gap:8px}
+  .nav-links a{
+    color:#c9d1d9;font-weight:600;font-size:15px;
+    padding:8px 12px;border-radius:var(--radius);transition:.15s;
+  }
+  .nav-links a:hover{color:#fff;background:rgba(255,255,255,.06)}
+  .nav-links .ghpill{
+    border:1px solid var(--ink-border);
+  }
+  .nav-links .ghpill:hover{background:rgba(255,255,255,.06);border-color:#475061}
+  .nav-cta{
+    background:var(--accent);color:#1f1500 !important;
+    padding:8px 16px;border-radius:var(--radius);font-weight:700;
+  }
+  .nav-cta:hover{background:var(--accent-press) !important}
+  .menu-btn{display:none}
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    background:
+      radial-gradient(900px 420px at 78% -10%, rgba(255,210,30,.16), transparent 60%),
+      radial-gradient(700px 360px at 5% 8%, rgba(56,139,253,.10), transparent 55%),
+      var(--hero);
+    color:var(--on-hero);
+    padding:84px 0 92px;
+    border-bottom:1px solid var(--ink-border);
+    overflow:hidden;
+  }
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(255,210,30,.12);
+    border:1px solid rgba(255,210,30,.35);
+    color:var(--accent);
+    padding:6px 14px;border-radius:var(--radius-pill);
+    font-size:13px;font-weight:700;letter-spacing:.02em;
+    margin-bottom:26px;
+  }
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(255,210,30,.18)}
+  h1{
+    font-size:clamp(38px,6.2vw,62px);
+    line-height:1.04;font-weight:700;letter-spacing:-.02em;
+    color:#fff;max-width:14ch;
+  }
+  h1 .hl{color:var(--accent)}
+  .subhead{
+    margin-top:22px;font-size:clamp(17px,2vw,21px);
+    color:#aeb6c2;max-width:56ch;font-weight:400;
+  }
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+
+  /* terminal */
+  .terminal{
+    background:#06090f;
+    border:1px solid var(--ink-border);
+    border-radius:12px;
+    box-shadow:0 24px 60px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02);
+    overflow:hidden;
+    font-family:var(--mono);
+  }
+  .term-bar{
+    display:flex;align-items:center;gap:8px;
+    padding:12px 16px;background:#0d1320;border-bottom:1px solid var(--ink-border);
+  }
+  .term-bar .d{width:12px;height:12px;border-radius:50%}
+  .term-bar .d:nth-child(1){background:#f85149}
+  .term-bar .d:nth-child(2){background:#d29922}
+  .term-bar .d:nth-child(3){background:#3fb950}
+  .term-title{margin-left:8px;color:#6e7681;font-size:12.5px;letter-spacing:.02em}
+  .term-body{padding:22px 20px;font-size:15px;line-height:1.85}
+  .term-body .ln{white-space:nowrap;overflow-x:auto}
+  .prompt{color:var(--accent);user-select:none}
+  .cmd{color:#e6edf3}
+  .flag{color:#388bfd}
+  .ok{color:var(--green)}
+  .arrow{color:#6e7681}
+  .url{color:var(--accent)}
+  .caret{display:inline-block;width:9px;height:17px;background:var(--accent);vertical-align:-3px;margin-left:3px;animation:blink 1.05s step-end infinite}
+  @keyframes blink{50%{opacity:0}}
+  .copybar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:11px 14px;border-top:1px solid var(--ink-border);background:#0a0e17;
+  }
+  .copybar code{font-family:var(--mono);font-size:13px;color:#aeb6c2}
+  .copybtn{
+    font-family:var(--sans);font-weight:700;font-size:13px;cursor:pointer;
+    background:rgba(255,255,255,.06);color:#e6edf3;border:1px solid var(--ink-border);
+    padding:6px 12px;border-radius:var(--radius);transition:.15s;
+  }
+  .copybtn:hover{background:rgba(255,210,30,.14);border-color:rgba(255,210,30,.5);color:var(--accent)}
+  .copybtn.done{background:rgba(63,185,80,.15);border-color:rgba(63,185,80,.5);color:var(--green)}
+
+  .cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:34px}
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;
+    font-weight:700;font-size:16px;cursor:pointer;
+    padding:13px 24px;border-radius:var(--radius);transition:.15s;border:1px solid transparent;
+  }
+  .btn-primary{background:var(--accent);color:#1f1500}
+  .btn-primary:hover{background:var(--accent-press);transform:translateY(-1px)}
+  .btn-secondary{background:transparent;color:#e6edf3;border-color:var(--ink-border)}
+  .btn-secondary:hover{background:rgba(255,255,255,.06);border-color:#475061}
+  .btn svg{width:18px;height:18px}
+
+  /* ---------- SECTION SHELL ---------- */
+  section{padding:88px 0}
+  .sec-head{max-width:60ch;margin-bottom:48px}
+  .kicker{
+    display:inline-block;color:var(--amber);font-weight:700;font-size:13px;
+    letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;
+  }
+  h2{font-size:clamp(28px,4vw,40px);font-weight:700;letter-spacing:-.02em;color:var(--ink-soft);line-height:1.1}
+  .sec-sub{margin-top:14px;font-size:18px;color:var(--muted)}
+
+  /* ---------- HOW IT WORKS ---------- */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .step{
+    background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius);
+    padding:28px 26px 30px;position:relative;transition:.18s;
+  }
+  .step:hover{border-color:#cfcfcf;box-shadow:0 12px 28px -16px rgba(11,15,25,.22);transform:translateY(-2px)}
+  .step .num{
+    width:38px;height:38px;border-radius:var(--radius);
+    background:var(--hero);color:var(--accent);font-family:var(--mono);font-weight:600;
+    display:grid;place-items:center;font-size:16px;margin-bottom:18px;
+  }
+  .step h3{font-size:20px;font-weight:700;color:var(--ink-soft);margin-bottom:8px}
+  .step p{color:var(--muted);font-size:15.5px}
+  .step .mini{
+    margin-top:16px;font-family:var(--mono);font-size:12.5px;
+    background:#f4f6f8;border:1px solid var(--hairline);border-radius:6px;
+    padding:8px 11px;color:var(--ink-elevated);overflow-x:auto;white-space:nowrap;
+  }
+  .step .mini .p{color:var(--amber)}
+  .step .mini .g{color:#1a7f37}
+
+  /* ---------- FEATURES ---------- */
+  .features-band{background:var(--surface-light);border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline)}
+  .feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+  .feat{
+    background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius);
+    padding:30px 28px;transition:.18s;
+  }
+  .feat:hover{border-color:#cdd6dd;box-shadow:0 14px 30px -18px rgba(11,15,25,.25);transform:translateY(-2px)}
+  .feat .ic{
+    width:46px;height:46px;border-radius:var(--radius);display:grid;place-items:center;
+    margin-bottom:18px;font-size:23px;border:1px solid var(--hairline);
+  }
+  .feat:nth-child(1) .ic{background:rgba(255,210,30,.16);border-color:rgba(255,210,30,.45)}
+  .feat:nth-child(2) .ic{background:rgba(56,139,253,.12);border-color:rgba(56,139,253,.35)}
+  .feat:nth-child(3) .ic{background:rgba(63,185,80,.12);border-color:rgba(63,185,80,.35)}
+  .feat:nth-child(4) .ic{background:rgba(210,153,34,.14);border-color:rgba(210,153,34,.4)}
+  .feat h3{font-size:20px;font-weight:700;color:var(--ink-soft);margin-bottom:9px}
+  .feat p{color:var(--muted);font-size:15.5px}
+  .feat .tag{
+    display:inline-block;margin-top:16px;font-family:var(--mono);font-size:12px;
+    padding:4px 11px;border-radius:var(--radius-pill);
+    background:#eef1f4;border:1px solid var(--hairline);color:var(--ink-elevated);
+  }
+
+  /* ---------- FINAL CTA ---------- */
+  .endcta{
+    background:
+      radial-gradient(700px 320px at 50% 120%, rgba(255,210,30,.14), transparent 60%),
+      var(--hero);
+    color:#fff;text-align:center;border-radius:14px;padding:60px 28px;
+    border:1px solid var(--ink-border);
+  }
+  .endcta h2{color:#fff}
+  .endcta p{color:#aeb6c2;margin-top:14px;font-size:18px}
+  .endcta .cta-row{justify-content:center}
+
+  /* ---------- FOOTER ---------- */
+  footer{background:var(--hero);color:#aeb6c2;border-top:1px solid var(--ink-border);padding:40px 0}
+  .foot-inner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:18px}
+  .foot-brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:700}
+  .foot-brand .logo{width:28px;height:28px;border-radius:6px;background:var(--accent);display:grid;place-items:center;font-size:15px}
+  .foot-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:14px}
+  .foot-meta .chip{
+    font-family:var(--mono);font-size:12px;padding:5px 12px;border-radius:var(--radius-pill);
+    border:1px solid var(--ink-border);color:#c9d1d9;
+  }
+  .foot-meta a:hover{color:#fff}
+
+  @media(max-width:880px){
+    .hero-grid{grid-template-columns:1fr;gap:38px}
+    .steps{grid-template-columns:1fr}
+    .feat-grid{grid-template-columns:1fr}
+    .nav-links a:not(.nav-cta):not(.ghpill){display:none}
+    header.hero{padding:60px 0 70px}
+    section{padding:64px 0}
+  }
+  @media(max-width:520px){
+    .nav-links .ghpill{display:none}
+    .foot-inner{flex-direction:column;align-items:flex-start}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-inner">
+    <a class="brand" href="#"><span class="logo">🪄</span> Conjure</a>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#" class="ghpill">★ GitHub</a>
+      <a href="#self-host" class="nav-cta">Self-host it</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow"><span class="dot"></span> Agent-native · scales to zero</span>
+      <h1>Your AI artifact, <span class="hl">live in seconds.</span></h1>
+      <p class="subhead">
+        Turn any AI-generated web artifact — an HTML file, a React or Vue component, or a built static folder — into a live, shareable URL with one CLI command. No database, no always-on server, no viewer login.
+      </p>
+      <div class="cta-row">
+        <a href="#self-host" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          Self-host it
+        </a>
+        <a href="#" class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.2.8-.5v-2c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.6.8.5 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+
+    <div class="terminal" aria-label="conjure deploy example">
+      <div class="term-bar">
+        <span class="d"></span><span class="d"></span><span class="d"></span>
+        <span class="term-title">~/my-artifact — conjure</span>
+      </div>
+      <div class="term-body">
+        <div class="ln"><span class="prompt">$</span> <span class="cmd">conjure deploy</span> <span class="flag">counter.tsx</span></div>
+        <div class="ln"><span class="arrow">·</span> <span class="cmd">auto-wrapping React component…</span></div>
+        <div class="ln"><span class="arrow">·</span> <span class="cmd">uploading to R2…</span></div>
+        <div class="ln"><span class="ok">✓</span> <span class="cmd">live</span> <span class="arrow">→</span> <span class="url">https://conjure.example.com/s/iwcmg3dt</span></div>
+        <div class="ln"><span class="prompt">$</span> <span class="caret"></span></div>
+      </div>
+      <div class="copybar">
+        <code id="cmd">conjure deploy counter.tsx</code>
+        <button class="copybtn" id="copy">Copy</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="kicker">How it works</span>
+      <h2>From component to public link in three steps.</h2>
+      <p class="sec-sub">No build pipeline to configure. Point Conjure at a file and it does the rest.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <h3>Build an artifact</h3>
+        <p>Your agent writes a <strong>.html</strong>, <strong>.tsx</strong>, or <strong>.vue</strong> — or a built static folder. Whatever it just generated, you're ready.</p>
+        <div class="mini">counter.tsx · dashboard.vue · index.html</div>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <h3>Run one command</h3>
+        <p>One CLI call auto-wraps single components into self-contained pages and uploads them straight to your bucket.</p>
+        <div class="mini"><span class="p">$</span> conjure deploy <span class="g">counter.tsx</span></div>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <h3>Share the link</h3>
+        <p>Get a clean, shareable URL instantly. No viewer login, no signup wall, and it scales to zero when idle.</p>
+        <div class="mini"><span class="g">✓ live</span> → /s/iwcmg3dt</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" class="features-band">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="kicker">Why Conjure</span>
+      <h2>A tiny backend that gets out of the way.</h2>
+      <p class="sec-sub">One Worker, one bucket, your account. Built for developers and the coding agents that work alongside them.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat">
+        <div class="ic">⚡</div>
+        <h3>One Worker + R2</h3>
+        <p>A single Cloudflare Worker and an R2 bucket. No database, no always-on server, and roughly <strong>$0 idle</strong> because it scales to zero.</p>
+        <span class="tag">no DB · ~$0 idle</span>
+      </div>
+      <div class="feat">
+        <div class="ic">🤖</div>
+        <h3>Agent-native</h3>
+        <p>Drop a snippet in <strong>AGENTS.md</strong> and any coding agent can publish on its own. The CLI is the whole interface.</p>
+        <span class="tag">drop-in AGENTS.md</span>
+      </div>
+      <div class="feat">
+        <div class="ic">🪄</div>
+        <h3>Auto-wrap</h3>
+        <p>Hand it one <strong>.tsx</strong> or <strong>.vue</strong> and it becomes a runnable page — React 18 + Babel + Tailwind, or Vue 3, fully self-contained.</p>
+        <span class="tag">React 18 · Vue 3 · Tailwind</span>
+      </div>
+      <div class="feat">
+        <div class="ic">🔐</div>
+        <h3>Yours to host</h3>
+        <p>Runs on your Cloudflare account with your token. Open-source and MIT — no lock-in, no surprises, fully self-hostable.</p>
+        <span class="tag">MIT · self-hosted</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section id="self-host">
+  <div class="wrap">
+    <div class="endcta">
+      <span class="kicker" style="color:var(--accent)">Free &amp; open source</span>
+      <h2>Conjure it onto your own Cloudflare in minutes.</h2>
+      <p>Clone the repo, point it at your account, and start turning artifacts into live links today.</p>
+      <div class="cta-row">
+        <a href="#" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          Self-host it
+        </a>
+        <a href="#" class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.2.8-.5v-2c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.6.8.5 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-inner">
+    <div class="foot-brand"><span class="logo">🪄</span> Conjure</div>
+    <div class="foot-meta">
+      <span class="chip">MIT licensed</span>
+      <span class="chip">self-hosted · scale-to-zero</span>
+      <a href="#">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var btn=document.getElementById('copy');
+    var cmd=document.getElementById('cmd');
+    btn.addEventListener('click',function(){
+      var text=cmd.textContent.trim();
+      var done=function(){
+        btn.textContent='Copied!';btn.classList.add('done');
+        setTimeout(function(){btn.textContent='Copy';btn.classList.remove('done');},1600);
+      };
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(done);
+      }else{
+        var t=document.createElement('textarea');t.value=text;document.body.appendChild(t);
+        t.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(t);done();
+      }
+    });
+
+    // subtle reveal on scroll
+    var els=document.querySelectorAll('.step,.feat');
+    els.forEach(function(el){el.style.opacity='0';el.style.transform='translateY(14px)';el.style.transition='opacity .5s ease, transform .5s ease';});
+    if('IntersectionObserver' in window){
+      var io=new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+          if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='none';io.unobserve(e.target);}
+        });
+      },{threshold:.12});
+      els.forEach(function(el){io.observe(el);});
+    }else{
+      els.forEach(function(el){el.style.opacity='1';el.style.transform='none';});
+    }
+  })();
+</script>
+</body>
+</html>

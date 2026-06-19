@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Conjure — Your AI artifact, live in seconds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    /* Supabase dark canvas */
+    --canvas:#1c1c1c;
+    --canvas-soft:#202020;
+    --surface:#242424;
+    --card:#1f1f1f;
+    --primary:#3ecf8e;
+    --primary-deep:#24b47e;
+    --primary-soft:#4ade80;
+    --on-primary:#171717;
+    --ink:#ffffff;
+    --ink-2:#ededed;
+    --ink-mute:#9a9a9a;
+    --ink-faint:#707070;
+    --hairline:#2e2e2e;
+    --hairline-strong:#3a3a3a;
+    --glow: rgba(62,207,142,.16);
+    --radius-btn:6px;
+    --radius-card:12px;
+    --radius-lg:16px;
+    --space:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--canvas);
+    color:var(--ink-2);
+    font-family:'Outfit',system-ui,-apple-system,sans-serif;
+    font-weight:400;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+  /* ambient green glow */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(620px 380px at 70% -8%, var(--glow), transparent 70%),
+      radial-gradient(520px 320px at 8% 12%, rgba(36,180,126,.10), transparent 72%);
+  }
+  header,main,footer{position:relative;z-index:1}
+
+  /* NAV */
+  nav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(28,28,28,.78);
+    backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--hairline);
+  }
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:17px;color:var(--ink);letter-spacing:-.01em}
+  .logo{
+    width:26px;height:26px;border-radius:7px;display:grid;place-items:center;
+    background:linear-gradient(160deg,var(--primary),var(--primary-deep));
+    color:var(--on-primary);box-shadow:0 0 0 1px rgba(62,207,142,.4),0 0 18px var(--glow);
+    font-size:15px;
+  }
+  .nav-links{display:flex;align-items:center;gap:28px}
+  .nav-links a.lnk{color:var(--ink-mute);font-size:14px;font-weight:400;transition:color .15s}
+  .nav-links a.lnk:hover{color:var(--ink)}
+  .nav-cta{display:flex;align-items:center;gap:10px}
+
+  /* BUTTONS — squarish 6px */
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:'Outfit',sans-serif;font-weight:500;font-size:14px;
+    padding:9px 16px;border-radius:var(--radius-btn);
+    border:1px solid transparent;cursor:pointer;transition:all .15s ease;
+    white-space:nowrap;
+  }
+  .btn-primary{
+    background:var(--primary);color:var(--on-primary);
+    border-color:var(--primary-deep);
+    box-shadow:0 0 0 1px rgba(62,207,142,.25),0 1px 0 rgba(0,0,0,.2),0 0 22px var(--glow);
+  }
+  .btn-primary:hover{background:var(--primary-soft);box-shadow:0 0 0 1px rgba(62,207,142,.45),0 0 30px var(--glow)}
+  .btn-ghost{
+    background:var(--surface);color:var(--ink-2);
+    border-color:var(--hairline-strong);
+  }
+  .btn-ghost:hover{border-color:#4a4a4a;background:#2a2a2a;color:var(--ink)}
+  .btn-lg{padding:12px 22px;font-size:15px}
+
+  /* HERO */
+  .hero{padding:80px 0 64px;text-align:center}
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:5px 12px 5px 8px;border-radius:100px;
+    border:1px solid var(--hairline-strong);background:var(--surface);
+    font-size:12.5px;color:var(--ink-mute);margin-bottom:26px;
+  }
+  .pill b{color:var(--primary);font-weight:600}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--primary);box-shadow:0 0 10px var(--primary)}
+  h1{
+    font-weight:600;color:var(--ink);
+    font-size:clamp(38px,6.4vw,62px);line-height:1.02;
+    letter-spacing:-.03em;margin-bottom:20px;
+  }
+  h1 .accent{
+    background:linear-gradient(120deg,var(--primary),var(--primary-soft));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .subhead{
+    font-size:clamp(16px,2.2vw,19px);color:var(--ink-mute);
+    max-width:600px;margin:0 auto 34px;font-weight:300;
+  }
+  .hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:46px}
+
+  /* TERMINAL */
+  .terminal{
+    max-width:620px;margin:0 auto;text-align:left;
+    background:#161616;border:1px solid var(--hairline-strong);
+    border-radius:var(--radius-lg);overflow:hidden;
+    box-shadow:0 24px 60px -20px rgba(0,0,0,.7),0 0 0 1px rgba(62,207,142,.08),0 0 40px -10px var(--glow);
+  }
+  .term-bar{
+    display:flex;align-items:center;gap:7px;padding:12px 16px;
+    border-bottom:1px solid var(--hairline);background:var(--canvas-soft);
+  }
+  .tdot{width:11px;height:11px;border-radius:50%;background:#333}
+  .tdot:nth-child(1){background:#ff5f56}
+  .tdot:nth-child(2){background:#ffbd2e}
+  .tdot:nth-child(3){background:#27c93f}
+  .term-label{margin-left:8px;font-size:12px;color:var(--ink-faint)}
+  .term-body{padding:22px 20px;font-family:'JetBrains Mono',monospace;font-size:14.5px;line-height:1.85}
+  .term-body .prompt{color:var(--primary)}
+  .term-body .cmd{color:var(--ink)}
+  .term-body .flag{color:var(--ink-mute)}
+  .term-out{color:var(--ink-mute)}
+  .term-out .ok{color:var(--primary);font-weight:600}
+  .term-out .url{color:var(--primary-soft);text-decoration:underline;text-decoration-color:rgba(74,222,128,.4)}
+  .caret{display:inline-block;width:9px;height:17px;background:var(--primary);vertical-align:-3px;margin-left:3px;animation:blink 1.05s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .copy-row{
+    display:flex;align-items:center;justify-content:space-between;
+    border-top:1px solid var(--hairline);padding:10px 16px;background:var(--canvas-soft);
+  }
+  .copy-row code{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink-mute)}
+  .copy-btn{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:500;
+    color:var(--ink-2);background:var(--surface);border:1px solid var(--hairline-strong);
+    padding:6px 11px;border-radius:var(--radius-btn);cursor:pointer;transition:all .15s;
+  }
+  .copy-btn:hover{border-color:var(--primary-deep);color:var(--primary)}
+  .copy-btn.done{color:var(--primary);border-color:var(--primary-deep)}
+
+  /* SECTION HEADERS */
+  .section{padding:74px 0;border-top:1px solid var(--hairline)}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;font-size:12.5px;letter-spacing:.04em;
+    color:var(--primary);text-transform:uppercase;margin-bottom:14px;
+  }
+  .section h2{
+    font-weight:600;color:var(--ink);font-size:clamp(28px,4vw,38px);
+    letter-spacing:-.025em;line-height:1.08;margin-bottom:14px;
+  }
+  .section .lede{color:var(--ink-mute);font-size:17px;font-weight:300;max-width:560px}
+  .sec-head{margin-bottom:46px}
+
+  /* STEPS */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .step{
+    background:var(--card);border:1px solid var(--hairline);
+    border-radius:var(--radius-card);padding:26px 24px;position:relative;
+    transition:border-color .2s,transform .2s;
+  }
+  .step:hover{border-color:var(--hairline-strong);transform:translateY(-2px)}
+  .step-num{
+    font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;
+    color:var(--on-primary);background:var(--primary);
+    width:30px;height:30px;border-radius:8px;display:grid;place-items:center;
+    margin-bottom:18px;box-shadow:0 0 16px var(--glow);
+  }
+  .step h3{color:var(--ink);font-size:18px;font-weight:600;letter-spacing:-.01em;margin-bottom:8px}
+  .step p{color:var(--ink-mute);font-size:14.5px;font-weight:300}
+  .step code{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--primary-soft);background:rgba(62,207,142,.08);padding:1px 6px;border-radius:5px}
+
+  /* FEATURES GRID */
+  .features{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .feature{
+    background:var(--card);border:1px solid var(--hairline);
+    border-radius:var(--radius-card);padding:28px 26px;
+    transition:border-color .2s,box-shadow .2s;
+  }
+  .feature:hover{border-color:rgba(62,207,142,.35);box-shadow:0 0 0 1px rgba(62,207,142,.12),0 0 34px -14px var(--glow)}
+  .ficon{
+    width:40px;height:40px;border-radius:10px;display:grid;place-items:center;
+    background:rgba(62,207,142,.10);border:1px solid rgba(62,207,142,.25);
+    margin-bottom:18px;
+  }
+  .ficon svg{width:20px;height:20px;stroke:var(--primary);fill:none;stroke-width:1.7}
+  .feature h3{color:var(--ink);font-size:18px;font-weight:600;letter-spacing:-.01em;margin-bottom:8px}
+  .feature p{color:var(--ink-mute);font-size:14.5px;font-weight:300}
+  .feature .tag{
+    display:inline-block;margin-top:14px;font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;color:var(--primary);background:rgba(62,207,142,.08);
+    border:1px solid rgba(62,207,142,.2);padding:3px 9px;border-radius:5px;
+  }
+
+  /* CTA STRIP */
+  .cta-strip{
+    margin:0 0 0;background:linear-gradient(160deg,#1f2a24,#1a1a1a);
+    border:1px solid rgba(62,207,142,.22);border-radius:var(--radius-lg);
+    padding:44px 36px;text-align:center;
+    box-shadow:0 0 50px -22px var(--glow);
+  }
+  .cta-strip h2{margin-bottom:10px}
+  .cta-strip p{color:var(--ink-mute);margin-bottom:26px;font-weight:300}
+  .cta-strip .hero-cta{margin-bottom:0}
+
+  /* FOOTER */
+  footer{border-top:1px solid var(--hairline);padding:34px 0;margin-top:74px}
+  .foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+  .foot .brand{font-size:15px}
+  .foot-meta{display:flex;align-items:center;gap:14px;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--ink-faint)}
+  .foot-meta .sep{color:#333}
+  .foot-meta b{color:var(--ink-mute);font-weight:500}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+
+  @media(max-width:780px){
+    .nav-links{display:none}
+    .steps,.features{grid-template-columns:1fr}
+    .hero{padding:54px 0 44px}
+    .section{padding:54px 0}
+    .cta-strip{padding:36px 22px}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-inner">
+    <div class="brand"><span class="logo">✦</span>Conjure</div>
+    <div class="nav-links">
+      <a class="lnk" href="#how">How it works</a>
+      <a class="lnk" href="#features">Features</a>
+      <a class="lnk" href="#" >Docs</a>
+    </div>
+    <div class="nav-cta">
+      <a class="btn btn-ghost" href="#">View on GitHub</a>
+      <a class="btn btn-primary" href="#deploy">Self-host it</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <!-- HERO -->
+  <section class="hero" id="deploy">
+    <div class="wrap">
+      <span class="pill"><span class="dot"></span>Open source &middot; <b>MIT licensed</b> &middot; scales to zero</span>
+      <h1>Your AI artifact,<br><span class="accent">live in seconds.</span></h1>
+      <p class="subhead">Conjure turns any AI-generated web artifact — an HTML file, a React or Vue component, a built static folder — into a shareable URL with one CLI command. No database. No always-on server.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg" href="#">Self-host it</a>
+        <a class="btn btn-ghost btn-lg" href="#">View on GitHub →</a>
+      </div>
+
+      <div class="terminal" role="group" aria-label="Conjure deploy command">
+        <div class="term-bar">
+          <span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>
+          <span class="term-label mono">~/project — conjure</span>
+        </div>
+        <div class="term-body">
+          <div><span class="prompt">$</span> <span class="cmd">conjure deploy</span> <span class="flag">counter.tsx</span></div>
+          <div class="term-out">↳ auto-wrapping React 18 + Tailwind…</div>
+          <div class="term-out">↳ uploading to R2…</div>
+          <div class="term-out"><span class="ok">✓ live</span> → <span class="url">https://conjure.example.com/s/iwcmg3dt</span><span class="caret" aria-hidden="true"></span></div>
+        </div>
+        <div class="copy-row">
+          <code id="cmdtext">conjure deploy counter.tsx</code>
+          <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy command">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span id="copyLabel">Copy</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section" id="how">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="eyebrow">// how it works</div>
+        <h2>Three steps to a shareable link</h2>
+        <p class="lede">From an agent's output file to a public URL — no build pipeline, no deploy config, no waiting on a server to spin up.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-num">1</div>
+          <h3>Build an artifact</h3>
+          <p>Your agent writes a <code>.html</code>, <code>.tsx</code>, or <code>.vue</code> — or a built static folder. Whatever it generates, Conjure can ship it.</p>
+        </div>
+        <div class="step reveal">
+          <div class="step-num">2</div>
+          <h3>Run one command</h3>
+          <p><code>conjure deploy</code> auto-wraps single components into self-contained pages and uploads the result in a single call.</p>
+        </div>
+        <div class="step reveal">
+          <div class="step-num">3</div>
+          <h3>Share the link</h3>
+          <p>You get a live URL instantly. No viewer login, no cold-start lag — and it scales right back down to zero when idle.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="eyebrow">// what you get</div>
+        <h2>Built for agents. Owned by you.</h2>
+        <p class="lede">One Cloudflare Worker, one R2 bucket, and a tiny CLI. That's the whole stack.</p>
+      </div>
+      <div class="features">
+        <div class="feature reveal">
+          <div class="ficon"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/></svg></div>
+          <h3>One Worker + R2</h3>
+          <p>No database. No always-on server. A single Cloudflare Worker fronts an R2 bucket, so idle cost rounds to about $0.</p>
+          <span class="tag">~$0 idle</span>
+        </div>
+        <div class="feature reveal">
+          <div class="ficon"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3m13 5h3a2 2 0 0 0 2-2v-3" stroke-linecap="round"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <h3>Agent-native</h3>
+          <p>Drop a snippet into <code style="font-family:'JetBrains Mono',monospace;color:var(--primary-soft)">AGENTS.md</code> and any coding agent can publish its own work — no human in the loop required.</p>
+          <span class="tag">conjure deploy &lt;file&gt;</span>
+        </div>
+        <div class="feature reveal">
+          <div class="ficon"><svg viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>Auto-wrap</h3>
+          <p>Hand it one <code style="font-family:'JetBrains Mono',monospace;color:var(--primary-soft)">.tsx</code>, <code style="font-family:'JetBrains Mono',monospace;color:var(--primary-soft)">.vue</code>, or <code style="font-family:'JetBrains Mono',monospace;color:var(--primary-soft)">.html</code> and it becomes a runnable page — React 18 + Babel + Tailwind, or Vue 3, self-contained.</p>
+          <span class="tag">React 18 · Vue 3 · Tailwind</span>
+        </div>
+        <div class="feature reveal">
+          <div class="ficon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linejoin="round"/></svg></div>
+          <h3>Yours to host</h3>
+          <p>Your Cloudflare account, your token, your domain. Conjure is free software under the MIT license — fork it, ship it, run it your way.</p>
+          <span class="tag">MIT</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section" style="border-top:none;padding-top:0">
+    <div class="wrap">
+      <div class="cta-strip reveal">
+        <h2>Conjure your first link</h2>
+        <p>Self-host it on your own Cloudflare account in minutes. Scale-to-zero by default.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="#">Self-host it</a>
+          <a class="btn btn-ghost btn-lg" href="#">View on GitHub →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div class="brand"><span class="logo">✦</span>Conjure</div>
+    <div class="foot-meta">
+      <b>MIT</b><span class="sep">|</span><span>self-hosted</span><span class="sep">·</span><span>scale-to-zero</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Copy button
+  (function(){
+    var btn=document.getElementById('copyBtn');
+    var label=document.getElementById('copyLabel');
+    var txt=document.getElementById('cmdtext').textContent.trim();
+    btn.addEventListener('click',function(){
+      var done=function(){
+        btn.classList.add('done');label.textContent='Copied';
+        setTimeout(function(){btn.classList.remove('done');label.textContent='Copy';},1600);
+      };
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(txt).then(done).catch(done);
+      }else{
+        var t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);
+        t.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(t);done();
+      }
+    });
+  })();
+
+  // Reveal on scroll
+  (function(){
+    var els=document.querySelectorAll('.reveal');
+    if(!('IntersectionObserver'in window)){els.forEach(function(e){e.classList.add('in')});return;}
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});
+    },{threshold:.14});
+    els.forEach(function(e){io.observe(e)});
+  })();
+</script>
+</body>
+</html>
