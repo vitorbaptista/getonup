@@ -343,7 +343,7 @@
         </a>
       </div>
 
-      <div class="terminal reveal" aria-label="Terminal showing the conjure deploy command">
+      <div class="terminal reveal" aria-label="Terminal showing the cjr deploy command">
         <div class="term-bar">
           <span class="tdot r"></span><span class="tdot y"></span><span class="tdot g"></span>
           <span class="ttitle">~/project — zsh</span>
@@ -353,7 +353,7 @@
           </button>
         </div>
         <div class="term-body">
-          <div class="row"><span class="pr">$</span> <span class="cmd">conjure deploy counter.tsx</span></div>
+          <div class="row"><span class="pr">$</span> <span class="cmd">cjr deploy counter.tsx</span></div>
           <div class="row"><span class="muted">› wrapping</span> <span class="cmd">React 18 + Babel + Tailwind</span> <span class="muted">…</span></div>
           <div class="row"><span class="muted">› uploading to R2</span> <span class="muted">…</span></div>
           <div class="row"><span class="ok">✓ live</span> <span class="arrow">→</span> <span class="url">https://conjure.example.com/s/iwcmg3dt</span></div>
@@ -386,7 +386,7 @@
         <div class="step reveal">
           <div class="num">2</div>
           <h3>Run one command</h3>
-          <p><code>conjure deploy</code> auto-wraps the component into a self-contained page and uploads it to your bucket.</p>
+          <p><code>cjr deploy</code> auto-wraps the component into a self-contained page and uploads it to your bucket.</p>
         </div>
         <div class="step reveal">
           <div class="num">3</div>
@@ -504,7 +504,7 @@
   var btn = document.getElementById('copyBtn');
   var label = document.getElementById('copyLabel');
   btn.addEventListener('click', function(){
-    var text = 'conjure deploy counter.tsx';
+    var text = 'cjr deploy counter.tsx';
     var done = function(){
       btn.classList.add('done'); label.textContent = 'copied';
       setTimeout(function(){ btn.classList.remove('done'); label.textContent = 'copy'; }, 1700);

@@ -274,7 +274,7 @@
           <path d="M112 6 l-9 1 m9-1 l-2 9" stroke="#1D4AFF" stroke-width="3" stroke-linecap="round"/>
         </svg>
       </p>
-      <div class="term" role="img" aria-label="Terminal running: conjure deploy counter.tsx, returns a live URL">
+      <div class="term" role="img" aria-label="Terminal running: cjr deploy counter.tsx, returns a live URL">
         <div class="term-bar">
           <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
           <span class="term-title">~/agent/artifacts — conjure</span>
@@ -312,7 +312,7 @@
       <div class="step rv">
         <span class="num">2</span>
         <h3>Run one command</h3>
-        <p><code>conjure deploy &lt;file&gt;</code> auto-wraps the component into a self-contained page and uploads it straight to your bucket.</p>
+        <p><code>cjr deploy &lt;file&gt;</code> auto-wraps the component into a self-contained page and uploads it straight to your bucket.</p>
       </div>
       <div class="step rv">
         <span class="num">3</span>
@@ -375,7 +375,7 @@
       <p>Clone the repo, point it at your Cloudflare account, and start conjuring URLs in minutes.</p>
       <div style="display:flex;justify-content:center;margin-bottom:24px">
         <div class="copyline">
-          <span><span class="pl">$</span> npx conjure deploy counter.tsx</span>
+          <span><span class="pl">$</span> cjr deploy counter.tsx</span>
           <button class="copybtn" id="copy" aria-label="Copy command">Copy</button>
         </div>
       </div>
@@ -419,7 +419,7 @@
 <script>
   // Typewriter for hero terminal
   (function(){
-    var cmd = "conjure deploy counter.tsx";
+    var cmd = "cjr deploy counter.tsx";
     var el = document.getElementById('typed');
     var caret = document.getElementById('caret');
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -451,7 +451,7 @@
     var btn=document.getElementById('copy');
     if(!btn) return;
     btn.addEventListener('click', function(){
-      var text="npx conjure deploy counter.tsx";
+      var text="cjr deploy counter.tsx";
       var done=function(){
         btn.textContent="Copied ✓"; btn.classList.add('done');
         setTimeout(function(){btn.textContent="Copy";btn.classList.remove('done');},1600);

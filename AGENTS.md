@@ -9,15 +9,15 @@ HTML page, a React/Vue component, or a built static site.
 
 ## Setup (once per machine)
 
-The user runs `conjure login --url <server> --token <token>` once (or exports `CONJURE_URL`
-and `CONJURE_TOKEN`). Check with `conjure whoami` — if it shows a server, you're ready.
+The user runs `cjr login --url <server> --token <token>` once (or exports `CONJURE_URL`
+and `CONJURE_TOKEN`). Check with `cjr whoami` — if it shows a server, you're ready.
 
 ## To publish
 
 Write the artifact to a file, then run:
 
 ```bash
-conjure deploy <file-or-dir> --json
+cjr deploy <file-or-dir> --json
 ```
 
 - `<file>` can be `.html`, `.jsx`/`.tsx`, `.vue`, `.js`, or a **directory** (a built static
@@ -27,29 +27,29 @@ conjure deploy <file-or-dir> --json
   the default export and use Tailwind classes freely.
 - `--json` prints `{"id","url","files","bytes"}`. Give the user the `url`.
 - Quick one-off from a string:
-  `printf '%s' "$HTML" | conjure deploy - --type html --json`
+  `printf '%s' "$HTML" | cjr deploy - --type html --json`
 
 ## Examples
 
 ```bash
-conjure deploy ./report.html --json
-conjure deploy ./dashboard.tsx --json
-conjure deploy ./site --json            # a folder built by `npm run build`
+cjr deploy ./report.html --json
+cjr deploy ./dashboard.tsx --json
+cjr deploy ./site --json            # a folder built by `npm run build`
 ```
 
 ## Preview locally (no deploy)
 
 To preview an artifact on the user's own machine without publishing, run
-`conjure serve <file-or-dir> --watch` — it auto-wraps and hosts it at a `localhost` URL with
-live-reload (no token, no Cloudflare). Use it for a quick local look; use `conjure deploy` when
+`cjr serve <file-or-dir> --watch` — it auto-wraps and hosts it at a `localhost` URL with
+live-reload (no token, no Cloudflare). Use it for a quick local look; use `cjr deploy` when
 the user wants a shareable public URL.
 
 ## Managing
 
 ```bash
-conjure list            # everything published
-conjure rm <id>         # take one down
-conjure open <id>       # open it in a browser
+cjr list            # everything published
+cjr rm <id>         # take one down
+cjr open <id>       # open it in a browser
 ```
 
 The deployed site is **public** and needs no login to view. Hand the `url` to the user.

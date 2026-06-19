@@ -12,8 +12,11 @@
   - Size/file caps, path-traversal rejection, content-type map, proper status codes, styled 404.
   - Default homepage is the polished **Midnight** landing.
 - **CLI** (`cli/` — `conjure`):
-  - `login`, `deploy <file|dir|->`, **`serve <file|dir|->`** (zero-config local hosting + auto-wrap
-    + live-reload, no token/Cloudflare), `list`, `rm`, `open`, `whoami`; flags `--json/--quiet/--open/--watch/--port/--name/--type/--no-wrap/--no-tailwind`.
+  - Command is **`cjr`** (`conjure` / `conjure-live` are aliases; bare `conjure` clashes with ImageMagick).
+  - `login`, `deploy <file|dir|->`, **`serve`** (zero-config local hosting + auto-wrap + live-reload,
+    no token/Cloudflare), **`build`** (wrap → a standalone HTML file, for GitHub Pages etc.), `list`,
+    `rm`, `open`, `whoami`; flags `--json/--quiet/--open/--watch/--port/--out/--name/--type/--no-wrap/--no-tailwind`.
+  - Docs cover **hosting alternatives**: GitHub Pages (simonw/tools style) and Datasette Apps.
   - **Auto-wrap engine**: HTML (full/fragment), React/JSX/TSX (React 18 + Babel + esm.sh import
     maps + Tailwind), Vue SFC (vue3-sfc-loader), plain JS. `</script>` escaping, error overlay.
   - 10 unit tests pass; esbuild bundles to a single `dist/index.js`.

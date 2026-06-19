@@ -1,4 +1,4 @@
-import { readFile, readdir, stat } from "node:fs/promises";
+import { readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { join, relative, sep, basename, extname } from "node:path";
 import { spawn } from "node:child_process";
 import { loadConfig, saveConfig } from "./config.js";
@@ -93,7 +93,7 @@ function openInBrowser(url: string): void {
 async function cmdLogin(args: Args): Promise<void> {
   const url = (args.flags.url as string) || args._[0];
   const token = (args.flags.token as string) || args._[1];
-  if (!url) err("usage: conjure login --url <server-url> --token <deploy-token>");
+  if (!url) err("usage: cjr login --url <server-url> --token <deploy-token>");
   const cfg = { url: String(url).replace(/\/+$/, ""), token: token ? String(token) : undefined };
   // Sanity-check the server.
   try {
@@ -113,10 +113,10 @@ async function cmdLogin(args: Args): Promise<void> {
 
 async function cmdDeploy(args: Args): Promise<void> {
   const { url, token } = await loadConfig();
-  if (!url) err("not configured. Run: conjure login --url <server> --token <token>  (or set CONJURE_URL/CONJURE_TOKEN)");
+  if (!url) err("not configured. Run: cjr login --url <server> --token <token>  (or set CONJURE_URL/CONJURE_TOKEN)");
 
   const target = args._[0];
-  if (!target) err("usage: conjure deploy <file|dir|->  [--name <title>] [--type html|react|vue|js|static] [--no-wrap] [--open] [--json]");
+  if (!target) err("usage: cjr deploy <file|dir|->  [--name <title>] [--type html|react|vue|js|static] [--no-wrap] [--open] [--json]");
 
   const json = !!args.flags.json;
   const quiet = !!args.flags.quiet;
@@ -169,7 +169,7 @@ async function cmdDeploy(args: Args): Promise<void> {
     result = await api.deploy(url, token, { title: title || null, type, files });
   } catch (e) {
     const ae = e as api.ApiError;
-    if (ae.status === 401) err(`unauthorized — check your deploy token (conjure login).`);
+    if (ae.status === 401) err(`unauthorized — check your deploy token (cjr login).`);
     err((e as Error).message);
   }
 
@@ -181,6 +181,40 @@ async function cmdDeploy(args: Args): Promise<void> {
     process.stdout.write(c.green("✓ live → ") + c.cyan(result!.url) + "\n");
   }
   if (args.flags.open) openInBrowser(result!.url);
+}
+
+async function cmdBuild(args: Args): Promise<void> {
+  const target = args._[0];
+  if (!target) err("usage: cjr build <file|-> [--out <path>] [--type html|react|vue|js] [--no-wrap]");
+  const noWrap = args.flags["no-wrap"] === true || args.flags.wrap === false;
+  const tailwind = args.flags["no-tailwind"] === true ? false : true;
+  let content: string;
+  let name = "artifact";
+  if (target === "-") {
+    content = await readStdin();
+    if (!content.trim()) err("nothing on stdin");
+  } else {
+    let s;
+    try {
+      s = await stat(target);
+    } catch {
+      err(`no such file: ${target}`);
+    }
+    if (s!.isDirectory()) err("build is for a single file; a folder is already static — copy it as-is");
+    content = await readFile(target, "utf8");
+    name = basename(target).replace(/\.[^.]+$/, "");
+  }
+  const type = (args.flags.type as ArtifactType) || detectType(target === "-" ? "stdin" : target, content);
+  const html = noWrap ? content : wrapToHtml(content, type, { title: name, tailwind });
+  const out = args.flags.out as string | undefined;
+  if (out) {
+    await writeFile(out, html, "utf8");
+    if (!args.flags.quiet) {
+      process.stderr.write(c.green("✓") + ` wrote ${out} ${c.dim(`(${type}, ${(Buffer.byteLength(html) / 1024).toFixed(1)} KB)`)}\n`);
+    }
+  } else {
+    process.stdout.write(html);
+  }
 }
 
 async function cmdServe(args: Args): Promise<void> {
@@ -195,7 +229,7 @@ async function cmdServe(args: Args): Promise<void> {
   };
   const target = args._[0];
   if (target === "-") return serve(null, opts, await readStdin());
-  if (!target) err("usage: conjure serve <file|dir|-> [--port N] [--open] [--watch] [--type html|react|vue|js|static] [--no-wrap]");
+  if (!target) err("usage: cjr serve <file|dir|-> [--port N] [--open] [--watch] [--type html|react|vue|js|static] [--no-wrap]");
   try {
     await stat(target);
   } catch {
@@ -206,7 +240,7 @@ async function cmdServe(args: Args): Promise<void> {
 
 async function cmdList(): Promise<void> {
   const { url, token } = await loadConfig();
-  if (!url) err("not configured. Run: conjure login …");
+  if (!url) err("not configured. Run: cjr login …");
   const { deploys } = await api.list(url, token);
   if (!deploys.length) {
     process.stdout.write(c.dim("no deploys yet.\n"));
@@ -223,9 +257,9 @@ async function cmdList(): Promise<void> {
 
 async function cmdRm(args: Args): Promise<void> {
   const { url, token } = await loadConfig();
-  if (!url) err("not configured. Run: conjure login …");
+  if (!url) err("not configured. Run: cjr login …");
   const id = args._[0];
-  if (!id) err("usage: conjure rm <id>");
+  if (!id) err("usage: cjr rm <id>");
   try {
     const r = await api.remove(url, token, id);
     process.stdout.write(c.green("✓") + ` removed ${id} (${r.files} file(s))\n`);
@@ -237,7 +271,7 @@ async function cmdRm(args: Args): Promise<void> {
 async function cmdOpen(args: Args): Promise<void> {
   const { url } = await loadConfig();
   const idOrUrl = args._[0];
-  if (!idOrUrl) err("usage: conjure open <id|url>");
+  if (!idOrUrl) err("usage: cjr open <id|url>");
   const full = /^https?:\/\//.test(idOrUrl)
     ? idOrUrl
     : `${(url || "").replace(/\/+$/, "")}/s/${idOrUrl}`;
@@ -255,21 +289,23 @@ function help(): void {
   process.stdout.write(`${c.bold("conjure")} — your AI artifact, live in seconds.
 
 ${c.bold("Usage")}
-  conjure login --url <server> --token <token>
-  conjure deploy <file|dir|->   [--name <title>] [--type html|react|vue|js|static]
+  cjr login --url <server> --token <token>
+  cjr deploy <file|dir|->   [--name <title>] [--type html|react|vue|js|static]
                                 [--no-wrap] [--no-tailwind] [--open] [--json] [--quiet]
-  conjure serve <file|dir|->    [--port N] [--open] [--watch] [--no-wrap]   ${c.dim("# local preview, no deploy")}
-  conjure list
-  conjure open <id|url>
-  conjure rm <id>
-  conjure whoami
+  cjr serve <file|dir|->    [--port N] [--open] [--watch] [--no-wrap]   ${c.dim("# local preview, no deploy")}
+  cjr build <file|->        [--out FILE] [--no-wrap]   ${c.dim("# wrap → a standalone .html (for GitHub Pages, etc.)")}
+  cjr list
+  cjr open <id|url>
+  cjr rm <id>
+  cjr whoami
 
 ${c.bold("Examples")}
-  conjure deploy index.html
-  conjure deploy counter.tsx --open
-  cat art.html | conjure deploy - --name demo
-  conjure deploy ./dist            ${c.dim("# a built static site (needs index.html)")}
-  conjure serve counter.tsx --open --watch   ${c.dim("# instant local preview, live reload, no deploy")}
+  cjr deploy index.html
+  cjr deploy counter.tsx --open
+  cat art.html | cjr deploy - --name demo
+  cjr deploy ./dist            ${c.dim("# a built static site (needs index.html)")}
+  cjr serve counter.tsx --open --watch   ${c.dim("# instant local preview, live reload, no deploy")}
+  cjr build counter.tsx --out counter.html  ${c.dim("# wrap → a single static file to commit anywhere")}
 
 Config lives in ~/.config/conjure/config.json, or env CONJURE_URL / CONJURE_TOKEN.
 `);
@@ -284,6 +320,7 @@ async function main(): Promise<void> {
     case "login": return cmdLogin(args);
     case "deploy": case "up": case "push": return cmdDeploy(args);
     case "serve": case "preview": return cmdServe(args);
+    case "build": return cmdBuild(args);
     case "list": case "ls": return cmdList();
     case "rm": case "delete": case "remove": return cmdRm(args);
     case "open": return cmdOpen(args);

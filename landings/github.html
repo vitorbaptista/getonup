@@ -356,14 +356,14 @@
       </div>
 
       <!-- TERMINAL -->
-      <div class="terminal" role="img" aria-label="Terminal running the conjure deploy command">
+      <div class="terminal" role="img" aria-label="Terminal running the cjr deploy command">
         <div class="term-bar">
           <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
           <span class="term-title">zsh — conjure</span>
           <button class="term-copy" id="copyBtn" type="button" aria-label="Copy command">Copy</button>
         </div>
         <div class="term-body">
-          <div class="term-line"><span class="term-prompt">$</span> <span class="term-cmd" id="cmdText">conjure deploy counter.tsx</span></div>
+          <div class="term-line"><span class="term-prompt">$</span> <span class="term-cmd" id="cmdText">cjr deploy counter.tsx</span></div>
           <div class="term-line term-dim">↳ wrapping React component &middot; React 18 + Babel + Tailwind</div>
           <div class="term-line term-dim">↳ uploading to R2 &middot; 1 object</div>
           <div class="term-line"><span class="term-ok">✓ live</span> <span class="term-dim">→</span> <span class="term-url">https://conjure.example.com/s/iwcmg3dt</span></div>
@@ -394,7 +394,7 @@
           <div class="step-num">2</div>
           <div class="step-connector" aria-hidden="true"></div>
           <h3>Run one command</h3>
-          <p><code>conjure deploy</code> auto-wraps a single component into a self-contained page, then uploads it to your Worker and R2 bucket.</p>
+          <p><code>cjr deploy</code> auto-wraps a single component into a self-contained page, then uploads it to your Worker and R2 bucket.</p>
         </div>
         <div class="step">
           <div class="step-num">3</div>
@@ -494,7 +494,7 @@
   <script>
     (function(){
       var btn = document.getElementById('copyBtn');
-      var cmd = "conjure deploy counter.tsx";
+      var cmd = "cjr deploy counter.tsx";
       if(btn){
         btn.addEventListener('click', function(){
           var done = function(){

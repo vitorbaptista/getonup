@@ -5,7 +5,7 @@ Fifteen landing-page directions for Conjure, each a complete self-contained HTML
 [shadcn.io DESIGN.md](https://www.shadcn.io/design) systems (each agent fetched the system's
 exact tokens — colors, typography, components — and applied them); **five** are house originals.
 Every page — and the gallery itself, a multi-file deploy — was **published with
-`conjure deploy`**, so this is also a live demo of the product.
+`cjr deploy`**, so this is also a live demo of the product.
 
 The **gallery** is the homepage: a single page linking to all fifteen.
 

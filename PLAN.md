@@ -5,7 +5,7 @@
 > agent) run locally; a self-hosted **Cloudflare Worker + R2** backend that **scales to zero**
 > (~$0 idle). Free software (MIT). You bring a deploy token; viewers need nothing.
 >
-> `conjure deploy index.html` → `https://your-conjure.example/s/ab12cd34` ✨
+> `cjr deploy index.html` → `https://your-conjure.example/s/ab12cd34` ✨
 
 _Reference product: https://oneclicklive.app (paste AI code → instant live site, auto-wraps
 React/Vue with Babel+Tailwind, Cloudflare edge sandbox, browser-only, closed-source, paid).
@@ -22,16 +22,16 @@ scale-to-zero → **static-only MVP**, dynamic deferred.
 ## 1. What it does (user / agent flow)
 
 1. **Install once:** `npm i -g conjure-live` (or `npx conjure …`, or a single binary via
-   `curl … | sh`). Configure: `conjure login --url https://your-conjure.example --token <T>`.
+   `curl … | sh`). Configure: `cjr login --url https://your-conjure.example --token <T>`.
 2. **An agent (or you) builds an artifact** — a `.html`, a single `.jsx/.tsx`, a `.vue`, a
    `.js`, or a built static folder.
-3. **Publish:** `conjure deploy artifact.tsx` → the CLI auto-detects the type, **auto-wraps**
+3. **Publish:** `cjr deploy artifact.tsx` → the CLI auto-detects the type, **auto-wraps**
    single components into a self-contained page (React 18 + Babel + esm.sh import maps +
    Tailwind; Vue 3 CDN), uploads to your Worker, and prints a **live URL** in seconds.
 4. **Share the link.** No viewer login. Scales to zero between visits.
-5. **Manage:** `conjure list`, `conjure open <id>`, `conjure rm <id>`.
+5. **Manage:** `cjr list`, `cjr open <id>`, `cjr rm <id>`.
 
-Also: `cat artifact.html | conjure deploy -` (shellshare-style pipe), `--open` to launch the
+Also: `cat artifact.html | cjr deploy -` (shellshare-style pipe), `--open` to launch the
 browser, `--json` for scripts/agents.
 
 ### Why CLI (the differentiator vs OneClickLive)
@@ -144,7 +144,7 @@ Detect input type and produce a single self-contained `index.html` (+ any siblin
 ## 6. Agent integration (the point)
 
 - **`AGENTS.md` / README snippet:** "To publish a web artifact live, run
-  `conjure deploy <file>` and share the printed URL." Drop into Claude Code / Cursor / Aider.
+  `cjr deploy <file>` and share the printed URL." Drop into Claude Code / Cursor / Aider.
 - **Claude Code skill** (`/conjure` or a `conjure-deploy` skill) that wraps the CLI.
 - **(Stretch) MCP server** exposing a `deploy_artifact` tool so MCP-aware agents discover it.
 
@@ -178,7 +178,7 @@ conjure/
 2. **Server core** — `POST /api/deploy` (token, R2 write, id) + `GET /s/:id[/*]` (R2 serve +
    headers) + status codes. Verify with `curl` against `wrangler dev`.
 3. **CLI deploy (HTML/static)** — config, detect, upload a single HTML file & a folder, print
-   URL. End-to-end: `conjure deploy examples/hello.html` → working live URL locally.
+   URL. End-to-end: `cjr deploy examples/hello.html` → working live URL locally.
 4. **Auto-wrap** — React/TSX → self-contained page (Babel + esm.sh import maps + Tailwind);
    Vue; JS fragment; import-map scan + allowlist; error overlay. Unit tests for detection +
    wrapping. Deploy `examples/counter.tsx` and see it run.
@@ -220,7 +220,7 @@ independent module work/review; give subagents explicit goals + loop-until-tests
 
 ## 10. Definition of done (MVP)
 
-- `npm i -g conjure-live` (or `npx`) → `conjure deploy hello.html` against a self-hosted
+- `npm i -g conjure-live` (or `npx`) → `cjr deploy hello.html` against a self-hosted
   Worker → a working public live URL in seconds.
 - One **Deploy to Cloudflare** click → set `CONJURE_DEPLOY_TOKEN` → working instance.
 - Auto-wraps a single `.tsx`/`.vue`/`.js` into a live page (OneClickLive parity); hosts a

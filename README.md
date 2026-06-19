@@ -9,7 +9,7 @@ folder — into a **live, shareable URL** with one command. Open-source, self-ho
 Worker backend that **scales to zero** (~$0 when idle).
 
 ```bash
-conjure deploy counter.tsx
+cjr deploy counter.tsx
 ✓ live → https://conjure.example.com/s/iwcmg3dt
 ```
 
@@ -74,26 +74,30 @@ That's the whole backend: one Worker, one bucket, one secret. It costs nothing a
 ```bash
 # from the cloned repo (until the npm package is published):
 npm run build --workspace cli
-npm link --workspace cli            # now `conjure` is on your PATH
-#   (or just: alias conjure="node $(pwd)/cli/dist/index.js")
+npm link --workspace cli            # installs `cjr` (+ `conjure`, `conjure-live` aliases)
+#   (or just: alias cjr="node $(pwd)/cli/dist/index.js")
 
-conjure login --url https://conjure.<your-subdomain>.workers.dev --token <your-token>
+cjr login --url https://conjure.<your-subdomain>.workers.dev --token <your-token>
 ```
 
 Config is saved to `~/.config/conjure/config.json`, or pass `CONJURE_URL` / `CONJURE_TOKEN`
 as env vars (handy for CI and agents).
 
+> **Command name:** the CLI is **`cjr`** (short and collision-free). `conjure` and `conjure-live`
+> are aliases — but bare `conjure` clashes with ImageMagick's `/usr/bin/conjure` on many systems,
+> so the docs use `cjr`.
+
 ### 3. Deploy something
 
 ```bash
-conjure deploy index.html              # a full HTML file → served as-is
-conjure deploy counter.tsx --open      # a React component → auto-wrapped & opened
-conjure deploy card.vue                # a Vue SFC → auto-wrapped
-cat art.html | conjure deploy -        # pipe from stdin (shellshare-style)
-conjure deploy ./dist                  # a built static site (needs index.html)
+cjr deploy index.html              # a full HTML file → served as-is
+cjr deploy counter.tsx --open      # a React component → auto-wrapped & opened
+cjr deploy card.vue                # a Vue SFC → auto-wrapped
+cat art.html | cjr deploy -        # pipe from stdin (shellshare-style)
+cjr deploy ./dist                  # a built static site (needs index.html)
 
-conjure list                           # everything you've published
-conjure rm <id>                        # take one down
+cjr list                           # everything you've published
+cjr rm <id>                        # take one down
 ```
 
 Every `deploy` prints the live URL as the last line of stdout (use `--json` for structured
@@ -103,16 +107,16 @@ output, `--quiet` for just the URL) — easy to script and easy for an agent to 
 
 ### Preview locally first — no deploy, no token
 
-`conjure serve` is the server *and* the uploader in one command. It wraps your artifact and
+`cjr serve` is the server *and* the uploader in one command. It wraps your artifact and
 hosts it on `localhost` with live-reload — nothing leaves your machine, no Cloudflare needed:
 
 ```bash
-conjure serve counter.tsx --open --watch   # http://localhost:4321, reloads on save
-conjure serve ./dist                        # serve a built folder
-cat page.html | conjure serve -             # from stdin
+cjr serve counter.tsx --open --watch   # http://localhost:4321, reloads on save
+cjr serve ./dist                        # serve a built folder
+cat page.html | cjr serve -             # from stdin
 ```
 
-Then `conjure deploy` the same artifact when you want a public URL.
+Then `cjr deploy` the same artifact when you want a public URL.
 
 ## Give it to your agent
 
@@ -123,7 +127,7 @@ This is the point. Add a few lines to your project's `AGENTS.md` (or `CLAUDE.md`
 ## Publishing artifacts
 
 To share a web artifact (HTML page, React/Vue component, or built static site) as a live URL,
-run: `conjure deploy <file-or-dir>` and give the user the printed URL.
+run: `cjr deploy <file-or-dir>` and give the user the printed URL.
 - Single components are auto-wrapped (React/Vue/Tailwind) — just point at the .tsx/.vue/.html.
 - Use `--json` if you need to parse the result.
 ```
@@ -206,6 +210,50 @@ Conjure serves untrusted, AI-generated code. The design keeps that safe:
 | `CONJURE_URL` / `CONJURE_TOKEN` | CLI env | from `~/.config/conjure` | server + token for the CLI |
 
 ---
+
+## Hosting alternatives
+
+Conjure's own backend is one Cloudflare Worker + R2 (above). But the artifacts Conjure produces
+are just self-contained HTML, so you can host them other ways too — pick by what your artifacts
+actually need:
+
+| | **Conjure** (Worker + R2) | **GitHub Pages** | **Datasette Apps** |
+|---|---|---|---|
+| Infra | 1 Worker + 1 bucket | none (a Git repo) | a running [Datasette](https://datasette.io) server |
+| Cost at idle | ~$0 (scale-to-zero) | $0 (static) | cost of an always-on server |
+| Publish | `cjr deploy` (token) | `git push` | paste into a "Create app" form |
+| Dynamic data | no (static / client-side) | no | **yes** — SQL queries, auth, writes |
+| Best for | instant shareable URLs, agent-driven, scale-to-zero | a versioned collection of static tools | apps that need a real database + permissions |
+
+### GitHub Pages — a repo of static HTML ([simonw/tools](https://github.com/simonw/tools) style)
+
+Keep your artifacts as self-contained HTML files in a Git repo and let GitHub Pages serve them.
+Each file becomes `youruser.github.io/repo/tool.html` (a `CNAME` adds a custom domain), and you
+can group them in folders. `cjr build` turns a bare component into a committable page:
+
+```bash
+cjr build dashboard.tsx --out tools/dashboard.html    # wrap → one standalone file
+git -C tools add -A && git commit -m "add dashboard" && git push   # the push *is* the deploy
+```
+
+Zero infrastructure, free, fully Git-versioned, scales to zero — but **static only** (no upload
+API, no token, no dynamic routes). Ideal when your artifacts are pure client-side HTML/JS.
+
+### Datasette Apps — when an artifact needs real data
+
+[Datasette Apps](https://simonwillison.net/2026/Jun/18/datasette-apps/) host HTML+JS apps inside a
+[Datasette](https://datasette.io) instance: each runs in a tightly sandboxed `<iframe>` (no
+cookie/localStorage access, strict CSP) and talks back to Datasette via `postMessage` to run **SQL
+queries** (`await datasette.query(db, sql)`) with the **logged-in user's permissions** and
+optional allow-listed writes. That's the thing pure static hosting can't do: relational data,
+auth, and server-backed state.
+
+The trade-off: it needs a **persistent Datasette server** (so no scale-to-zero / $0-idle), and
+apps are authored in Datasette's UI rather than via `cjr`. So it isn't "better in all senses" —
+it's the right pick when your artifact is a *data app* (a dashboard over your own DB, an internal
+tool), while Conjure and GitHub Pages win for instant, scale-to-zero hosting of standalone
+artifacts. You can even combine them: prototype the UI with `cjr serve`, then move it into a
+Datasette App once it needs a database.
 
 ## Limitations & roadmap
 

@@ -4,7 +4,9 @@
   "description": "Conjure CLI — deploy any AI artifact (HTML, React, Vue, static folder) to a live URL on your self-hosted, scale-to-zero Conjure server.",
   "type": "module",
   "bin": {
-    "conjure": "dist/index.js"
+    "conjure": "dist/index.js",
+    "conjure-live": "dist/index.js",
+    "cjr": "dist/index.js"
   },
   "files": [
     "dist",
