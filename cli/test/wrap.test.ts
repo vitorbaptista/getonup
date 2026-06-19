@@ -109,6 +109,9 @@ test("react wrap detects React imports via the AST, not snippet text", () => {
   // only *mentions* import React inside JSX text → still injected (the component needs it)
   const b = wrapToHtml('function App(){ return <pre>import React from "react"</pre>; }\nexport default App;', "react");
   assert.ok((b.match(/import React from "react"/g) || []).length >= 2);
+  // a TYPE-ONLY React import is erased by Babel → runtime React must still be injected
+  const c = wrapToHtml('import type * as React from "react";\nexport default function App(){ return <div/>; }', "react");
+  assert.match(c, /import React from "react";/);
 });
 
 test("react wrap injects React import when missing", () => {

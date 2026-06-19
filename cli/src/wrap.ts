@@ -165,8 +165,10 @@ function transformReact(code: string): string {
   let importsReact = false;
   const edits: { start: number; end: number; text: string }[] = [];
   for (const node of body) {
-    if (node.type === "ImportDeclaration" && node.source.value === "react") {
-      if (node.specifiers.some((s: any) => s.type === "ImportDefaultSpecifier" || s.type === "ImportNamespaceSpecifier")) importsReact = true;
+    if (node.type === "ImportDeclaration" && node.source.value === "react" && node.importKind !== "type") {
+      // A type-only import (`import type * as React`) is erased by Babel — it does NOT provide a
+      // runtime React, so it must not suppress the injected import for classic-runtime JSX.
+      if (node.specifiers.some((s: any) => (s.type === "ImportDefaultSpecifier" || s.type === "ImportNamespaceSpecifier") && s.importKind !== "type")) importsReact = true;
     } else if (node.type === "ExportDefaultDeclaration") {
       // Replace the whole statement and slice the declaration by its own (balanced) span, so a
       // parenthesized expression like `export default (() => <i/>)` leaves no stray `)`.
