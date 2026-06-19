@@ -59,6 +59,13 @@ test("react wrap preserves sibling named exports alongside the default", () => {
   assert.match(out, /export \{ B \};/);
 });
 
+test("plain .ts is transpiled (not shipped as a raw module)", () => {
+  assert.equal(detectType("a.ts", "const x: number = 1; export {};"), "js");
+  const out = wrapToHtml("const n: number = 1;\ndocument.body.textContent = String(n);", "js");
+  assert.match(out, /data-presets="typescript"/);
+  assert.match(out, /@babel\/standalone/);
+});
+
 test("react wrap injects React import when missing", () => {
   const out = wrapToHtml("export default () => <div/>", "react");
   assert.match(out, /import React from "react";/);

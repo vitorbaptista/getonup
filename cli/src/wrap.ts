@@ -245,7 +245,10 @@ function wrapJs(code: string, opts: WrapOptions): string {
     "</head><body>",
     '<div id="app"></div>',
     `<script>${OVERLAY_SCRIPT}</script>`,
-    `<script type="module">`,
+    // Transpile via Babel (typescript preset) so plain `.ts` runs in the browser; valid `.js`
+    // passes through unchanged. Bare imports still resolve through the import map above.
+    `<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7/babel.min.js"></script>`,
+    `<script type="text/babel" data-type="module" data-presets="typescript">`,
     escapeScriptText(code),
     "</script>",
     "</body></html>",

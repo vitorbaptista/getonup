@@ -280,8 +280,8 @@ Datasette App once it needs a database.
   scale-to-zero. A future flag may add per-deploy Workers for dynamic apps.
 - esm.sh / the Tailwind & Babel CDNs are runtime dependencies of wrapped pages — versions are
   pinned; a self-hosted esm.sh mirror is a planned option for air-gapped installs.
-- Planned: a "Deploy to Cloudflare" one-click button, an MCP server for agents, custom
-  domains/subdomains UX, optional D1 metadata index, and a browser paste UI.
+- Planned: a "Deploy to Cloudflare" one-click button, custom domains/subdomains UX, an optional
+  D1 metadata index, and a browser paste UI.
 
 ---
 

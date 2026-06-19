@@ -16,7 +16,6 @@
 
   // Object storage for deployed artifacts. Create it once with:
   //   wrangler r2 bucket create conjure
-  // (The "Deploy to Cloudflare" button provisions this automatically.)
   "r2_buckets": [
     { "binding": "BUCKET", "bucket_name": "conjure" }
   ],
