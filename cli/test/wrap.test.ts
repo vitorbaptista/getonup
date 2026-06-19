@@ -38,6 +38,13 @@ test("react wrap produces a runnable document", () => {
   assert.match(out, /<title>T<\/title>/);
 });
 
+test("react wrap captures the aggregate `export { X as default }` form", () => {
+  const src = "function App(){ return <h1>hi</h1>; }\nexport { App as default };";
+  const out = wrapToHtml(src, "react");
+  assert.match(out, /window\.__conjure_default = App;/);
+  assert.doesNotMatch(out, /export\s*\{/); // the export statement was rewritten away
+});
+
 test("react wrap injects React import when missing", () => {
   const out = wrapToHtml("export default () => <div/>", "react");
   assert.match(out, /import React from "react";/);

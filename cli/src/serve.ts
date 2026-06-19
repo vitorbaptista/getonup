@@ -110,7 +110,14 @@ export async function startServer(
   const clients = new Set<ServerResponse>();
 
   const server = createServer((req, res) => {
-    const url = decodeURIComponent((req.url || "/").split("?")[0]);
+    let url: string;
+    try {
+      url = decodeURIComponent((req.url || "/").split("?")[0]);
+    } catch {
+      res.writeHead(400, { "content-type": "text/plain" });
+      res.end("bad request");
+      return;
+    }
     if (url === "/__conjure_live") {
       res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
       res.write("retry: 500\n\n");

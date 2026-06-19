@@ -77,19 +77,24 @@ function json(data: unknown, status = 200, headers: Record<string, string> = {})
   });
 }
 
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+async function sha256(s: string): Promise<Uint8Array> {
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
+}
+
+/** Constant-time compare via fixed-length digests — no length short-circuit, so neither the
+ *  presented token nor the secret leaks its length through timing. */
+async function safeEqual(a: string, b: string): Promise<boolean> {
+  const [da, db] = await Promise.all([sha256(a), sha256(b)]);
   let r = 0;
-  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  for (let i = 0; i < 32; i++) r |= da[i] ^ db[i];
   return r === 0;
 }
 
-function isAuthed(req: Request, env: Env): boolean {
+async function isAuthed(req: Request, env: Env): Promise<boolean> {
   const token = env.CONJURE_DEPLOY_TOKEN;
   if (!token) return false; // fail-closed: no token configured -> no deploys
-  const header = req.headers.get("authorization") || "";
-  const m = header.match(/^Bearer\s+(.+)$/i);
-  return !!m && timingSafeEqual(m[1].trim(), token);
+  const m = (req.headers.get("authorization") || "").match(/^Bearer\s+(.+)$/i);
+  return !!m && (await safeEqual(m[1].trim(), token));
 }
 
 function extOf(path: string): string {
@@ -142,7 +147,7 @@ interface UploadFile {
 }
 
 async function handleDeploy(req: Request, env: Env): Promise<Response> {
-  if (!isAuthed(req, env)) {
+  if (!(await isAuthed(req, env))) {
     return json(
       { error: env.CONJURE_DEPLOY_TOKEN ? "unauthorized" : "deploy disabled: set CONJURE_DEPLOY_TOKEN" },
       401,
@@ -253,12 +258,17 @@ async function handleServe(url: URL, env: Env): Promise<Response> {
 }
 
 async function handleList(req: Request, env: Env): Promise<Response> {
-  if (!isAuthed(req, env)) return json({ error: "unauthorized" }, 401);
-  const listing = await env.BUCKET.list({ delimiter: "/", limit: 1000 });
-  const ids = (listing.delimitedPrefixes || []).map((p) => p.replace(/\/$/, ""));
+  if (!(await isAuthed(req, env))) return json({ error: "unauthorized" }, 401);
+  const ids: string[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await env.BUCKET.list({ delimiter: "/", limit: 1000, cursor });
+    for (const p of page.delimitedPrefixes || []) ids.push(p.replace(/\/$/, ""));
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
   const deploys: unknown[] = [];
   await Promise.all(
-    ids.slice(0, 1000).map(async (id) => {
+    ids.map(async (id) => {
       const m = await env.BUCKET.get(`${id}/_meta.json`);
       if (m) {
         try {
@@ -274,13 +284,21 @@ async function handleList(req: Request, env: Env): Promise<Response> {
 }
 
 async function handleDelete(req: Request, env: Env, id: string): Promise<Response> {
-  if (!isAuthed(req, env)) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthed(req, env))) return json({ error: "unauthorized" }, 401);
   if (!/^[a-z0-9]+$/.test(id)) return json({ error: "invalid id" }, 400);
-  const listing = await env.BUCKET.list({ prefix: `${id}/`, limit: 1000 });
-  const keys = listing.objects.map((o) => o.key);
-  if (keys.length === 0) return json({ error: "not found" }, 404);
-  await env.BUCKET.delete(keys);
-  return json({ deleted: id, files: keys.length });
+  let total = 0;
+  let cursor: string | undefined;
+  do {
+    const page = await env.BUCKET.list({ prefix: `${id}/`, limit: 1000, cursor });
+    const keys = page.objects.map((o) => o.key);
+    if (keys.length) {
+      await env.BUCKET.delete(keys);
+      total += keys.length;
+    }
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+  if (total === 0) return json({ error: "not found" }, 404);
+  return json({ deleted: id, files: total });
 }
 
 export default {

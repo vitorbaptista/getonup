@@ -86,6 +86,8 @@ function esmUrl(spec: string): string {
   return `https://esm.sh/${spec}?external=react,react-dom`;
 }
 
+// Heuristic: regex-scan import/export specifiers. May also catch matches inside strings or
+// comments — harmless (an unused import-map entry), so we keep it simple rather than parse.
 function scanBareSpecifiers(code: string): string[] {
   const specs = new Set<string>();
   const patterns = [
@@ -142,8 +144,13 @@ function tailwindTag(opts: WrapOptions): string {
 function transformReact(code: string): string {
   let out = code;
   const hasReactDefaultImport = /import\s+React(\s|,)/.test(out);
-  // Capture the default export into a global we can mount.
+  // Capture the default export into a global we can mount — both `export default X`
+  // and the aggregate form `export { X as default }`.
   out = out.replace(/export\s+default\s+/, "window.__conjure_default = ");
+  out = out.replace(/export\s*\{([^}]*)\}\s*;?/g, (full, inner) => {
+    const m = String(inner).match(/([A-Za-z_$][\w$]*)\s+as\s+default/);
+    return m ? `window.__conjure_default = ${m[1]};` : full;
+  });
   const prelude = hasReactDefaultImport ? "" : `import React from "react";\n`;
   return prelude + out;
 }
