@@ -1,19 +1,23 @@
 #!/usr/bin/env node
 /**
  * Rebuild the Conjure demo: deploy every landing design + a gallery that links to them, and set
- * the gallery as the server homepage. Idempotent and reproducible — run it whenever the designs
- * change instead of hand-managing deploy IDs.
+ * the gallery as the server homepage.
+ *
+ * Re-runnable: each run first deletes the previous run's demo deploys (those titled "Conjure — …")
+ * so they don't accumulate, then publishes fresh. Deploy IDs are assigned by the server per run,
+ * so the /s/<id> URLs change each time — the stable entry point is the homepage (`/`).
  *
  *   CONJURE_URL=http://localhost:8787 CONJURE_TOKEN=… node scripts/publish-demo.mjs
  *   (or: npm run demo, after `npm run dev` is up)
  */
-import { readFile, writeFile, readdir, mkdir, copyFile } from "node:fs/promises";
+import { readFile, writeFile, readdir, mkdir, copyFile, rm, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join, extname } from "node:path";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = (process.env.CONJURE_URL || "http://localhost:8787").replace(/\/+$/, "");
 const TOKEN = process.env.CONJURE_TOKEN || "";
+const TITLE_PREFIX = "Conjure — ";
 
 const SYSTEMS = [
   ["linear", "Linear", "Strict dark canvas, lavender accent, surface-lift hierarchy."],
@@ -35,52 +39,66 @@ const ORIGINALS = [
   ["claude", "Claude ☕️", "Warm editorial — serif display, terracotta italics, calm."],
 ];
 
-const CT = {
-  html: "text/html; charset=utf-8", css: "text/css; charset=utf-8", js: "text/javascript; charset=utf-8",
-  json: "application/json", svg: "image/svg+xml", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg",
-  gif: "image/gif", webp: "image/webp", ico: "image/x-icon",
-};
 const text = new Set(["html", "css", "js", "json", "svg", "txt", "map"]);
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-async function api(path, body) {
+async function apiReq(method, path, body) {
   const res = await fetch(BASE + path, {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${TOKEN}` },
-    body: JSON.stringify(body),
+    method,
+    headers: { ...(body ? { "content-type": "application/json" } : {}), authorization: `Bearer ${TOKEN}` },
+    body: body ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) throw new Error(`POST ${path} → ${res.status} ${await res.text()}`);
-  return res.json();
+  if (!res.ok) throw new Error(`${method} ${path} → ${res.status} ${await res.text()}`);
+  return res.status === 204 ? null : res.json();
 }
 
 async function deployHtml(file, title) {
   const html = await readFile(join(ROOT, file), "utf8");
-  const { id } = await api("/api/deploy", { title, type: "html", files: [{ path: "index.html", content: html, encoding: "utf8" }] });
+  const { id } = await apiReq("POST", "/api/deploy", { title, type: "html", files: [{ path: "index.html", content: html, encoding: "utf8" }] });
   return id;
 }
 
 async function deployFolder(dir, title) {
   const files = [];
-  async function walk(d, base) {
+  const abs = join(ROOT, dir);
+  async function walk(d) {
     for (const e of await readdir(d, { withFileTypes: true })) {
+      if (e.name.startsWith(".")) continue; // skip .DS_Store, swap files, etc.
       const full = join(d, e.name);
-      if (e.isDirectory()) await walk(full, base);
+      if (e.isDirectory()) await walk(full);
       else {
-        const rel = full.slice(base.length + 1).split("\\").join("/");
-        const ext = extname(rel).slice(1).toLowerCase();
-        const isText = text.has(ext);
+        const rel = full.slice(abs.length + 1).split("\\").join("/");
+        const isText = text.has(extname(rel).slice(1).toLowerCase());
         const buf = await readFile(full);
         files.push({ path: rel, content: isText ? buf.toString("utf8") : buf.toString("base64"), encoding: isText ? "utf8" : "base64" });
       }
     }
   }
-  const abs = join(ROOT, dir);
-  await walk(abs, abs);
-  const { id } = await api("/api/deploy", { title, type: "static", files });
+  await walk(abs);
+  const { id } = await apiReq("POST", "/api/deploy", { title, type: "static", files });
   return id;
 }
 
+async function cleanupPrevious() {
+  let stale = [];
+  try {
+    const { deploys } = await apiReq("GET", "/api/list");
+    stale = (deploys || []).filter((d) => String(d?.title || "").startsWith(TITLE_PREFIX)).map((d) => d.id);
+  } catch {
+    return; // first run / list unavailable — nothing to clean
+  }
+  for (const id of stale) {
+    try {
+      await apiReq("DELETE", `/api/deploy/${id}`);
+    } catch {
+      /* best effort */
+    }
+  }
+  if (stale.length) process.stdout.write(`cleaned ${stale.length} previous demo deploy(s)\n`);
+}
+
 const card = ([key, name, desc], id) =>
-  `        <a class="card" href="/s/${id}"><div class="thumb"><img src="./thumbs/${key}.png" alt="${name}" loading="lazy"/></div><div class="meta"><h3>${name}</h3><p>${desc}</p><span class="view">View live →</span></div></a>`;
+  `        <a class="card" href="/s/${id}"><div class="thumb"><img src="./thumbs/${key}.png" alt="${esc(name)}" loading="lazy"/></div><div class="meta"><h3>${esc(name)}</h3><p>${esc(desc)}</p><span class="view">View live →</span></div></a>`;
 
 function gallery(sysCards, origCards) {
   return `<!doctype html>
@@ -144,26 +162,46 @@ ${origCards}
 
 async function main() {
   if (!TOKEN) throw new Error("set CONJURE_TOKEN (and CONJURE_URL) — the demo deploys to your Conjure server");
+
+  // Fail loudly if any thumbnail is missing rather than publishing a gallery with broken tiles.
+  const missing = [];
+  for (const [key] of [...SYSTEMS, ...ORIGINALS]) {
+    try {
+      await stat(join(ROOT, "gallery/thumbs", `${key}.png`));
+    } catch {
+      missing.push(`${key}.png`);
+    }
+  }
+  if (missing.length) throw new Error(`missing gallery/thumbs: ${missing.join(", ")}`);
+
   process.stdout.write(`Publishing demo to ${BASE} …\n`);
+  await cleanupPrevious();
+
   const ids = {};
   for (const d of [...SYSTEMS, ...ORIGINALS]) {
-    ids[d[0]] = await deployHtml(`landings/${d[0]}.html`, `Conjure — ${d[1]}`);
+    ids[d[0]] = await deployHtml(`landings/${d[0]}.html`, `${TITLE_PREFIX}${d[1]}`);
     process.stdout.write(`  ${d[1].padEnd(16)} → /s/${ids[d[0]]}\n`);
   }
+
   const html = gallery(
     SYSTEMS.map((d) => card(d, ids[d[0]])).join("\n"),
     ORIGINALS.map((d) => card(d, ids[d[0]])).join("\n"),
   );
   await writeFile(join(ROOT, "gallery/index.html"), html, "utf8");
+
   // Deploy the gallery folder BEFORE writing server/public/ — `wrangler dev` watches the assets
   // dir, so writing it mid-run reloads the worker and 503s any in-flight deploy.
-  const galleryId = await deployFolder("gallery", "Conjure — Gallery");
-  // Now set the homepage = the gallery (this write may reload a running `wrangler dev`).
+  const galleryId = await deployFolder("gallery", `${TITLE_PREFIX}Gallery`);
+
+  // Set the homepage = the gallery, mirroring thumbs exactly (clear first so removed designs
+  // don't leave stale PNGs behind). This write may reload a running `wrangler dev`.
   await writeFile(join(ROOT, "server/public/index.html"), html, "utf8");
+  await rm(join(ROOT, "server/public/thumbs"), { recursive: true, force: true });
   await mkdir(join(ROOT, "server/public/thumbs"), { recursive: true });
   for (const f of await readdir(join(ROOT, "gallery/thumbs"))) {
     await copyFile(join(ROOT, "gallery/thumbs", f), join(ROOT, "server/public/thumbs", f));
   }
+
   process.stdout.write(`\n✓ Gallery (homepage): ${BASE}/  ·  ${BASE}/s/${galleryId}\n`);
 }
 
