@@ -278,8 +278,10 @@ Datasette App once it needs a database.
 
 - **Static & client-side only** (no server-side Python/full-stack). This is what keeps it
   scale-to-zero. A future flag may add per-deploy Workers for dynamic apps.
-- esm.sh / the Tailwind & Babel CDNs are runtime dependencies of wrapped pages — versions are
-  pinned; a self-hosted esm.sh mirror is a planned option for air-gapped installs.
+- Wrapped pages load React/Vue/Babel/Tailwind and any npm imports from CDNs (esm.sh, jsDelivr, the
+  Tailwind Play CDN) at runtime. React/Babel are major-version pinned, esm.sh deps pin the React
+  peer, and `vue3-sfc-loader` is minor-pinned; the Tailwind Play CDN is intentionally unversioned.
+  A self-hosted esm.sh mirror is a planned option for air-gapped installs.
 - Planned: a "Deploy to Cloudflare" one-click button, custom domains/subdomains UX, an optional
   D1 metadata index, and a browser paste UI.
 

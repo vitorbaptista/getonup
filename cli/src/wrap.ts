@@ -145,18 +145,19 @@ function transformReact(code: string): string {
   let out = code;
   const hasReactDefaultImport = /import\s+React(\s|,)/.test(out);
   // Capture the default export into a global we can mount — both `export default X` and the local
-  // aggregate `export { X as default }`. Anchored to statement position (start of line) so it won't
-  // fire on "export default" text inside a string/JSX. Re-exports (`... from "x"`) are left
-  // untouched (rewriting them would emit invalid JS); sibling named exports are preserved.
-  out = out.replace(/^[ \t]*export\s+default\s+/m, "window.__conjure_default = ");
-  out = out.replace(/^[ \t]*export\s*\{([^}]*)\}\s*(from\s*['"][^'"]+['"])?\s*;?/gm, (full, inner, fromClause) => {
+  // aggregate `export { X as default }`. Anchored to a statement boundary (start of source, or
+  // after a newline / `;` / `}`) so it also catches same-line statements like
+  // `import React from "react"; export default App` while NOT matching "export default" text inside
+  // a string/JSX. Re-exports (`... from "x"`) are left untouched; sibling named exports are kept.
+  out = out.replace(/(^|[\n;}])([ \t]*)export\s+default\s+/, "$1$2window.__conjure_default = ");
+  out = out.replace(/(^|[\n;}])([ \t]*)export\s*\{([^}]*)\}\s*(from\s*['"][^'"]+['"])?\s*;?/g, (full, b, ws, inner, fromClause) => {
     if (fromClause) return full; // re-export: leave as-is
     const names = String(inner).split(",").map((s) => s.trim()).filter(Boolean);
     const def = names.find((n) => /\sas\s+default$/.test(n));
     if (!def) return full;
     const local = def.replace(/\s+as\s+default$/, "").trim();
     const rest = names.filter((n) => n !== def);
-    return `window.__conjure_default = ${local};` + (rest.length ? ` export { ${rest.join(", ")} };` : "");
+    return `${b}${ws}window.__conjure_default = ${local};` + (rest.length ? ` export { ${rest.join(", ")} };` : "");
   });
   const prelude = hasReactDefaultImport ? "" : `import React from "react";\n`;
   return prelude + out;
@@ -219,7 +220,7 @@ function wrapVue(code: string, opts: WrapOptions): string {
     '<div id="app"></div>',
     `<script>${OVERLAY_SCRIPT}</script>`,
     `<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>`,
-    `<script src="https://cdn.jsdelivr.net/npm/vue3-sfc-loader/dist/vue3-sfc-loader.js"></script>`,
+    `<script src="https://cdn.jsdelivr.net/npm/vue3-sfc-loader@0.9/dist/vue3-sfc-loader.js"></script>`,
     `<script>${loader}</script>`,
     "</body></html>",
   ].join("\n");

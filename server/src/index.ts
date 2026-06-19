@@ -250,6 +250,13 @@ async function handleServe(url: URL, env: Env): Promise<Response> {
   let rest = slash === -1 ? "" : after.slice(slash + 1);
   if (!/^[a-z0-9]+$/.test(id)) return notFound();
 
+  // Browsers percent-encode path chars (e.g. "my%20logo.png"); decode to match the stored R2 key.
+  try {
+    rest = decodeURIComponent(rest);
+  } catch {
+    return notFound(); // malformed percent-encoding
+  }
+
   if (rest === "") rest = "index.html";
   else if (rest.endsWith("/")) rest += "index.html";
 

@@ -66,6 +66,13 @@ test("plain .ts is transpiled (not shipped as a raw module)", () => {
   assert.match(out, /@babel\/standalone/);
 });
 
+test("react wrap captures a same-line `export default` (after a `;`)", () => {
+  const src = 'import React from "react"; export default function App(){ return <h1>hi</h1>; }';
+  const out = wrapToHtml(src, "react");
+  assert.match(out, /window\.__conjure_default = function App/);
+  assert.doesNotMatch(out, /;\s*export default function App/); // the real export was rewritten
+});
+
 test("react wrap injects React import when missing", () => {
   const out = wrapToHtml("export default () => <div/>", "react");
   assert.match(out, /import React from "react";/);
