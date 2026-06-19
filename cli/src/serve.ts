@@ -27,6 +27,7 @@ function ctypeFor(p: string): string {
 
 export interface ServeOptions {
   port?: number;
+  host?: string;
   open?: boolean;
   noWrap?: boolean;
   type?: ArtifactType;
@@ -84,7 +85,7 @@ function openBrowser(url: string): void {
   }
 }
 
-function tryListen(server: Server, port: number): Promise<number> {
+function tryListen(server: Server, port: number, host: string): Promise<number> {
   return new Promise((resolve, reject) => {
     const onErr = (e: NodeJS.ErrnoException) => {
       server.removeListener("error", onErr);
@@ -92,7 +93,7 @@ function tryListen(server: Server, port: number): Promise<number> {
       else reject(e);
     };
     server.once("error", onErr);
-    server.listen(port, () => {
+    server.listen(port, host, () => {
       server.removeListener("error", onErr);
       resolve(port);
     });
@@ -135,10 +136,11 @@ export async function startServer(
     res.end(body);
   });
 
+  const host = opts.host || "localhost";
   const start = opts.port || 4321;
   let port = -1;
   for (let p = start; p < start + 25; p++) {
-    port = await tryListen(server, p);
+    port = await tryListen(server, p, host);
     if (port > 0) break;
   }
   if (port < 0) throw new Error(`no free port in ${start}..${start + 24}`);

@@ -221,6 +221,7 @@ async function cmdBuild(args: Args): Promise<void> {
 async function cmdServe(args: Args): Promise<void> {
   const opts = {
     port: args.flags.port ? Number(args.flags.port) : undefined,
+    host: (args.flags.host as string) || undefined,
     open: !!args.flags.open,
     noWrap: args.flags["no-wrap"] === true || args.flags.wrap === false,
     type: args.flags.type as ArtifactType | undefined,
@@ -293,7 +294,7 @@ ${c.bold("Usage")}
   cjr login --url <server> --token <token>
   cjr deploy <file|dir|->   [--name <title>] [--type html|react|vue|js|static]
                                 [--no-wrap] [--no-tailwind] [--open] [--json] [--quiet]
-  cjr serve <file|dir|->    [--port N] [--open] [--watch] [--no-wrap]   ${c.dim("# local preview, no deploy")}
+  cjr serve <file|dir|->    [--port N] [--host H] [--open] [--watch] [--no-wrap]   ${c.dim("# local preview, no deploy")}
   cjr build <file|->        [--out FILE] [--no-wrap]   ${c.dim("# wrap → a standalone .html (for GitHub Pages, etc.)")}
   cjr list
   cjr open <id|url>
