@@ -146,6 +146,12 @@ interface UploadFile {
   contentType?: string;
 }
 
+/** A positive integer from an env string, else the default (so "0"/""/"abc" don't silently pass). */
+function posInt(v: string | undefined, dflt: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : dflt;
+}
+
 async function handleDeploy(req: Request, env: Env): Promise<Response> {
   if (!(await isAuthed(req, env))) {
     return json(
@@ -154,11 +160,12 @@ async function handleDeploy(req: Request, env: Env): Promise<Response> {
     );
   }
 
-  const maxBytes = Number(env.MAX_BYTES) || DEFAULT_MAX_BYTES;
-  const maxFiles = Number(env.MAX_FILES) || DEFAULT_MAX_FILES;
+  const maxBytes = posInt(env.MAX_BYTES, DEFAULT_MAX_BYTES);
+  const maxFiles = posInt(env.MAX_FILES, DEFAULT_MAX_FILES);
 
   const declared = Number(req.headers.get("content-length") || "0");
-  // base64 inflates ~33%; allow headroom but reject obviously-too-large bodies early.
+  // base64 inflates ~33%; allow headroom but reject obviously-too-large bodies early. Best-effort:
+  // chunked requests carry no content-length and skip this — the per-file loop below is the hard cap.
   if (declared && declared > maxBytes * 2) return json({ error: "payload too large" }, 413);
 
   let body: { title?: string; type?: string; files?: UploadFile[] };
@@ -202,12 +209,6 @@ async function handleDeploy(req: Request, env: Env): Promise<Response> {
   if (!hasIndex) return json({ error: "deploy must include an index.html entry file" }, 400);
 
   const id = genId();
-  await Promise.all(
-    normalized.map((f) =>
-      env.BUCKET.put(`${id}/${f.path}`, f.bytes, { httpMetadata: { contentType: f.contentType } }),
-    ),
-  );
-
   const meta = {
     id,
     title: (String(body.title ?? "").trim().slice(0, 200)) || null,
@@ -216,9 +217,25 @@ async function handleDeploy(req: Request, env: Env): Promise<Response> {
     bytes: total,
     created_at: new Date().toISOString(),
   };
-  await env.BUCKET.put(`${id}/_meta.json`, JSON.stringify(meta), {
-    httpMetadata: { contentType: "application/json" },
-  });
+  try {
+    await Promise.all(
+      normalized.map((f) =>
+        env.BUCKET.put(`${id}/${f.path}`, f.bytes, { httpMetadata: { contentType: f.contentType } }),
+      ),
+    );
+    await env.BUCKET.put(`${id}/_meta.json`, JSON.stringify(meta), {
+      httpMetadata: { contentType: "application/json" },
+    });
+  } catch (e) {
+    // Best-effort rollback so a partial write leaves no unreclaimable orphan objects.
+    try {
+      const orphans = await env.BUCKET.list({ prefix: `${id}/` });
+      if (orphans.objects.length) await env.BUCKET.delete(orphans.objects.map((o) => o.key));
+    } catch {
+      /* ignore cleanup failure */
+    }
+    throw e;
+  }
 
   const base = (env.CONJURE_PUBLIC_URL || "").replace(/\/+$/, "") || new URL(req.url).origin;
   return json({ id, url: `${base}/s/${id}`, files: meta.files, bytes: total }, 201);

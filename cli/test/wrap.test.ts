@@ -45,6 +45,20 @@ test("react wrap captures the aggregate `export { X as default }` form", () => {
   assert.doesNotMatch(out, /export\s*\{/); // the export statement was rewritten away
 });
 
+test("react wrap leaves a default re-export (`... from`) intact, not corrupted", () => {
+  const src = 'function x(){return <i/>}\nexport { Thing as default } from "./z";';
+  const out = wrapToHtml(src, "react");
+  assert.match(out, /export\s*\{\s*Thing as default\s*\}\s*from\s*"\.\/z"/);
+  assert.doesNotMatch(out, /window\.__conjure_default = Thing;from/); // not corrupted into a syntax error
+});
+
+test("react wrap preserves sibling named exports alongside the default", () => {
+  const src = "function A(){return <i/>}\nfunction B(){}\nexport { A as default, B };";
+  const out = wrapToHtml(src, "react");
+  assert.match(out, /window\.__conjure_default = A;/);
+  assert.match(out, /export \{ B \};/);
+});
+
 test("react wrap injects React import when missing", () => {
   const out = wrapToHtml("export default () => <div/>", "react");
   assert.match(out, /import React from "react";/);

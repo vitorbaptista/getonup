@@ -49,7 +49,9 @@ async function call(
   try {
     data = text ? JSON.parse(text) : {};
   } catch {
-    data = { error: text };
+    // Non-JSON body (e.g. an HTML error page) — keep the message short, don't dump the page.
+    const t = text.trimStart();
+    data = { error: t && !t.startsWith("<") ? text.slice(0, 300) : `HTTP ${res.status}` };
   }
   if (!res.ok) {
     const err: ApiError = new Error(data?.error || `HTTP ${res.status}`);

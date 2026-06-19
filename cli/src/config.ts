@@ -21,9 +21,10 @@ function configPath(): string {
 export async function loadConfig(): Promise<Config> {
   let fileCfg: Config = {};
   try {
-    fileCfg = JSON.parse(await readFile(configPath(), "utf8"));
+    const parsed = JSON.parse(await readFile(configPath(), "utf8"));
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) fileCfg = parsed as Config;
   } catch {
-    /* no config file yet */
+    /* no config file yet, or malformed — fall back to env/empty */
   }
   return {
     url: process.env.CONJURE_URL || fileCfg.url,

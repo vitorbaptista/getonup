@@ -144,12 +144,19 @@ function tailwindTag(opts: WrapOptions): string {
 function transformReact(code: string): string {
   let out = code;
   const hasReactDefaultImport = /import\s+React(\s|,)/.test(out);
-  // Capture the default export into a global we can mount — both `export default X`
-  // and the aggregate form `export { X as default }`.
-  out = out.replace(/export\s+default\s+/, "window.__conjure_default = ");
-  out = out.replace(/export\s*\{([^}]*)\}\s*;?/g, (full, inner) => {
-    const m = String(inner).match(/([A-Za-z_$][\w$]*)\s+as\s+default/);
-    return m ? `window.__conjure_default = ${m[1]};` : full;
+  // Capture the default export into a global we can mount — both `export default X` and the local
+  // aggregate `export { X as default }`. Anchored to statement position (start of line) so it won't
+  // fire on "export default" text inside a string/JSX. Re-exports (`... from "x"`) are left
+  // untouched (rewriting them would emit invalid JS); sibling named exports are preserved.
+  out = out.replace(/^[ \t]*export\s+default\s+/m, "window.__conjure_default = ");
+  out = out.replace(/^[ \t]*export\s*\{([^}]*)\}\s*(from\s*['"][^'"]+['"])?\s*;?/gm, (full, inner, fromClause) => {
+    if (fromClause) return full; // re-export: leave as-is
+    const names = String(inner).split(",").map((s) => s.trim()).filter(Boolean);
+    const def = names.find((n) => /\sas\s+default$/.test(n));
+    if (!def) return full;
+    const local = def.replace(/\s+as\s+default$/, "").trim();
+    const rest = names.filter((n) => n !== def);
+    return `window.__conjure_default = ${local};` + (rest.length ? ` export { ${rest.join(", ")} };` : "");
   });
   const prelude = hasReactDefaultImport ? "" : `import React from "react";\n`;
   return prelude + out;
