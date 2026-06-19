@@ -73,6 +73,22 @@ test("react wrap captures a same-line `export default` (after a `;`)", () => {
   assert.doesNotMatch(out, /;\s*export default function App/); // the real export was rewritten
 });
 
+test("react wrap ignores `export default` inside strings, comments, and templates", () => {
+  // a string literal that itself contains "; export default …" before the real export
+  const o1 = wrapToHtml('const s = "; export default nope"; export default App;', "react");
+  assert.match(o1, /window\.__conjure_default = App;/);
+  assert.match(o1, /"; export default nope"/); // string preserved verbatim, not rewritten
+
+  // a line comment
+  const o2 = wrapToHtml("// export default Fake\nexport default App;", "react");
+  assert.match(o2, /window\.__conjure_default = App;/);
+  assert.match(o2, /\/\/ export default Fake/);
+
+  // a newline inside a template literal
+  const o3 = wrapToHtml("const t = `\nexport default nope`;\nexport default App;", "react");
+  assert.match(o3, /window\.__conjure_default = App;/);
+});
+
 test("react wrap injects React import when missing", () => {
   const out = wrapToHtml("export default () => <div/>", "react");
   assert.match(out, /import React from "react";/);

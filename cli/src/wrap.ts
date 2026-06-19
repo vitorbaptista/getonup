@@ -141,24 +141,62 @@ function tailwindTag(opts: WrapOptions): string {
 // React
 // ---------------------------------------------------------------------------
 
-function transformReact(code: string): string {
-  let out = code;
-  const hasReactDefaultImport = /import\s+React(\s|,)/.test(out);
-  // Capture the default export into a global we can mount — both `export default X` and the local
-  // aggregate `export { X as default }`. Anchored to a statement boundary (start of source, or
-  // after a newline / `;` / `}`) so it also catches same-line statements like
-  // `import React from "react"; export default App` while NOT matching "export default" text inside
-  // a string/JSX. Re-exports (`... from "x"`) are left untouched; sibling named exports are kept.
-  out = out.replace(/(^|[\n;}])([ \t]*)export\s+default\s+/, "$1$2window.__conjure_default = ");
-  out = out.replace(/(^|[\n;}])([ \t]*)export\s*\{([^}]*)\}\s*(from\s*['"][^'"]+['"])?\s*;?/g, (full, b, ws, inner, fromClause) => {
-    if (fromClause) return full; // re-export: leave as-is
-    const names = String(inner).split(",").map((s) => s.trim()).filter(Boolean);
+/** Blank the contents of strings, template literals and comments (preserving length + newlines) so
+ *  a regex can locate real statements without ever firing on code-like text inside a literal. */
+function maskNonCode(s: string): string {
+  const out = s.split("");
+  let mode: "'" | '"' | "`" | "line" | "block" | null = null;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    const c2 = s[i + 1];
+    if (!mode) {
+      if (c === "'" || c === '"' || c === "`") mode = c;
+      else if (c === "/" && c2 === "/") { mode = "line"; out[i] = out[i + 1] = " "; i++; }
+      else if (c === "/" && c2 === "*") { mode = "block"; out[i] = out[i + 1] = " "; i++; }
+      continue;
+    }
+    if (mode === "line") { if (c === "\n") mode = null; else out[i] = " "; continue; }
+    if (mode === "block") { if (c === "*" && c2 === "/") { out[i] = out[i + 1] = " "; mode = null; i++; } else if (c !== "\n") out[i] = " "; continue; }
+    // inside a string/template literal
+    if (c === "\\") { out[i] = " "; if (i + 1 < s.length) out[i + 1] = " "; i++; continue; }
+    if (c === mode) { mode = null; continue; }
+    if (c !== "\n") out[i] = " ";
+  }
+  return out.join("");
+}
+
+/** Capture the default export into a global we can mount. Matches are located on a masked copy (so
+ *  text inside strings/templates/comments is never rewritten) and spliced into the original. Handles
+ *  `export default X` and the local aggregate `export { X as default }` (siblings preserved, even
+ *  same-line); leaves re-exports (`… from "x"`) untouched. */
+function captureDefaultExport(code: string): string {
+  const masked = maskNonCode(code);
+  const edits: { start: number; end: number; text: string }[] = [];
+
+  const dre = /(^|[\n;}])([ \t]*)export\s+default\s+/g;
+  const dm = dre.exec(masked);
+  if (dm) edits.push({ start: dm.index, end: dm.index + dm[0].length, text: `${dm[1]}${dm[2]}window.__conjure_default = ` });
+
+  const are = /(^|[\n;}])([ \t]*)export\s*\{([^}]*)\}[ \t]*(from\s*['"][^'"]+['"])?[ \t]*;?/g;
+  for (let m = are.exec(masked); m; m = are.exec(masked)) {
+    if (m[4]) continue; // re-export: leave as-is
+    const names = m[3].split(",").map((n) => n.trim()).filter(Boolean);
     const def = names.find((n) => /\sas\s+default$/.test(n));
-    if (!def) return full;
+    if (!def) continue;
     const local = def.replace(/\s+as\s+default$/, "").trim();
     const rest = names.filter((n) => n !== def);
-    return `${b}${ws}window.__conjure_default = ${local};` + (rest.length ? ` export { ${rest.join(", ")} };` : "");
-  });
+    const text = `${m[1]}${m[2]}window.__conjure_default = ${local};` + (rest.length ? ` export { ${rest.join(", ")} };` : "");
+    edits.push({ start: m.index, end: m.index + m[0].length, text });
+  }
+
+  edits.sort((a, b) => b.start - a.start); // apply right-to-left so offsets stay valid
+  for (const e of edits) code = code.slice(0, e.start) + e.text + code.slice(e.end);
+  return code;
+}
+
+function transformReact(code: string): string {
+  const hasReactDefaultImport = /import\s+React(\s|,)/.test(code);
+  const out = captureDefaultExport(code);
   const prelude = hasReactDefaultImport ? "" : `import React from "react";\n`;
   return prelude + out;
 }
