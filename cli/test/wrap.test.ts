@@ -89,6 +89,13 @@ test("react wrap ignores `export default` inside strings, comments, and template
   assert.match(o3, /window\.__conjure_default = App;/);
 });
 
+test("react wrap ignores `export default` inside JSX text", () => {
+  const src = "function App(){ return <pre>\nexport default nope\n</pre>; }\nexport default App;";
+  const out = wrapToHtml(src, "react");
+  assert.match(out, /window\.__conjure_default = App;/);
+  assert.match(out, /export default nope/); // JSX text preserved, not rewritten
+});
+
 test("react wrap injects React import when missing", () => {
   const out = wrapToHtml("export default () => <div/>", "react");
   assert.match(out, /import React from "react";/);

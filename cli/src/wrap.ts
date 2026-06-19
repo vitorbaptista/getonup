@@ -11,6 +11,8 @@
  * The server never sees this logic — it just stores and serves the resulting bytes.
  */
 
+import { parse } from "@babel/parser";
+
 export type ArtifactType = "html" | "react" | "vue" | "js" | "static";
 
 export interface WrapOptions {
@@ -141,54 +143,34 @@ function tailwindTag(opts: WrapOptions): string {
 // React
 // ---------------------------------------------------------------------------
 
-/** Blank the contents of strings, template literals and comments (preserving length + newlines) so
- *  a regex can locate real statements without ever firing on code-like text inside a literal. */
-function maskNonCode(s: string): string {
-  const out = s.split("");
-  let mode: "'" | '"' | "`" | "line" | "block" | null = null;
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i];
-    const c2 = s[i + 1];
-    if (!mode) {
-      if (c === "'" || c === '"' || c === "`") mode = c;
-      else if (c === "/" && c2 === "/") { mode = "line"; out[i] = out[i + 1] = " "; i++; }
-      else if (c === "/" && c2 === "*") { mode = "block"; out[i] = out[i + 1] = " "; i++; }
-      continue;
-    }
-    if (mode === "line") { if (c === "\n") mode = null; else out[i] = " "; continue; }
-    if (mode === "block") { if (c === "*" && c2 === "/") { out[i] = out[i + 1] = " "; mode = null; i++; } else if (c !== "\n") out[i] = " "; continue; }
-    // inside a string/template literal
-    if (c === "\\") { out[i] = " "; if (i + 1 < s.length) out[i + 1] = " "; i++; continue; }
-    if (c === mode) { mode = null; continue; }
-    if (c !== "\n") out[i] = " ";
-  }
-  return out.join("");
-}
-
-/** Capture the default export into a global we can mount. Matches are located on a masked copy (so
- *  text inside strings/templates/comments is never rewritten) and spliced into the original. Handles
- *  `export default X` and the local aggregate `export { X as default }` (siblings preserved, even
- *  same-line); leaves re-exports (`… from "x"`) untouched. */
+/** Locate the real top-level default export with a parser — so `export default` text inside
+ *  strings, comments, template literals or JSX is never matched — and rewrite it to a global we
+ *  can mount. Handles `export default X` and the local aggregate `export { X as default }`
+ *  (siblings preserved); leaves re-exports (`… from "x"`) untouched. If the source can't be
+ *  parsed, it's returned unchanged and the in-browser Babel surfaces the syntax error. */
 function captureDefaultExport(code: string): string {
-  const masked = maskNonCode(code);
-  const edits: { start: number; end: number; text: string }[] = [];
-
-  const dre = /(^|[\n;}])([ \t]*)export\s+default\s+/g;
-  const dm = dre.exec(masked);
-  if (dm) edits.push({ start: dm.index, end: dm.index + dm[0].length, text: `${dm[1]}${dm[2]}window.__conjure_default = ` });
-
-  const are = /(^|[\n;}])([ \t]*)export\s*\{([^}]*)\}[ \t]*(from\s*['"][^'"]+['"])?[ \t]*;?/g;
-  for (let m = are.exec(masked); m; m = are.exec(masked)) {
-    if (m[4]) continue; // re-export: leave as-is
-    const names = m[3].split(",").map((n) => n.trim()).filter(Boolean);
-    const def = names.find((n) => /\sas\s+default$/.test(n));
-    if (!def) continue;
-    const local = def.replace(/\s+as\s+default$/, "").trim();
-    const rest = names.filter((n) => n !== def);
-    const text = `${m[1]}${m[2]}window.__conjure_default = ${local};` + (rest.length ? ` export { ${rest.join(", ")} };` : "");
-    edits.push({ start: m.index, end: m.index + m[0].length, text });
+  let body: any[];
+  try {
+    body = (parse(code, { sourceType: "module", plugins: ["typescript", "jsx"], errorRecovery: true }) as any).program.body;
+  } catch {
+    return code;
   }
-
+  const edits: { start: number; end: number; text: string }[] = [];
+  for (const node of body) {
+    if (node.type === "ExportDefaultDeclaration") {
+      // Replace just the `export default ` keyword span; the declaration becomes the assignment's
+      // RHS (a named function/class declaration is valid as a function/class expression there).
+      edits.push({ start: node.start, end: node.declaration.start, text: "window.__conjure_default = " });
+    } else if (node.type === "ExportNamedDeclaration" && !node.source) {
+      const def = node.specifiers.find((s: any) => s.type === "ExportSpecifier" && s.exported.name === "default");
+      if (!def) continue;
+      const rest = node.specifiers
+        .filter((s: any) => s !== def && s.type === "ExportSpecifier")
+        .map((s: any) => (s.local.name === s.exported.name ? s.local.name : `${s.local.name} as ${s.exported.name}`));
+      const text = `window.__conjure_default = ${def.local.name};` + (rest.length ? ` export { ${rest.join(", ")} };` : "");
+      edits.push({ start: node.start, end: node.end, text });
+    }
+  }
   edits.sort((a, b) => b.start - a.start); // apply right-to-left so offsets stay valid
   for (const e of edits) code = code.slice(0, e.start) + e.text + code.slice(e.end);
   return code;

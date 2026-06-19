@@ -18,12 +18,21 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test test/*.test.ts"
   },
-  "keywords": ["cloudflare", "artifacts", "deploy", "ai", "static-hosting", "agent", "self-hosted"],
+  "keywords": [
+    "cloudflare",
+    "artifacts",
+    "deploy",
+    "ai",
+    "static-hosting",
+    "agent",
+    "self-hosted"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
+    "@babel/parser": "^8.0.0",
     "@types/node": "^20.14.0",
     "esbuild": "^0.23.0",
     "tsx": "^4.19.0",
