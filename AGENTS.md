@@ -53,3 +53,9 @@ cjr open <id>       # open it in a browser
 ```
 
 The deployed site is **public** and needs no login to view. Hand the `url` to the user.
+
+## Or use the MCP server
+
+Instead of the CLI, run `cjr mcp` and register it as an MCP server (stdio). It exposes
+`deploy_artifact`, `build_artifact`, `list_deploys`, and `remove_deploy` tools; set `CONJURE_URL`
+and `CONJURE_TOKEN` in its env.

@@ -135,6 +135,24 @@ run: `cjr deploy <file-or-dir>` and give the user the printed URL.
 See [`AGENTS.md`](./AGENTS.md) in this repo for a ready-to-copy block, and
 [`skills/conjure`](./skills/conjure) for a Claude Code skill.
 
+### …or as an MCP server
+
+`cjr mcp` runs Conjure as an [MCP](https://modelcontextprotocol.io) server over stdio, exposing
+`deploy_artifact`, `build_artifact`, `list_deploys`, and `remove_deploy` as tools. Point any
+MCP-aware agent at it — no shelling out:
+
+```json
+{
+  "mcpServers": {
+    "conjure": {
+      "command": "cjr",
+      "args": ["mcp"],
+      "env": { "CONJURE_URL": "https://your-conjure.example", "CONJURE_TOKEN": "your-token" }
+    }
+  }
+}
+```
+
 ---
 
 ## Supported inputs

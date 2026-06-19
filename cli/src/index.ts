@@ -5,6 +5,7 @@ import { loadConfig, saveConfig } from "./config.js";
 import * as api from "./api.js";
 import { detectType, wrapToHtml, type ArtifactType } from "./wrap.js";
 import { serve } from "./serve.js";
+import { runMcp } from "./mcp.js";
 
 const VERSION = "0.1.0";
 
@@ -298,6 +299,7 @@ ${c.bold("Usage")}
   cjr open <id|url>
   cjr rm <id>
   cjr whoami
+  cjr mcp                       ${c.dim("# run as an MCP server (stdio) for agents")}
 
 ${c.bold("Examples")}
   cjr deploy index.html
@@ -321,6 +323,7 @@ async function main(): Promise<void> {
     case "deploy": case "up": case "push": return cmdDeploy(args);
     case "serve": case "preview": return cmdServe(args);
     case "build": return cmdBuild(args);
+    case "mcp": return runMcp();
     case "list": case "ls": return cmdList();
     case "rm": case "delete": case "remove": return cmdRm(args);
     case "open": return cmdOpen(args);
