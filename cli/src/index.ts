@@ -4,6 +4,7 @@ import { spawn } from "node:child_process";
 import { loadConfig, saveConfig } from "./config.js";
 import * as api from "./api.js";
 import { detectType, wrapToHtml, type ArtifactType } from "./wrap.js";
+import { serve } from "./serve.js";
 
 const VERSION = "0.1.0";
 
@@ -182,6 +183,27 @@ async function cmdDeploy(args: Args): Promise<void> {
   if (args.flags.open) openInBrowser(result!.url);
 }
 
+async function cmdServe(args: Args): Promise<void> {
+  const opts = {
+    port: args.flags.port ? Number(args.flags.port) : undefined,
+    open: !!args.flags.open,
+    noWrap: args.flags["no-wrap"] === true || args.flags.wrap === false,
+    type: args.flags.type as ArtifactType | undefined,
+    tailwind: args.flags["no-tailwind"] === true ? false : true,
+    watch: args.flags.watch === true || args.flags.w === true,
+    quiet: !!args.flags.quiet,
+  };
+  const target = args._[0];
+  if (target === "-") return serve(null, opts, await readStdin());
+  if (!target) err("usage: conjure serve <file|dir|-> [--port N] [--open] [--watch] [--type html|react|vue|js|static] [--no-wrap]");
+  try {
+    await stat(target);
+  } catch {
+    err(`no such file or directory: ${target}`);
+  }
+  return serve(target, opts);
+}
+
 async function cmdList(): Promise<void> {
   const { url, token } = await loadConfig();
   if (!url) err("not configured. Run: conjure login …");
@@ -236,6 +258,7 @@ ${c.bold("Usage")}
   conjure login --url <server> --token <token>
   conjure deploy <file|dir|->   [--name <title>] [--type html|react|vue|js|static]
                                 [--no-wrap] [--no-tailwind] [--open] [--json] [--quiet]
+  conjure serve <file|dir|->    [--port N] [--open] [--watch] [--no-wrap]   ${c.dim("# local preview, no deploy")}
   conjure list
   conjure open <id|url>
   conjure rm <id>
@@ -246,6 +269,7 @@ ${c.bold("Examples")}
   conjure deploy counter.tsx --open
   cat art.html | conjure deploy - --name demo
   conjure deploy ./dist            ${c.dim("# a built static site (needs index.html)")}
+  conjure serve counter.tsx --open --watch   ${c.dim("# instant local preview, live reload, no deploy")}
 
 Config lives in ~/.config/conjure/config.json, or env CONJURE_URL / CONJURE_TOKEN.
 `);
@@ -259,6 +283,7 @@ async function main(): Promise<void> {
   switch (cmd) {
     case "login": return cmdLogin(args);
     case "deploy": case "up": case "push": return cmdDeploy(args);
+    case "serve": case "preview": return cmdServe(args);
     case "list": case "ls": return cmdList();
     case "rm": case "delete": case "remove": return cmdRm(args);
     case "open": return cmdOpen(args);

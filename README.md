@@ -101,6 +101,19 @@ output, `--quiet` for just the URL) — easy to script and easy for an agent to 
 
 ---
 
+### Preview locally first — no deploy, no token
+
+`conjure serve` is the server *and* the uploader in one command. It wraps your artifact and
+hosts it on `localhost` with live-reload — nothing leaves your machine, no Cloudflare needed:
+
+```bash
+conjure serve counter.tsx --open --watch   # http://localhost:4321, reloads on save
+conjure serve ./dist                        # serve a built folder
+cat page.html | conjure serve -             # from stdin
+```
+
+Then `conjure deploy` the same artifact when you want a public URL.
+
 ## Give it to your agent
 
 This is the point. Add a few lines to your project's `AGENTS.md` (or `CLAUDE.md`,

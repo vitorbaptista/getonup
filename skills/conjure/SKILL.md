@@ -26,6 +26,11 @@ the user's own self-hosted Cloudflare Worker.
 4. **Share.** Read the `url` field from the JSON and give it to the user. It's public; no login
    to view.
 
+## Preview locally (no deploy)
+
+For a local preview without publishing, run `conjure serve <file-or-dir> --watch` — it wraps and
+hosts the artifact at a `localhost` URL with live-reload (no token/Cloudflare needed).
+
 ## Manage
 
 ```bash

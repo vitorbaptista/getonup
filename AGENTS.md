@@ -37,6 +37,13 @@ conjure deploy ./dashboard.tsx --json
 conjure deploy ./site --json            # a folder built by `npm run build`
 ```
 
+## Preview locally (no deploy)
+
+To preview an artifact on the user's own machine without publishing, run
+`conjure serve <file-or-dir> --watch` — it auto-wraps and hosts it at a `localhost` URL with
+live-reload (no token, no Cloudflare). Use it for a quick local look; use `conjure deploy` when
+the user wants a shareable public URL.
+
 ## Managing
 
 ```bash
