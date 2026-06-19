@@ -1,0 +1,23 @@
+{
+  "name": "conjure-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Conjure — open-source, self-hostable OneClickLive. Turn any AI artifact into a live URL.",
+  "workspaces": [
+    "cli",
+    "server"
+  ],
+  "scripts": {
+    "dev": "npm --workspace server run dev",
+    "deploy": "npm --workspace server run deploy",
+    "conjure": "npm --workspace cli run dev --",
+    "build": "npm --workspace cli run build",
+    "test": "npm --workspace cli run test",
+    "typecheck": "npm --workspace cli run typecheck && npm --workspace server run typecheck"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  // Conjure server — one Cloudflare Worker that stores deploys in R2 and serves them.
+  // Deploy: `wrangler deploy`.  Set the secret first: `wrangler secret put CONJURE_DEPLOY_TOKEN`.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "conjure",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-18",
+
+  // Static landing page (and optional browser paste UI) served from ./public.
+  // Requests that match a static asset are served at the edge (free, no Worker invocation);
+  // anything else (/api/*, /s/*) falls through to the Worker.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+
+  // Object storage for deployed artifacts. Create it once with:
+  //   wrangler r2 bucket create conjure
+  // (The "Deploy to Cloudflare" button provisions this automatically.)
+  "r2_buckets": [
+    { "binding": "BUCKET", "bucket_name": "conjure" }
+  ],
+
+  // Non-secret config. CONJURE_DEPLOY_TOKEN is a *secret* (set via `wrangler secret put`),
+  // not listed here. Optional overrides:
+  "vars": {
+    "MAX_BYTES": "20971520",
+    "MAX_FILES": "300"
+    // "CONJURE_PUBLIC_URL": "https://conjure.example.com"  // force the printed base URL
+  },
+
+  "observability": { "enabled": true }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "conjure-live",
+  "version": "0.1.0",
+  "description": "Conjure CLI — deploy any AI artifact (HTML, React, Vue, static folder) to a live URL on your self-hosted, scale-to-zero Conjure server.",
+  "type": "module",
+  "bin": {
+    "conjure": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/index.js --banner:js=\"#!/usr/bin/env node\" && chmod +x dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "keywords": ["cloudflare", "artifacts", "deploy", "ai", "static-hosting", "agent", "self-hosted"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "esbuild": "^0.23.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,5 @@
+# Copy to .dev.vars for local `wrangler dev`, and set the real secret in production with:
+#   wrangler secret put CONJURE_DEPLOY_TOKEN
+#
+# Generate a strong token, e.g.:  openssl rand -hex 32
+CONJURE_DEPLOY_TOKEN=dev-local-token-change-me

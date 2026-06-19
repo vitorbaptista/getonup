@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Conjure — Your AI artifact, live in seconds.</title>
+<meta name="description" content="Conjure turns any AI-generated web artifact into a live, shareable URL with one CLI command. Open-source, self-hostable, scales to zero." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --cream:#FAF7F0;
+    --cream-2:#F4F1EA;
+    --paper:#FFFDF8;
+    --ink:#3D3A34;
+    --ink-soft:#6B665C;
+    --ink-faint:#928C7F;
+    --clay:#CC785C;
+    --clay-deep:#B5604A;
+    --sand:#D4A27F;
+    --line:#E5DFD2;
+    --line-soft:#ECE7DB;
+    --term-bg:#2E2A24;
+    --term-line:#46413A;
+    --radius:18px;
+    --maxw:1120px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:"Inter",-apple-system,system-ui,sans-serif;
+    font-size:17px;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  ::selection{background:rgba(204,120,92,.22);color:var(--ink);}
+
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px;}
+
+  h1,h2,h3{
+    font-family:"Fraunces",Georgia,serif;
+    font-weight:500;
+    letter-spacing:-0.01em;
+    line-height:1.08;
+    margin:0;
+    color:var(--ink);
+  }
+  em{font-style:italic;color:var(--clay-deep);}
+  h1 em,h2 em,h3 em{font-style:italic;font-weight:500;color:var(--clay);}
+
+  a{color:inherit;text-decoration:none;}
+
+  /* ---------- Nav ---------- */
+  header.nav{
+    position:sticky;top:0;z-index:50;
+    backdrop-filter:saturate(140%) blur(10px);
+    background:rgba(250,247,240,.82);
+    border-bottom:1px solid transparent;
+    transition:border-color .3s ease, background .3s ease;
+  }
+  header.nav.scrolled{border-bottom:1px solid var(--line);}
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:74px;}
+  .brand{display:flex;align-items:center;gap:11px;font-family:"Fraunces",serif;font-weight:600;font-size:21px;letter-spacing:-.01em;}
+  .brand .mark{
+    width:30px;height:30px;flex:none;
+    display:grid;place-items:center;
+  }
+  .brand .mark svg{width:30px;height:30px;display:block;}
+  .nav-links{display:flex;align-items:center;gap:30px;font-size:15px;}
+  .nav-links a.quiet{color:var(--ink-soft);transition:color .2s;}
+  .nav-links a.quiet:hover{color:var(--ink);}
+  .nav-cta{
+    font-size:14.5px;font-weight:500;
+    padding:9px 18px;border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    transition:border-color .2s, transform .2s;
+  }
+  .nav-cta:hover{border-color:var(--sand);transform:translateY(-1px);}
+  .nav-toggle{display:none;}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;
+    font-family:"Inter",sans-serif;font-weight:500;font-size:16px;
+    padding:14px 26px;border-radius:999px;
+    cursor:pointer;border:1px solid transparent;
+    transition:transform .2s ease, box-shadow .3s ease, background .2s ease, border-color .2s ease;
+    line-height:1;
+  }
+  .btn-primary{
+    background:var(--clay);color:#FFF8F3;
+    box-shadow:0 8px 22px -10px rgba(204,120,92,.7);
+  }
+  .btn-primary:hover{background:var(--clay-deep);transform:translateY(-2px);box-shadow:0 14px 30px -10px rgba(204,120,92,.65);}
+  .btn-ghost{
+    background:transparent;color:var(--ink);border:1px solid var(--line);
+  }
+  .btn-ghost:hover{border-color:var(--sand);background:var(--paper);transform:translateY(-2px);}
+  .btn svg{width:18px;height:18px;}
+
+  /* ---------- Hero ---------- */
+  .hero{position:relative;overflow:hidden;padding:78px 0 96px;}
+  .hero::before{
+    content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(560px 360px at 82% 8%, rgba(212,162,127,.20), transparent 70%),
+      radial-gradient(620px 460px at 6% 88%, rgba(204,120,92,.10), transparent 72%);
+  }
+  .hero .wrap{position:relative;z-index:1;}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:9px;
+    font-size:13px;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--ink-soft);font-weight:500;
+    padding:7px 14px 7px 11px;border-radius:999px;
+    background:var(--paper);border:1px solid var(--line);
+    margin-bottom:30px;
+  }
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--clay);box-shadow:0 0 0 4px rgba(204,120,92,.15);}
+  .hero h1{
+    font-size:clamp(2.7rem,6.4vw,4.6rem);
+    max-width:14ch;
+    margin-bottom:26px;
+  }
+  .hero p.sub{
+    font-size:clamp(1.08rem,2.1vw,1.32rem);
+    color:var(--ink-soft);
+    max-width:48ch;line-height:1.6;margin:0 0 38px;
+  }
+  .hero p.sub em{color:var(--clay-deep);}
+  .hero-cta{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:54px;}
+
+  /* ---------- Terminal ---------- */
+  .terminal{
+    background:var(--term-bg);
+    border-radius:16px;
+    max-width:680px;
+    box-shadow:0 30px 60px -28px rgba(61,58,52,.55), 0 2px 0 rgba(255,255,255,.03) inset;
+    border:1px solid #3a352e;
+    overflow:hidden;
+  }
+  .term-bar{
+    display:flex;align-items:center;gap:8px;
+    padding:13px 16px;border-bottom:1px solid var(--term-line);
+    background:linear-gradient(#322e28,#2c2822);
+  }
+  .term-bar .tdot{width:11px;height:11px;border-radius:50%;display:block;}
+  .tdot.r{background:#E0816B;} .tdot.y{background:#D8B25E;} .tdot.g{background:#9DB07B;}
+  .term-bar .ttitle{
+    margin-left:auto;font-family:"JetBrains Mono",monospace;
+    font-size:12px;color:#8a8276;letter-spacing:.02em;
+  }
+  .term-body{
+    padding:22px 22px 26px;
+    font-family:"JetBrains Mono",monospace;
+    font-size:15px;line-height:1.95;
+    color:#EDE7DB;
+  }
+  .term-body .row{white-space:pre-wrap;word-break:break-word;}
+  .term-body .pr{color:var(--sand);}
+  .term-body .cmd{color:#F4EEE2;}
+  .term-body .ok{color:#A6BE83;}
+  .term-body .arrow{color:#8a8276;}
+  .term-body .url{color:var(--sand);border-bottom:1px solid rgba(212,162,127,.35);}
+  .term-body .muted{color:#7f7768;}
+  .caret{
+    display:inline-block;width:9px;height:1.05em;
+    background:var(--sand);vertical-align:-2px;margin-left:3px;
+    animation:blink 1.05s steps(1) infinite;border-radius:1px;
+  }
+  @keyframes blink{50%{opacity:0;}}
+
+  .trust{
+    display:flex;flex-wrap:wrap;gap:8px 26px;margin-top:34px;
+    font-size:14px;color:var(--ink-faint);
+  }
+  .trust span{display:inline-flex;align-items:center;gap:8px;}
+  .trust svg{width:15px;height:15px;color:var(--clay);}
+
+  /* ---------- Section shell ---------- */
+  section{padding:96px 0;}
+  .sec-head{max-width:640px;margin-bottom:58px;}
+  .sec-tag{
+    font-family:"Fraunces",serif;font-style:italic;font-size:1.05rem;
+    color:var(--clay);margin-bottom:14px;
+  }
+  .sec-head h2{font-size:clamp(2rem,4vw,2.9rem);margin-bottom:18px;}
+  .sec-head p{color:var(--ink-soft);font-size:1.1rem;margin:0;max-width:52ch;}
+
+  /* ---------- How it works ---------- */
+  .how{background:var(--cream-2);border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+  .step{
+    background:var(--paper);border:1px solid var(--line);
+    border-radius:var(--radius);padding:32px 30px 34px;
+    position:relative;
+    transition:transform .35s ease, box-shadow .35s ease, border-color .35s ease;
+  }
+  .step:hover{transform:translateY(-4px);box-shadow:0 22px 40px -26px rgba(61,58,52,.4);border-color:var(--sand);}
+  .step .num{
+    font-family:"Fraunces",serif;font-style:italic;font-weight:500;
+    font-size:1.5rem;color:var(--clay);
+    width:46px;height:46px;border-radius:50%;
+    display:grid;place-items:center;
+    background:rgba(204,120,92,.10);border:1px solid rgba(204,120,92,.25);
+    margin-bottom:22px;
+  }
+  .step h3{font-size:1.35rem;margin-bottom:12px;}
+  .step p{color:var(--ink-soft);margin:0 0 16px;font-size:1.02rem;}
+  .step code{
+    font-family:"JetBrains Mono",monospace;font-size:13px;
+    background:var(--cream-2);color:var(--clay-deep);
+    padding:3px 9px;border-radius:7px;border:1px solid var(--line);
+  }
+  .step-conn{display:none;}
+
+  /* ---------- Features ---------- */
+  .features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
+  .feature{
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:34px 34px 36px;background:var(--paper);
+    transition:transform .35s ease, box-shadow .35s ease, border-color .35s ease;
+  }
+  .feature:hover{transform:translateY(-4px);box-shadow:0 22px 44px -28px rgba(61,58,52,.4);border-color:var(--sand);}
+  .feature .ficon{
+    width:50px;height:50px;border-radius:13px;
+    display:grid;place-items:center;margin-bottom:22px;
+    background:linear-gradient(150deg, rgba(212,162,127,.22), rgba(204,120,92,.12));
+    border:1px solid rgba(204,120,92,.22);
+  }
+  .feature .ficon svg{width:25px;height:25px;color:var(--clay-deep);}
+  .feature h3{font-size:1.4rem;margin-bottom:12px;}
+  .feature h3 em{font-style:italic;}
+  .feature p{color:var(--ink-soft);margin:0;font-size:1.04rem;}
+
+  /* ---------- Reveal ---------- */
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease, transform .7s ease;}
+  .reveal.in{opacity:1;transform:none;}
+
+  /* ---------- Footer ---------- */
+  footer{
+    background:var(--cream-2);border-top:1px solid var(--line);
+    padding:64px 0 48px;
+  }
+  .foot-top{display:flex;flex-wrap:wrap;gap:34px;justify-content:space-between;align-items:flex-start;margin-bottom:46px;}
+  .foot-brand{max-width:340px;}
+  .foot-brand .brand{margin-bottom:14px;}
+  .foot-brand p{color:var(--ink-soft);font-size:.98rem;margin:0;}
+  .foot-cols{display:flex;gap:64px;flex-wrap:wrap;}
+  .foot-col h4{font-family:"Inter",sans-serif;font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);margin:0 0 16px;}
+  .foot-col a{display:block;color:var(--ink-soft);font-size:15px;margin-bottom:11px;transition:color .2s;}
+  .foot-col a:hover{color:var(--clay-deep);}
+  .foot-bot{
+    border-top:1px solid var(--line);padding-top:26px;
+    display:flex;flex-wrap:wrap;gap:14px 22px;justify-content:space-between;align-items:center;
+    font-size:14px;color:var(--ink-faint);
+  }
+  .foot-bot .badges{display:flex;flex-wrap:wrap;gap:10px;}
+  .badge{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:5px 13px;border-radius:999px;
+    background:var(--paper);border:1px solid var(--line);
+    font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--ink-soft);
+  }
+  .badge .bd{width:6px;height:6px;border-radius:50%;background:var(--clay);}
+
+  /* copy toast */
+  .copy-btn{
+    margin-left:auto;display:inline-flex;align-items:center;gap:7px;
+    background:transparent;border:1px solid var(--term-line);color:#bdb4a4;
+    font-family:"JetBrains Mono",monospace;font-size:11.5px;
+    padding:5px 11px;border-radius:8px;cursor:pointer;transition:.2s;
+  }
+  .copy-btn:hover{border-color:var(--sand);color:var(--sand);}
+  .copy-btn.done{color:#A6BE83;border-color:#A6BE83;}
+
+  @media (max-width:880px){
+    .steps{grid-template-columns:1fr;}
+    .features-grid{grid-template-columns:1fr;}
+    .nav-links{display:none;}
+    .nav-toggle{display:inline-flex;}
+    section{padding:74px 0;}
+    .hero{padding:54px 0 74px;}
+  }
+  @media (max-width:560px){
+    .wrap{padding:0 20px;}
+    .term-body{font-size:13px;}
+    .hero-cta .btn{flex:1 1 auto;justify-content:center;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important;}
+    .reveal{opacity:1;transform:none;}
+  }
+</style>
+</head>
+<body>
+
+<header class="nav" id="nav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="brand" aria-label="Conjure home">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 30 30" fill="none">
+          <path d="M15 2.5 L17.6 11.2 L26 12.5 L19.5 17.4 L21.4 26 L15 21.1 L8.6 26 L10.5 17.4 L4 12.5 L12.4 11.2 Z" fill="#CC785C" opacity="0.92"/>
+          <circle cx="15" cy="14.5" r="2.6" fill="#FAF7F0"/>
+        </svg>
+      </span>
+      Conjure
+    </a>
+    <nav class="nav-links">
+      <a href="#how" class="quiet">How it works</a>
+      <a href="#features" class="quiet">Features</a>
+      <a href="#" class="quiet">Docs</a>
+      <a href="#" class="nav-cta">View on GitHub</a>
+    </nav>
+    <a href="#" class="nav-cta nav-toggle">GitHub</a>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <span class="eyebrow"><span class="dot"></span> Open-source · self-hostable · MIT</span>
+      <h1>Your AI artifact, <em>live</em> in seconds.</h1>
+      <p class="sub">Conjure turns any AI-generated web artifact — an HTML file, a React or Vue component, a built static folder — into a <em>live, shareable URL</em> with one command. One Worker, one bucket, no database. The self-hostable take on one-click publishing.</p>
+
+      <div class="hero-cta">
+        <a href="#how" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+          Self-host it
+        </a>
+        <a href="#" class="btn btn-ghost">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5a10.5 10.5 0 00-3.32 20.46c.52.1.71-.23.71-.5v-1.95c-2.92.63-3.54-1.24-3.54-1.24-.48-1.21-1.17-1.53-1.17-1.53-.95-.65.07-.64.07-.64 1.06.07 1.61 1.09 1.61 1.09.94 1.6 2.46 1.14 3.06.87.1-.68.37-1.14.67-1.4-2.33-.27-4.78-1.17-4.78-5.18 0-1.15.41-2.08 1.08-2.82-.11-.27-.47-1.34.1-2.79 0 0 .88-.28 2.88 1.07a9.96 9.96 0 015.24 0c2-1.35 2.88-1.07 2.88-1.07.57 1.45.21 2.52.1 2.79.68.74 1.08 1.67 1.08 2.82 0 4.02-2.46 4.9-4.8 5.16.38.33.71.97.71 1.96v2.9c0 .28.19.61.72.5A10.5 10.5 0 0012 1.5z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+
+      <div class="terminal reveal" aria-label="Terminal showing the conjure deploy command">
+        <div class="term-bar">
+          <span class="tdot r"></span><span class="tdot y"></span><span class="tdot g"></span>
+          <span class="ttitle">~/project — zsh</span>
+          <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy command">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+            <span id="copyLabel">copy</span>
+          </button>
+        </div>
+        <div class="term-body">
+          <div class="row"><span class="pr">$</span> <span class="cmd">conjure deploy counter.tsx</span></div>
+          <div class="row"><span class="muted">› wrapping</span> <span class="cmd">React 18 + Babel + Tailwind</span> <span class="muted">…</span></div>
+          <div class="row"><span class="muted">› uploading to R2</span> <span class="muted">…</span></div>
+          <div class="row"><span class="ok">✓ live</span> <span class="arrow">→</span> <span class="url">https://conjure.example.com/s/iwcmg3dt</span></div>
+          <div class="row"><span class="pr">$</span> <span class="caret" aria-hidden="true"></span></div>
+        </div>
+      </div>
+
+      <div class="trust">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> ~$0 idle — scales to zero</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> No viewer login</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Your Cloudflare account</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how" id="how">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-tag">Three quiet steps</div>
+        <h2>From a file to a link, <em>without the ceremony.</em></h2>
+        <p>No dashboards to click through, no project to configure. Your agent writes a file, runs a command, and shares the URL.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="num">1</div>
+          <h3>Build an artifact</h3>
+          <p>Your coding agent writes a single <code>.html</code>, <code>.tsx</code>, or <code>.vue</code> — or a built static folder. Whatever it just made.</p>
+        </div>
+        <div class="step reveal">
+          <div class="num">2</div>
+          <h3>Run one command</h3>
+          <p><code>conjure deploy</code> auto-wraps the component into a self-contained page and uploads it to your bucket.</p>
+        </div>
+        <div class="step reveal">
+          <div class="num">3</div>
+          <h3>Share the link</h3>
+          <p>You get a clean, public URL. No viewer login, no always-on server — it scales all the way to zero.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-tag">Why it feels different</div>
+        <h2>Small, sharp, and <em>entirely yours.</em></h2>
+        <p>Conjure is deliberately tiny — one Worker, one bucket, and a CLI any agent can call. Nothing to babysit, nothing to outgrow.</p>
+      </div>
+      <div class="features-grid">
+
+        <div class="feature reveal">
+          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></div>
+          <h3>One Worker <em>+ R2</em></h3>
+          <p>No database, no always-on server, nothing to keep warm. A single Cloudflare Worker fronts an R2 bucket and sits at roughly $0 while idle.</p>
+        </div>
+
+        <div class="feature reveal">
+          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3M7 9l2.5 2L7 13M13 13h4"/></svg></div>
+          <h3>Agent-native</h3>
+          <p>Drop one snippet into <code style="font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--cream-2);padding:2px 7px;border-radius:6px;border:1px solid var(--line);">AGENTS.md</code> and any coding agent can publish on its own — no human in the deploy loop.</p>
+        </div>
+
+        <div class="feature reveal">
+          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7L9 18l-5-5"/><path d="M16 3l4 4M3 21l4-4"/></svg></div>
+          <h3>Auto-wrap</h3>
+          <p>Hand it one <code style="font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--cream-2);padding:2px 7px;border-radius:6px;border:1px solid var(--line);">.tsx</code> or <code style="font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--cream-2);padding:2px 7px;border-radius:6px;border:1px solid var(--line);">.vue</code> and it becomes a runnable page — React 18 + Babel + Tailwind, or Vue 3, all self-contained.</p>
+        </div>
+
+        <div class="feature reveal">
+          <div class="ficon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h3>Yours to host</h3>
+          <p>Your Cloudflare account, your token, your data. Free and MIT-licensed, so you can read it, fork it, and run it forever.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <div class="brand">
+          <span class="mark" aria-hidden="true">
+            <svg viewBox="0 0 30 30" fill="none">
+              <path d="M15 2.5 L17.6 11.2 L26 12.5 L19.5 17.4 L21.4 26 L15 21.1 L8.6 26 L10.5 17.4 L4 12.5 L12.4 11.2 Z" fill="#CC785C" opacity="0.92"/>
+              <circle cx="15" cy="14.5" r="2.6" fill="#F4F1EA"/>
+            </svg>
+          </span>
+          Conjure
+        </div>
+        <p>The open-source way to turn an AI artifact into a live URL. <em style="font-family:'Fraunces',serif;">Your artifact, live in seconds.</em></p>
+      </div>
+      <div class="foot-cols">
+        <div class="foot-col">
+          <h4>Product</h4>
+          <a href="#how">How it works</a>
+          <a href="#features">Features</a>
+          <a href="#">CLI reference</a>
+          <a href="#">Changelog</a>
+        </div>
+        <div class="foot-col">
+          <h4>Resources</h4>
+          <a href="#">Documentation</a>
+          <a href="#">Self-host guide</a>
+          <a href="#">AGENTS.md snippet</a>
+          <a href="#">GitHub</a>
+        </div>
+        <div class="foot-col">
+          <h4>Project</h4>
+          <a href="#">MIT License</a>
+          <a href="#">Contributing</a>
+          <a href="#">Issues</a>
+          <a href="#">Discussions</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bot">
+      <span>© 2026 Conjure · Free &amp; open software, MIT.</span>
+      <div class="badges">
+        <span class="badge"><span class="bd"></span> self-hosted</span>
+        <span class="badge"><span class="bd"></span> scale-to-zero</span>
+        <span class="badge"><span class="bd"></span> one Worker + R2</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Nav border on scroll
+  var nav = document.getElementById('nav');
+  var onScroll = function(){ nav.classList.toggle('scrolled', window.scrollY > 8); };
+  onScroll(); window.addEventListener('scroll', onScroll, {passive:true});
+
+  // Reveal on scroll
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }});
+  }, {threshold:0.14, rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
+  // Copy command
+  var btn = document.getElementById('copyBtn');
+  var label = document.getElementById('copyLabel');
+  btn.addEventListener('click', function(){
+    var text = 'conjure deploy counter.tsx';
+    var done = function(){
+      btn.classList.add('done'); label.textContent = 'copied';
+      setTimeout(function(){ btn.classList.remove('done'); label.textContent = 'copy'; }, 1700);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(done);
+    } else {
+      var ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta);
+      ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); done();
+    }
+  });
+</script>
+</body>
+</html>

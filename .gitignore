@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.dev.vars
+.wrangler/
+wrangler.toml.bak
+*.log
+.DS_Store
+coverage/
+.idea/
+.vscode/
+*.tsbuildinfo
+.gstack/
