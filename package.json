@@ -9,6 +9,8 @@
     "server"
   ],
   "scripts": {
+    "setup": "npm run build && (npm link --workspace cli || true) && node scripts/local-setup.mjs",
+    "predev": "node scripts/local-setup.mjs --quiet",
     "dev": "npm --workspace server run dev",
     "deploy": "npm --workspace server run deploy",
     "cjr": "npm --workspace cli run dev --",

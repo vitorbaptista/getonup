@@ -170,7 +170,13 @@ async function cmdDeploy(args: Args): Promise<void> {
     result = await api.deploy(url, token, { title: title || null, type, files });
   } catch (e) {
     const ae = e as api.ApiError;
-    if (ae.status === 401) err(`unauthorized — check your deploy token (cjr login).`);
+    if (ae.status === 401) {
+      const msg = (ae.data as { error?: string } | undefined)?.error;
+      // Distinguish "the server has no token configured" from "wrong CLI token".
+      err(msg && /disabled/i.test(msg)
+        ? `${msg} — for local dev run \`npm run setup\` (writes server/.dev.vars); in production use \`wrangler secret put CONJURE_DEPLOY_TOKEN\`.`
+        : `unauthorized — check your deploy token (run \`cjr login\`).`);
+    }
     err((e as Error).message);
   }
 

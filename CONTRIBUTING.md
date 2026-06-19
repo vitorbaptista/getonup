@@ -15,20 +15,17 @@ examples/ sample artifacts you can deploy/serve
 
 ```bash
 npm install
-npm run dev                 # wrangler dev — local server at http://localhost:8787
-npm test                    # CLI unit tests (wrap engine, serve, mcp)
-npm run typecheck           # both workspaces
-npm run build --workspace cli   # bundle the CLI to cli/dist/index.js
+npm run setup        # build + link the cjr CLI, write a local deploy token (server/.dev.vars)
+npm run dev          # wrangler dev — local server at http://localhost:8787 (no Cloudflare needed)
+npm test             # CLI unit tests (wrap engine, serve, mcp)
+npm run typecheck    # both workspaces
 ```
 
-Run the CLI from source without building: `npm --workspace cli run dev -- <args>`
-(e.g. `npm --workspace cli run dev -- serve examples/counter.tsx`).
-
-For a quick local loop, point the CLI at the dev server:
+`npm run setup` prints a ready-to-run `cjr login` line with the generated token. Then:
 
 ```bash
-export CONJURE_URL=http://localhost:8787 CONJURE_TOKEN=dev-local-token-abc123
-node cli/dist/index.js deploy examples/counter.tsx --open
+cjr deploy examples/counter.tsx --open      # or, without building/linking:
+npm run cjr -- deploy examples/counter.tsx  # runs the CLI from source via tsx
 ```
 
 ## Where things live

@@ -40,9 +40,37 @@ command line, on infrastructure you own:
 
 ---
 
-## Quickstart
+## Run it locally (no Cloudflare account)
 
-### 1. Host the server (≈ 5 minutes)
+`npm run dev` runs the entire server on your machine via Wrangler's local
+[miniflare](https://developers.cloudflare.com/workers/testing/miniflare/) storage — **no Cloudflare
+account, no login, no bucket to create.** Fastest way to try Conjure:
+
+```bash
+git clone https://github.com/YOUR_USERNAME/conjure.git && cd conjure
+npm install
+npm run setup        # builds + links the cjr CLI, writes a local deploy token, prints the next step
+npm run dev          # serves at http://localhost:8787  (Ctrl-C to stop)
+```
+
+`npm run setup` prints a ready-to-run `cjr login` line with your generated token. In a second
+terminal:
+
+```bash
+cjr login --url http://localhost:8787 --token <token-from-setup>
+cjr deploy examples/counter.tsx        # auto-wrapped React → http://localhost:8787/s/<id>
+cjr serve  examples/counter.tsx        # …or just preview it — no server, no token
+```
+
+That's the whole local stack. You skip everything in the Cloudflare quickstart below
+(`wrangler login`, `r2 bucket create`, `wrangler secret put`, `npm run deploy`) until you want a
+public URL. No `cjr` on your PATH? `npm run setup` links it; otherwise use `npm run cjr -- <args>`.
+
+---
+
+## Quickstart — deploy to a public URL
+
+### 1. Host the server on Cloudflare (≈ 5 minutes)
 
 You need a free [Cloudflare account](https://dash.cloudflare.com/sign-up) and
 [Node](https://nodejs.org) ≥ 20.
