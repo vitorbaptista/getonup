@@ -12,39 +12,38 @@ The **gallery** is the homepage: a single page linking to all fifteen.
 ![Gallery](docs/gallery.png)
 
 ```bash
-npm run dev        # http://localhost:8787  → the gallery, links to all fifteen
+npm run dev         # http://localhost:8787 → serves the committed gallery
+npm run demo        # (re)deploy all 15 + the gallery to your server and set the homepage
 ```
 
 ## Design systems (shadcn.io DESIGN.md)
 
-| Design | Source | Live (local) |
-|---|---|---|
-| Linear | `landings/linear.html` | /s/dwsgfkfp |
-| Vercel | `landings/vercel.html` | /s/s7xz56cf |
-| Stripe | `landings/stripe.html` | /s/n9i3egyy |
-| Supabase | `landings/supabase.html` | /s/74bhb7xg |
-| Raycast | `landings/raycast.html` | /s/8v7q8u4c |
-| GitHub | `landings/github.html` | /s/qa56h65n |
-| Cursor | `landings/cursor.html` | /s/ba3p7yka |
-| Notion | `landings/notion.html` | /s/b2bpvhxj |
-| Figma | `landings/figma.html` | /s/wi8ex9pa |
-| Hugging Face | `landings/huggingface.html` | /s/64n3a459 |
+| Design | Source |
+|---|---|
+| Linear | `landings/linear.html` |
+| Vercel | `landings/vercel.html` |
+| Stripe | `landings/stripe.html` |
+| Supabase | `landings/supabase.html` |
+| Raycast | `landings/raycast.html` |
+| GitHub | `landings/github.html` |
+| Cursor | `landings/cursor.html` |
+| Notion | `landings/notion.html` |
+| Figma | `landings/figma.html` |
+| Hugging Face | `landings/huggingface.html` |
 
 ## Originals
 
-| Design | Source | Live (local) |
-|---|---|---|
-| Midnight (house style) | `landings/midnight.html` | /s/32c7whv2 |
-| Scanini (`scanini.app`) | `landings/scanini.html` | /s/tunyekjr |
-| Shellshare (`shellshare.net`) | `landings/shellshare.html` | /s/y3ynsckc |
-| PostHog | `landings/posthog.html` | /s/4dtxiaem |
-| Claude | `landings/claude.html` | /s/gurjmsk7 |
+| Design | Source |
+|---|---|
+| Midnight (house style) | `landings/midnight.html` |
+| Scanini | `landings/scanini.html` |
+| Shellshare | `landings/shellshare.html` |
+| PostHog | `landings/posthog.html` |
+| Claude | `landings/claude.html` |
 
-Gallery: homepage `/` · also `/s/qrid9qrt`. Individual screenshots in
-[`docs/landings/`](./docs/landings).
-
-> IDs are local deploys (persisted in `.wrangler`). Cleared local state or a real Cloudflare
-> deploy gives new IDs — redeploy and the gallery links update.
+Run `npm run demo` to publish all fifteen + the gallery to your server, then open the homepage
+(`/`) to browse them live. Deploy IDs are assigned per-server at publish time, so they aren't
+listed here. Per-design screenshots are in [`docs/landings/`](./docs/landings).
 
 **Make one design the homepage** (instead of the gallery):
 

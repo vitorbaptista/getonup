@@ -4,8 +4,8 @@
 #   From a cloned repo:   ./install.sh
 #   (once published):     npm i -g conjure-live    # or: npx conjure-live
 #
-# Builds the CLI from this checkout and symlinks `conjure` into ~/.local/bin (override with
-# CONJURE_PREFIX). Requires Node.js >= 20.
+# Builds the CLI from this checkout and symlinks `cjr` (+ aliases) into ~/.local/bin (override
+# with CONJURE_PREFIX). Requires Node.js >= 20.
 set -e
 
 PREFIX="${CONJURE_PREFIX:-$HOME/.local/bin}"
@@ -30,13 +30,14 @@ npm run build --workspace cli --silent
 mkdir -p "$PREFIX"
 TARGET="$(cd cli && pwd)/dist/index.js"
 chmod +x "$TARGET"
-ln -sf "$TARGET" "$PREFIX/conjure"
+# Primary command is `cjr` (bare `conjure` collides with ImageMagick); also link the aliases.
+for name in cjr conjure-live conjure; do ln -sf "$TARGET" "$PREFIX/$name"; done
 
-echo "✓ installed: $PREFIX/conjure"
+echo "✓ installed: $PREFIX/cjr  (aliases: conjure-live, conjure)"
 case ":$PATH:" in
   *":$PREFIX:"*) ;;
   *) echo "  note: add $PREFIX to your PATH (e.g. in ~/.bashrc or ~/.zshrc):"
      echo "        export PATH=\"$PREFIX:\$PATH\"" ;;
 esac
 echo
-echo "Next: conjure login --url <your-server> --token <your-token>"
+echo "Next: cjr login --url <your-server> --token <your-token>"

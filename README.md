@@ -48,16 +48,17 @@ You need a free [Cloudflare account](https://dash.cloudflare.com/sign-up) and
 [Node](https://nodejs.org) ≥ 20.
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/conjure.git
+git clone https://github.com/YOUR_USERNAME/conjure.git   # your fork — no canonical public repo yet
 cd conjure
 npm install
 
 # create the R2 bucket the Worker stores deploys in
 npx --workspace server wrangler r2 bucket create conjure
 
-# set your deploy token (anything secret; the CLI uses it to publish)
-echo "CONJURE_DEPLOY_TOKEN=$(openssl rand -hex 32)" # copy this value
-npx --workspace server wrangler secret put CONJURE_DEPLOY_TOKEN   # paste it when prompted
+# set your deploy token — generate one, pipe ONLY the value into the secret, and save it
+TOKEN=$(openssl rand -hex 32)
+echo -n "$TOKEN" | npx --workspace server wrangler secret put CONJURE_DEPLOY_TOKEN
+echo "$TOKEN"   # this exact value is what you pass to `cjr login --token`
 
 # ship it
 npm run deploy
@@ -286,11 +287,13 @@ Datasette App once it needs a database.
 
 ## Landing page designs
 
-Five landing-page directions ship in [`landings/`](./landings) — Midnight, Scanini, Shellshare,
-PostHog, and Claude — plus a **gallery** that links to all of them (the current homepage). Every
-one was generated and then **deployed through Conjure's own CLI**, so they double as a live demo.
-See [`LANDINGS.md`](./LANDINGS.md) for the gallery and live URLs. Swap the homepage to a single
-design with `cp landings/<key>.html server/public/index.html`.
+Fifteen landing-page directions ship in [`landings/`](./landings) — ten built from real
+shadcn.io DESIGN.md systems plus five house originals (Midnight, Scanini, Shellshare, PostHog,
+Claude) — and a **gallery** that links to all of them (the current homepage). Every one was
+generated and then **deployed through Conjure's own CLI**, so they double as a live demo;
+regenerate the whole set against your server anytime with `npm run demo`. Swap the homepage to a
+single design with `cp landings/<key>.html server/public/index.html` (restore the gallery with
+`cp gallery/index.html server/public/index.html`). See [`LANDINGS.md`](./LANDINGS.md) for more.
 
 ## Development
 

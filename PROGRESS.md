@@ -10,7 +10,8 @@
   - `POST /api/deploy` (Bearer token, fail-closed), `GET /api/list`, `DELETE /api/deploy/:id`,
     `GET /api/health`, `GET /s/:id[/*]` (R2 serve + security headers), `GET /` landing.
   - Size/file caps, path-traversal rejection, content-type map, proper status codes, styled 404.
-  - Default homepage is the polished **Midnight** landing.
+  - Default homepage is the **gallery** (links to all 15 landings); regenerate with `npm run demo`,
+    or swap to one design via `cp landings/<key>.html server/public/index.html`.
 - **CLI** (`cli/` — `conjure`):
   - Command is **`cjr`** (`conjure` / `conjure-live` are aliases; bare `conjure` clashes with ImageMagick).
   - `login`, `deploy <file|dir|->`, **`serve`** (zero-config local hosting + auto-wrap + live-reload,
@@ -20,7 +21,7 @@
   - Docs cover **hosting alternatives**: GitHub Pages (simonw/tools style) and Datasette Apps.
   - **Auto-wrap engine**: HTML (full/fragment), React/JSX/TSX (React 18 + Babel + esm.sh import
     maps + Tailwind), Vue SFC (vue3-sfc-loader), plain JS. `</script>` escaping, error overlay.
-  - 10 unit tests pass; esbuild bundles to a single `dist/index.js`.
+  - Unit tests for the wrap engine, serve, and mcp pass; esbuild bundles to a single `dist/index.js`.
 - **Verified in a real browser** — deployed `counter.tsx`; React mounts, renders, interactive.
 - **Agent integration** — `AGENTS.md` snippet + `skills/conjure` Claude Code skill.
 - **Docs** — README (5-min self-host, CLI, security, hardening), PLAN, LANDINGS, this file.
@@ -30,6 +31,8 @@
   Claude). A **gallery** (`gallery/`) links to all 15 and is the homepage. Every page (and the
   gallery, a multi-file deploy) was **deployed through Conjure's own CLI**. Screenshots in
   `docs/landings/`, gallery in `docs/gallery.png`.
+- **Reproducible demo** — `npm run demo` (`scripts/publish-demo.mjs`) redeploys all 15 landings +
+  the gallery to your server and sets the homepage, so deploy IDs aren't hand-managed.
 
 ## Verified
 
@@ -40,6 +43,5 @@
 ## Roadmap (not blocking; ask anytime)
 
 - "Deploy to Cloudflare" one-click button (needs the repo public on GitHub).
-- MCP server exposing a `deploy_artifact` tool (CLI + skill already cover agents).
 - Single-binary packaging (`bun build --compile`) + `curl | sh` install.
 - Per-deploy subdomain isolation; optional D1 metadata index; browser paste UI.
