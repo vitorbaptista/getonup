@@ -138,8 +138,8 @@ See [`AGENTS.md`](./AGENTS.md) in this repo for a ready-to-copy block, and
 ### …or as an MCP server
 
 `cjr mcp` runs Conjure as an [MCP](https://modelcontextprotocol.io) server over stdio, exposing
-`deploy_artifact`, `build_artifact`, `list_deploys`, and `remove_deploy` as tools. Point any
-MCP-aware agent at it — no shelling out:
+`deploy_artifact`, `list_deploys`, and `remove_deploy` as tools. Point any MCP-aware agent at it —
+no shelling out:
 
 ```json
 {
@@ -231,7 +231,7 @@ Conjure serves untrusted, AI-generated code. The design keeps that safe:
 
 ## Hosting alternatives
 
-Conjure's own backend is one Cloudflare Worker + R2 (above). But the artifacts Conjure produces
+Conjure's own backend is one Cloudflare Worker + R2 (above). But the artifacts you host with it
 are just self-contained HTML, so you can host them other ways too — pick by what your artifacts
 actually need:
 
@@ -245,17 +245,17 @@ actually need:
 
 ### GitHub Pages — a repo of static HTML ([simonw/tools](https://github.com/simonw/tools) style)
 
-Keep your artifacts as self-contained HTML files in a Git repo and let GitHub Pages serve them.
-Each file becomes `youruser.github.io/repo/tool.html` (a `CNAME` adds a custom domain), and you
-can group them in folders. `cjr build` turns a bare component into a committable page:
+Conjure isn't the only way to host. Since your agent produces self-contained HTML, you can commit
+those files to a Git repo and let GitHub Pages serve them — each becomes
+`youruser.github.io/repo/tool.html` (a `CNAME` adds a custom domain), and you can group them in
+folders. Preview locally with `cjr serve` first, then:
 
 ```bash
-cjr build dashboard.tsx --out tools/dashboard.html    # wrap → one standalone file
-git -C tools add -A && git commit -m "add dashboard" && git push   # the push *is* the deploy
+git -C tools add dashboard.html && git commit -m "add dashboard" && git push   # the push *is* the deploy
 ```
 
-Zero infrastructure, free, fully Git-versioned, scales to zero — but **static only** (no upload
-API, no token, no dynamic routes). Ideal when your artifacts are pure client-side HTML/JS.
+Zero infrastructure, free, fully Git-versioned, scales to zero — but **static only** (no dynamic
+routes). Here Conjure isn't in the loop at all; GitHub Pages is the host.
 
 ### Datasette Apps — when an artifact needs real data
 

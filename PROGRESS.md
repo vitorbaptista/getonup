@@ -14,9 +14,9 @@
 - **CLI** (`cli/` — `conjure`):
   - Command is **`cjr`** (`conjure` / `conjure-live` are aliases; bare `conjure` clashes with ImageMagick).
   - `login`, `deploy <file|dir|->`, **`serve`** (zero-config local hosting + auto-wrap + live-reload,
-    no token/Cloudflare), **`build`** (wrap → a standalone HTML file, for GitHub Pages etc.), `list`,
+    no token/Cloudflare), `list`,
     `rm`, `open`, `whoami`, **`mcp`** (run as an MCP server for agents); flags `--json/--quiet/--open/--watch/--port/--out/--name/--type/--no-wrap/--no-tailwind`.
-  - **MCP server** (`cjr mcp`, stdio): `deploy_artifact` / `build_artifact` / `list_deploys` / `remove_deploy` tools.
+  - **MCP server** (`cjr mcp`, stdio): `deploy_artifact` / `list_deploys` / `remove_deploy` tools.
   - Docs cover **hosting alternatives**: GitHub Pages (simonw/tools style) and Datasette Apps.
   - **Auto-wrap engine**: HTML (full/fragment), React/JSX/TSX (React 18 + Babel + esm.sh import
     maps + Tailwind), Vue SFC (vue3-sfc-loader), plain JS. `</script>` escaping, error overlay.

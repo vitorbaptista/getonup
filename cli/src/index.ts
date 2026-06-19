@@ -1,4 +1,4 @@
-import { readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import { join, relative, sep, basename, extname } from "node:path";
 import { spawn } from "node:child_process";
 import { loadConfig, saveConfig } from "./config.js";
@@ -184,40 +184,6 @@ async function cmdDeploy(args: Args): Promise<void> {
   if (args.flags.open) openInBrowser(result!.url);
 }
 
-async function cmdBuild(args: Args): Promise<void> {
-  const target = args._[0];
-  if (!target) err("usage: cjr build <file|-> [--out <path>] [--type html|react|vue|js] [--no-wrap]");
-  const noWrap = args.flags["no-wrap"] === true || args.flags.wrap === false;
-  const tailwind = args.flags["no-tailwind"] === true ? false : true;
-  let content: string;
-  let name = "artifact";
-  if (target === "-") {
-    content = await readStdin();
-    if (!content.trim()) err("nothing on stdin");
-  } else {
-    let s;
-    try {
-      s = await stat(target);
-    } catch {
-      err(`no such file: ${target}`);
-    }
-    if (s!.isDirectory()) err("build is for a single file; a folder is already static — copy it as-is");
-    content = await readFile(target, "utf8");
-    name = basename(target).replace(/\.[^.]+$/, "");
-  }
-  const type = (args.flags.type as ArtifactType) || detectType(target === "-" ? "stdin" : target, content);
-  const html = noWrap ? content : wrapToHtml(content, type, { title: name, tailwind });
-  const out = args.flags.out as string | undefined;
-  if (out) {
-    await writeFile(out, html, "utf8");
-    if (!args.flags.quiet) {
-      process.stderr.write(c.green("✓") + ` wrote ${out} ${c.dim(`(${type}, ${(Buffer.byteLength(html) / 1024).toFixed(1)} KB)`)}\n`);
-    }
-  } else {
-    process.stdout.write(html);
-  }
-}
-
 async function cmdServe(args: Args): Promise<void> {
   const opts = {
     port: args.flags.port ? Number(args.flags.port) : undefined,
@@ -295,7 +261,6 @@ ${c.bold("Usage")}
   cjr deploy <file|dir|->   [--name <title>] [--type html|react|vue|js|static]
                                 [--no-wrap] [--no-tailwind] [--open] [--json] [--quiet]
   cjr serve <file|dir|->    [--port N] [--host H] [--open] [--watch] [--no-wrap]   ${c.dim("# local preview, no deploy")}
-  cjr build <file|->        [--out FILE] [--no-wrap]   ${c.dim("# wrap → a standalone .html (for GitHub Pages, etc.)")}
   cjr list
   cjr open <id|url>
   cjr rm <id>
@@ -308,7 +273,6 @@ ${c.bold("Examples")}
   cat art.html | cjr deploy - --name demo
   cjr deploy ./dist            ${c.dim("# a built static site (needs index.html)")}
   cjr serve counter.tsx --open --watch   ${c.dim("# instant local preview, live reload, no deploy")}
-  cjr build counter.tsx --out counter.html  ${c.dim("# wrap → a single static file to commit anywhere")}
 
 Config lives in ~/.config/conjure/config.json, or env CONJURE_URL / CONJURE_TOKEN.
 `);
@@ -323,7 +287,6 @@ async function main(): Promise<void> {
     case "login": return cmdLogin(args);
     case "deploy": case "up": case "push": return cmdDeploy(args);
     case "serve": case "preview": return cmdServe(args);
-    case "build": return cmdBuild(args);
     case "mcp": return runMcp();
     case "list": case "ls": return cmdList();
     case "rm": case "delete": case "remove": return cmdRm(args);

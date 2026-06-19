@@ -9,21 +9,10 @@ test("initialize returns Conjure server info and echoes protocolVersion", async 
   assert.ok(r?.result.capabilities.tools);
 });
 
-test("tools/list advertises the four tools", async () => {
+test("tools/list advertises the three hosting tools", async () => {
   const r = await respond({ jsonrpc: "2.0", id: 2, method: "tools/list" });
   const names = r?.result.tools.map((t: any) => t.name).sort();
-  assert.deepEqual(names, ["build_artifact", "deploy_artifact", "list_deploys", "remove_deploy"]);
-});
-
-test("tools/call build_artifact wraps and returns standalone HTML", async () => {
-  const r = await respond({
-    jsonrpc: "2.0",
-    id: 3,
-    method: "tools/call",
-    params: { name: "build_artifact", arguments: { content: "export default () => <h1>hi</h1>" } },
-  });
-  assert.equal(r?.result.isError, false);
-  assert.match(r?.result.content[0].text, /type="importmap"/);
+  assert.deepEqual(names, ["deploy_artifact", "list_deploys", "remove_deploy"]);
 });
 
 test("notifications get no reply", async () => {

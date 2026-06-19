@@ -3,7 +3,7 @@
  *
  * Lets any MCP-aware agent (Claude Code, Cursor, …) publish artifacts as tools, without
  * shelling out to the CLI. Hand-rolled minimal JSON-RPC 2.0 (newline-delimited) so the CLI
- * stays dependency-free. Tools: deploy_artifact, build_artifact, list_deploys, remove_deploy.
+ * stays dependency-free. Tools: deploy_artifact, list_deploys, remove_deploy.
  *
  * Configure in an agent (env carries the server + token):
  *   { "mcpServers": { "conjure": { "command": "cjr", "args": ["mcp"],
@@ -105,20 +105,6 @@ const TOOLS = [
     },
   },
   {
-    name: "build_artifact",
-    description:
-      "Wrap an artifact into a single self-contained HTML document and return it (no deploy, no server needed). Useful for committing to static hosts like GitHub Pages. Pass `content`.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        content: { type: "string", description: "Artifact source code." },
-        type: { type: "string", enum: ["html", "react", "vue", "js"], description: "Override auto-detection." },
-        name: { type: "string", description: "Title for the page." },
-      },
-      required: ["content"],
-    },
-  },
-  {
     name: "list_deploys",
     description: "List artifacts published to the configured Conjure server.",
     inputSchema: { type: "object", properties: {} },
@@ -131,12 +117,7 @@ const TOOLS = [
 ];
 
 async function callTool(name: string, args: any): Promise<{ content: { type: string; text: string }[]; isError: boolean }> {
-  if (name === "build_artifact") {
-    const { files } = await collect({ content: args?.content, type: args?.type, name: args?.name });
-    return toolResult(files[0].content);
-  }
-
-  // The remaining tools need a configured server.
+  // All tools need a configured server.
   const { url, token } = await loadConfig();
   if (!url) {
     return toolResult(
