@@ -143,44 +143,47 @@ function tailwindTag(opts: WrapOptions): string {
 // React
 // ---------------------------------------------------------------------------
 
-/** Locate the real top-level default export with a parser — so `export default` text inside
- *  strings, comments, template literals or JSX is never matched — and rewrite it to a global we
- *  can mount. Handles `export default X` and the local aggregate `export { X as default }`
- *  (siblings preserved); leaves re-exports (`… from "x"`) untouched. If the source can't be
- *  parsed, it's returned unchanged and the in-browser Babel surfaces the syntax error. */
-function captureDefaultExport(code: string): string {
-  let body: any[];
+/** Prepare a React/JSX/TSX artifact for in-browser Babel: capture the real top-level default
+ *  export into a global we can mount, and inject `import React` when the source doesn't already
+ *  import it. Both decisions use a parser (typescript+jsx) — never text scanning — so
+ *  `export default` / `import React` text inside strings, comments, templates or JSX is ignored.
+ *  Handles `export default <expr|decl>` (parenthesized included) and the local aggregate
+ *  `export { X as default }` (siblings preserved); leaves re-exports (`… from "x"`) untouched. */
+function transformReact(code: string): string {
+  let body: any[] | null = null;
   try {
     body = (parse(code, { sourceType: "module", plugins: ["typescript", "jsx"], errorRecovery: true }) as any).program.body;
   } catch {
-    return code;
+    body = null;
   }
+  if (!body) {
+    // Unparseable: leave the source for the in-browser Babel to report; best-effort React inject.
+    const has = /(^|[\n;])\s*import\s+(\*\s+as\s+)?React[\s,]/.test(code);
+    return (has ? "" : `import React from "react";\n`) + code;
+  }
+
+  let importsReact = false;
   const edits: { start: number; end: number; text: string }[] = [];
   for (const node of body) {
-    if (node.type === "ExportDefaultDeclaration") {
-      // Replace just the `export default ` keyword span; the declaration becomes the assignment's
-      // RHS (a named function/class declaration is valid as a function/class expression there).
-      edits.push({ start: node.start, end: node.declaration.start, text: "window.__conjure_default = " });
+    if (node.type === "ImportDeclaration" && node.source.value === "react") {
+      if (node.specifiers.some((s: any) => s.type === "ImportDefaultSpecifier" || s.type === "ImportNamespaceSpecifier")) importsReact = true;
+    } else if (node.type === "ExportDefaultDeclaration") {
+      // Replace the whole statement and slice the declaration by its own (balanced) span, so a
+      // parenthesized expression like `export default (() => <i/>)` leaves no stray `)`.
+      const d = node.declaration;
+      edits.push({ start: node.start, end: node.end, text: `window.__conjure_default = ${code.slice(d.start, d.end)};` });
     } else if (node.type === "ExportNamedDeclaration" && !node.source) {
       const def = node.specifiers.find((s: any) => s.type === "ExportSpecifier" && s.exported.name === "default");
       if (!def) continue;
       const rest = node.specifiers
         .filter((s: any) => s !== def && s.type === "ExportSpecifier")
         .map((s: any) => (s.local.name === s.exported.name ? s.local.name : `${s.local.name} as ${s.exported.name}`));
-      const text = `window.__conjure_default = ${def.local.name};` + (rest.length ? ` export { ${rest.join(", ")} };` : "");
-      edits.push({ start: node.start, end: node.end, text });
+      edits.push({ start: node.start, end: node.end, text: `window.__conjure_default = ${def.local.name};` + (rest.length ? ` export { ${rest.join(", ")} };` : "") });
     }
   }
   edits.sort((a, b) => b.start - a.start); // apply right-to-left so offsets stay valid
   for (const e of edits) code = code.slice(0, e.start) + e.text + code.slice(e.end);
-  return code;
-}
-
-function transformReact(code: string): string {
-  const hasReactDefaultImport = /import\s+React(\s|,)/.test(code);
-  const out = captureDefaultExport(code);
-  const prelude = hasReactDefaultImport ? "" : `import React from "react";\n`;
-  return prelude + out;
+  return (importsReact ? "" : `import React from "react";\n`) + code;
 }
 
 function wrapReact(code: string, opts: WrapOptions): string {

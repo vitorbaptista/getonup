@@ -96,6 +96,21 @@ test("react wrap ignores `export default` inside JSX text", () => {
   assert.match(out, /export default nope/); // JSX text preserved, not rewritten
 });
 
+test("react wrap handles a parenthesized default export with no stray paren", () => {
+  const out = wrapToHtml("export default (() => <h1>hi</h1>);", "react");
+  assert.match(out, /window\.__conjure_default = \(\) => <h1>hi<\/h1>;/);
+  assert.doesNotMatch(out, /<\/h1>\)\s*;/); // the original outer parens didn't leak through
+});
+
+test("react wrap detects React imports via the AST, not snippet text", () => {
+  // genuinely imports React → not injected a second time
+  const a = wrapToHtml('import React from "react";\nexport default function App(){ return <div/>; }', "react");
+  assert.equal((a.match(/import React from "react"/g) || []).length, 1);
+  // only *mentions* import React inside JSX text → still injected (the component needs it)
+  const b = wrapToHtml('function App(){ return <pre>import React from "react"</pre>; }\nexport default App;', "react");
+  assert.ok((b.match(/import React from "react"/g) || []).length >= 2);
+});
+
 test("react wrap injects React import when missing", () => {
   const out = wrapToHtml("export default () => <div/>", "react");
   assert.match(out, /import React from "react";/);
