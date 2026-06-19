@@ -1,65 +1,76 @@
 # Conjure — landing page designs
 
-Four landing-page directions for Conjure, each a complete self-contained HTML file. They were
-**generated in parallel and then deployed through Conjure's own CLI** to the local server — so
-this page is itself a demo of the product (an AI artifact → a live URL, one command).
+Five landing-page directions for Conjure, each a complete self-contained HTML file in
+[`landings/`](./landings). They were **generated and then deployed through Conjure's own CLI** —
+so this whole thing is a live demo of the product (an AI artifact → a live URL, one command).
 
-The polished **Midnight** direction is the current default homepage (`server/public/index.html`).
-To switch the homepage to any other option:
+A **gallery** ties them together: it's a single page (itself a multi-file deploy: index + five
+thumbnails) that links to every design. It's the current homepage.
 
-```bash
-cp landings/<key>.html server/public/index.html   # then redeploy / restart wrangler dev
-```
+![Gallery](docs/gallery.png)
 
 ## View them live
 
-Start the server and open the URLs (IDs are stable — they persist in local R2):
-
 ```bash
-npm run dev        # http://localhost:8787  (the Midnight design is the homepage)
+npm run dev        # http://localhost:8787  → the gallery, with links to all five
 ```
 
-| Design | Source | Live (local) |
+| Page | Source | Live (local) |
 |---|---|---|
-| Midnight (house style) | `landings/midnight.html` | http://localhost:8787/s/g8ykptg5 |
-| PostHog style | `landings/posthog.html` | http://localhost:8787/s/aig7n3wd |
-| Claude style | `landings/claude.html` | http://localhost:8787/s/rfgck3dn |
-| Studio minimal | `landings/studio.html` | http://localhost:8787/s/f46sq2w9 |
+| **Gallery** (homepage) | `gallery/` | http://localhost:8787/ · /s/xr8q6ykn |
+| Midnight (house style) | `landings/midnight.html` | /s/32c7whv2 |
+| Scanini | `landings/scanini.html` | /s/tunyekjr |
+| Shellshare | `landings/shellshare.html` | /s/y3ynsckc |
+| PostHog | `landings/posthog.html` | /s/4dtxiaem |
+| Claude | `landings/claude.html` | /s/gurjmsk7 |
 
-If the IDs ever change (e.g. you cleared `.wrangler`), just redeploy them:
+> IDs are from local deploys (they persist in `.wrangler`). If you clear local state or deploy
+> to real Cloudflare, redeploy and the gallery links update accordingly:
+> ```bash
+> CONJURE_URL=http://localhost:8787 CONJURE_TOKEN=dev-local-token-abc123 \
+>   node cli/dist/index.js deploy landings/midnight.html --name "Conjure"
+> ```
+
+**Make a single design the homepage** (instead of the gallery):
 
 ```bash
-CONJURE_URL=http://localhost:8787 CONJURE_TOKEN=dev-local-token-abc123 \
-  node cli/dist/index.js deploy landings/midnight.html --name "Conjure"
+cp landings/<key>.html server/public/index.html      # midnight | scanini | shellshare | posthog | claude
+# to restore the gallery as the homepage:
+cp gallery/index.html server/public/index.html && cp gallery/thumbs/*.png server/public/thumbs/
 ```
 
 ---
 
 ## 1. Midnight — the Conjure house style 🌌
 
-Deep near-black canvas, violet→cyan ambient glow, glassy panels, a blinking-caret terminal,
-"materialize" reveals. Premium and a little magical. **This is the default.**
+Deep near-black, violet→cyan ambient glow, glassy panels, a blinking-caret terminal,
+"materialize" reveals. Premium and a little magical.
 
-![Midnight design](docs/landings/midnight.png)
+![Midnight](docs/landings/midnight.png)
 
-## 2. PostHog style — bold, playful, dev-native 🟠
+## 2. Scanini — `scanini.app` style ◼︎
 
-Cream canvas, thick black sticker-cards, coral + blue + yellow accents, monospace, doodle
-energy, hard-edged feature grid. Confident and fun.
+Cream paper, a huge Boldonse display serif with a red italic accent, sticker motifs, a dark
+stats band, an auto-scrolling marquee, and a giant outlined "CONJURE" wordmark.
 
-![PostHog design](docs/landings/posthog.png)
+![Scanini](docs/landings/scanini.png)
 
-## 3. Claude style — warm, editorial, calm ☕️
+## 3. Shellshare — `shellshare.net` style ▕
 
-Warm cream, serif display with italic terracotta accents, generous whitespace, soft and
-human. Reads like a calm, well-made object.
+Minimal hacker-docs: white, a monospace wordmark, a spaced "LIVE ARTIFACT HOSTING" tagline,
+the deploy command as a pill, dark terminal blocks, and a tidy FAQ.
 
-![Claude design](docs/landings/claude.png)
+![Shellshare](docs/landings/shellshare.png)
 
-## 4. Studio minimal — refined Swiss/editorial ◾️
+## 4. PostHog — bold, playful, dev-native 🟠
 
-_(My read of the "Scanini" cue — point me at the real reference if I guessed wrong.)_ Near-
-monochrome, oversized display type, strict grid, a single electric-blue accent, gallery-grade
-restraint.
+Cream canvas, thick black sticker-cards, coral + blue + yellow accents, monospace, hard-edged
+feature grid. Confident and fun.
 
-![Studio design](docs/landings/studio.png)
+![PostHog](docs/landings/posthog.png)
+
+## 5. Claude — warm, editorial, calm ☕️
+
+Warm cream, serif display with italic terracotta accents, generous whitespace, soft and human.
+
+![Claude](docs/landings/claude.png)

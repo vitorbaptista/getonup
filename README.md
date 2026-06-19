@@ -207,11 +207,11 @@ Conjure serves untrusted, AI-generated code. The design keeps that safe:
 
 ## Landing page designs
 
-Four landing-page directions ship in [`landings/`](./landings) — Midnight (the house style and
-default homepage), PostHog, Claude, and Studio-minimal. They were generated and then **deployed
-through Conjure's own CLI**, so they double as a live demo. See [`LANDINGS.md`](./LANDINGS.md)
-for the gallery and live URLs. Swap the homepage with
-`cp landings/<key>.html server/public/index.html`.
+Five landing-page directions ship in [`landings/`](./landings) — Midnight, Scanini, Shellshare,
+PostHog, and Claude — plus a **gallery** that links to all of them (the current homepage). Every
+one was generated and then **deployed through Conjure's own CLI**, so they double as a live demo.
+See [`LANDINGS.md`](./LANDINGS.md) for the gallery and live URLs. Swap the homepage to a single
+design with `cp landings/<key>.html server/public/index.html`.
 
 ## Development
 
