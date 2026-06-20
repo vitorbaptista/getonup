@@ -24,6 +24,13 @@ export interface ApiError extends Error {
   data?: unknown;
 }
 
+/** Cloudflare Access service-token credentials, sent so a non-interactive client (CLI/agent/CI)
+ *  gets past an Access-protected origin at the edge. See docs/SELF-HOSTING.md. */
+export interface Access {
+  clientId: string;
+  clientSecret: string;
+}
+
 function base(url: string): string {
   return url.replace(/\/+$/, "");
 }
@@ -33,9 +40,14 @@ async function call(
   token: string | undefined,
   path: string,
   init: RequestInit,
+  access?: Access,
 ): Promise<any> {
   const headers: Record<string, string> = { ...(init.headers as Record<string, string>) };
   if (token) headers["authorization"] = `Bearer ${token}`;
+  if (access) {
+    headers["cf-access-client-id"] = access.clientId;
+    headers["cf-access-client-secret"] = access.clientSecret;
+  }
 
   let res: Response;
   try {
@@ -63,22 +75,22 @@ async function call(
   return data;
 }
 
-export function deploy(url: string, token: string | undefined, body: DeployBody): Promise<DeployResult> {
+export function deploy(url: string, token: string | undefined, body: DeployBody, access?: Access): Promise<DeployResult> {
   return call(url, token, "/api/deploy", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
-  });
+  }, access);
 }
 
-export function list(url: string, token: string | undefined): Promise<{ deploys: any[] }> {
-  return call(url, token, "/api/list", { method: "GET" });
+export function list(url: string, token: string | undefined, access?: Access): Promise<{ deploys: any[] }> {
+  return call(url, token, "/api/list", { method: "GET" }, access);
 }
 
-export function remove(url: string, token: string | undefined, id: string): Promise<any> {
-  return call(url, token, `/api/deploy/${encodeURIComponent(id)}`, { method: "DELETE" });
+export function remove(url: string, token: string | undefined, id: string, access?: Access): Promise<any> {
+  return call(url, token, `/api/deploy/${encodeURIComponent(id)}`, { method: "DELETE" }, access);
 }
 
-export function health(url: string): Promise<any> {
-  return call(url, undefined, "/api/health", { method: "GET" });
+export function health(url: string, access?: Access): Promise<any> {
+  return call(url, undefined, "/api/health", { method: "GET" }, access);
 }

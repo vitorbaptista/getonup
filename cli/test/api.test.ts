@@ -12,6 +12,20 @@ function stubFetch(status: number, body: string, contentType = "text/plain"): ()
   };
 }
 
+// Capture the headers api.call sends, so we can assert auth/Access wiring.
+function captureFetch(): { headers: () => Record<string, string>; restore: () => void } {
+  const orig = globalThis.fetch;
+  let seen: Record<string, string> = {};
+  (globalThis as any).fetch = async (_url: string, init: RequestInit) => {
+    seen = (init.headers as Record<string, string>) || {};
+    return new Response(JSON.stringify({ id: "x", url: "u", files: [], bytes: 0 }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+  return { headers: () => seen, restore: () => { (globalThis as any).fetch = orig; } };
+}
+
 test("a non-JSON HTML error body collapses to a status, not the dumped page", async () => {
   const restore = stubFetch(500, "<html><body>" + "x".repeat(1000) + "</body></html>", "text/html");
   try {
@@ -48,5 +62,30 @@ test("a JSON error surfaces the error field", async () => {
     });
   } finally {
     restore();
+  }
+});
+
+test("an Access service token is sent as CF-Access-Client-* headers", async () => {
+  const cap = captureFetch();
+  try {
+    await deploy("https://x.example", "tok", { files: [] }, { clientId: "cid.access", clientSecret: "csec" });
+    const h = cap.headers();
+    assert.equal(h["authorization"], "Bearer tok");
+    assert.equal(h["cf-access-client-id"], "cid.access");
+    assert.equal(h["cf-access-client-secret"], "csec");
+  } finally {
+    cap.restore();
+  }
+});
+
+test("no Access token → no CF-Access-Client-* headers", async () => {
+  const cap = captureFetch();
+  try {
+    await deploy("https://x.example", "tok", { files: [] });
+    const h = cap.headers();
+    assert.equal(h["cf-access-client-id"], undefined);
+    assert.equal(h["cf-access-client-secret"], undefined);
+  } finally {
+    cap.restore();
   }
 });

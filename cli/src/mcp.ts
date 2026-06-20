@@ -11,7 +11,7 @@
  */
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, relative, sep, extname, basename } from "node:path";
-import { loadConfig } from "./config.js";
+import { loadConfig, resolveAccess } from "./config.js";
 import * as api from "./api.js";
 import { detectType, wrapToHtml, type ArtifactType } from "./wrap.js";
 
@@ -118,21 +118,23 @@ const TOOLS = [
 
 async function callTool(name: string, args: any): Promise<{ content: { type: string; text: string }[]; isError: boolean }> {
   // All tools need a configured server.
-  const { url, token } = await loadConfig();
+  const cfg = await loadConfig();
+  const { url, token } = cfg;
   if (!url) {
     return toolResult(
       "getonup is not configured. Set GETONUP_URL (and GETONUP_TOKEN) in this MCP server's env, or run `getonup login` first.",
       true,
     );
   }
+  const access = resolveAccess(cfg);
 
   if (name === "deploy_artifact") {
     const { files, type, title } = await collect(args || {});
-    const r = await api.deploy(url, token, { title, type, files });
+    const r = await api.deploy(url, token, { title, type, files }, access);
     return toolResult(`Deployed. Live URL: ${r.url}\nid: ${r.id} · files: ${r.files.length} · ${r.bytes} bytes`);
   }
   if (name === "list_deploys") {
-    const { deploys } = await api.list(url, token);
+    const { deploys } = await api.list(url, token, access);
     if (!deploys.length) return toolResult("No deploys yet.");
     return toolResult(
       deploys.map((d: any) => `${d.id}  ${d.type || "static"}  ${d.title || ""}  →  ${url.replace(/\/+$/, "")}/s/${d.id}`).join("\n"),
@@ -140,7 +142,7 @@ async function callTool(name: string, args: any): Promise<{ content: { type: str
   }
   if (name === "remove_deploy") {
     if (!args?.id) return toolResult("missing `id`", true);
-    const r = await api.remove(url, token, String(args.id));
+    const r = await api.remove(url, token, String(args.id), access);
     return toolResult(`Removed ${args.id} (${r.files} file(s)).`);
   }
   return toolResult(`unknown tool: ${name}`, true);

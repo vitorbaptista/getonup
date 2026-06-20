@@ -7,11 +7,21 @@ Configuration is read from `~/.config/getonup/config.json` (written by `getonup 
 `GETONUP_URL` / `GETONUP_TOKEN` environment variables, which take precedence (handy for CI and
 agents). `deploy` and `serve` print the live URL as the last line of stdout.
 
+If your instance sits behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/),
+also set `GETONUP_ACCESS_CLIENT_ID` / `GETONUP_ACCESS_CLIENT_SECRET` (a service token); the CLI
+sends them as `CF-Access-Client-Id` / `CF-Access-Client-Secret` so it gets past Access at the edge.
+See [Deploy behind Cloudflare Access](./SELF-HOSTING.md#deploy-behind-cloudflare-access-service-token).
+
 ## Commands
 
 ### `getonup login --url <server> --token <token>`
 Save the server URL + deploy token to `~/.config/getonup/config.json`. Sanity-checks that the
-server is reachable and warns if its deploy API is disabled.
+server is reachable and warns if its deploy API is disabled. For instances behind Cloudflare Access,
+add `--access-client-id <id> --access-client-secret <secret>` to store a service token too.
+`login` writes exactly what you pass — it's declarative, so re-run it with every flag you want kept
+(re-running with just `--url`/`--token` clears a previously stored Access token, the same way it
+would clear `--token`). To rotate one value without touching the rest, edit `config.json` or use the
+`GETONUP_*` env vars instead.
 
 ### `getonup deploy <file|dir|->`  ·  aliases: `up`, `push`
 Publish an artifact to a live URL.
