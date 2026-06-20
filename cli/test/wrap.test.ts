@@ -183,3 +183,41 @@ test("js wrap adds import map only when bare imports exist", () => {
   assert.doesNotMatch(wrapToHtml("alert(1)", "js"), /importmap/);
   assert.match(wrapToHtml("import confetti from 'canvas-confetti'; confetti()", "js"), /importmap/);
 });
+
+test("HTML fragments with self-closing tags are not misdetected as React", () => {
+  // Regression: a bare fragment with <br/>/<img/> used to detect as React and ship a blank
+  // page with a 'No default export' overlay instead of the markup.
+  assert.equal(detectType("stdin", "<p>hello <br/> world</p>"), "html");
+  assert.equal(detectType("stdin", "<p>hi <img src=x/> there</p>"), "html");
+  assert.equal(detectType("stdin", "<section><hr/><span>ok</span></section>"), "html");
+  assert.equal(detectType("stdin", "<br/>"), "html"); // even a lone void element, no wrapper
+  assert.equal(detectType("stdin", "<img src=x/>"), "html");
+});
+
+test("real bare-JSX (createRoot / export default) over stdin still detects as React", () => {
+  // Guards against reordering the html-markup branch ahead of looksReact, which would route a
+  // real React snippet to the bare-HTML shell (no mount) — a worse regression than the one above.
+  const src =
+    "function App(){ return <div className='x'>{1}</div> }\n" +
+    "createRoot(document.getElementById('root')).render(<App/>)";
+  assert.equal(detectType("stdin", src), "react");
+  assert.equal(detectType("stdin", "export default function App(){ return <main><br/></main> }"), "react");
+});
+
+test("non-runnable text/data files render in a viewer, never Babel", () => {
+  // Regression: .css/.json/.md fell through to a Babel module and threw a syntax error at runtime.
+  assert.equal(detectType("a.css", "body{color:red}"), "text");
+  assert.equal(detectType("data.json", '{"a":1}'), "text");
+  assert.equal(detectType("notes.xml", "<a>1</a>"), "text"); // .md/.markdown have their own renderer
+  assert.equal(detectType("c.yml", "a: 1"), "text");
+  const out = wrapToHtml("body { color: red; }", "text", { title: "styles.css" });
+  assert.match(out, /<!doctype html>/);
+  assert.match(out, /<pre>body \{ color: red; \}<\/pre>/);
+  assert.doesNotMatch(out, /text\/babel/);
+});
+
+test("text viewer escapes its content (no injection from the artifact)", () => {
+  const out = wrapToHtml("<script>alert(1)</script>", "text");
+  assert.doesNotMatch(out, /<script>alert\(1\)<\/script>/);
+  assert.match(out, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+});
