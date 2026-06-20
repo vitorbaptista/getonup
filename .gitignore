@@ -10,3 +10,6 @@ coverage/
 .vscode/
 *.tsbuildinfo
 .gstack/
+
+# Generated at publish time by cli's prepack script (copied from root README.md)
+cli/README.md
