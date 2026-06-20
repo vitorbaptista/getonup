@@ -1,6 +1,6 @@
 {
   "name": "getonup",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "getonup CLI — deploy any AI artifact (HTML, React, Vue, static folder) to a live URL on your self-hosted, scale-to-zero getonup server.",
   "type": "module",
   "bin": {

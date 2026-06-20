@@ -6,6 +6,22 @@ All notable changes to getonup are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-06-20
+
+### Added
+- **Live index homepage.** `/` is now an auto-generated, public index of every artifact published
+  to the instance — grouped by month, newest first, each linking to its live `/s/<id>` URL. Backed
+  by a new public `GET /api/index` endpoint (a trimmed, no-token projection; the token-gated
+  `GET /api/list` is unchanged). The CLI auto-derives a one-line description for each deploy from the
+  artifact's HTML (`<meta name="description">` → `<title>`) at deploy time and stores it in the
+  deploy metadata. See [docs/specs/2026-06-20-live-index-page.md](docs/specs/2026-06-20-live-index-page.md).
+
+### Changed
+- The homepage now lists **all** deploys publicly. Previously the host served a hand-curated demo
+  gallery and a deploy was discoverable only if you knew its `/s/<id>` URL; the index makes every
+  deploy on an instance visible. The original gallery is preserved as a design reference under
+  [`docs/mockups/`](docs/mockups). (Crawlers remain blocked instance-wide via the root `robots.txt`.)
+
 ## [0.4.0] — 2026-06-20
 
 ### Added
