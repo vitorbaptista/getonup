@@ -37,6 +37,11 @@ const ORIGINALS = [
   ["shellshare", "Shellshare ▕", "Minimal hacker-docs — white, monospace, terminal blocks."],
   ["posthog", "PostHog 🟠", "Bold and playful — cream sticker-cards, coral accent."],
   ["claude", "Claude ☕️", "Warm editorial — serif display, terracotta italics, calm."],
+  ["funkadelic", "Funkadelic 🕺", "Maximalist 70s funk — drenched oxblood, sunbursts, GET ON UP marquees."],
+  ["groovyhacker", "Groovy Hacker ▚", "Funk × terminal — warm CRT amber/magenta phosphor, scanlines, ASCII waves."],
+  ["pixelfunk", "Pixel Funk 👾", "16-bit funk game (ToeJam & Earl spirit) — pixel alien mascot, HUD, dithered palette."],
+  ["pixelhog", "Pixel Hog 🦔", "PostHog sticker style with pixel charm — pixel hedgehog, pixel icons, no game framing."],
+  ["shipit", "Ship It 🚀", "PostHog × 16-bit spaceship — your artifact blasts off to a live URL (ship it = deploy)."],
 ];
 
 const text = new Set(["html", "css", "js", "json", "svg", "txt", "map"]);
@@ -144,7 +149,7 @@ function gallery(sysCards, origCards) {
     <main class="wrap">
       <span class="badge"><span class="dot"></span> deployed through getonup itself</span>
       <h1>Pick a look for <span class="grad">getonup</span>.</h1>
-      <p class="lede">Landing-page directions, each a complete self-contained page deployed with <code>getonup deploy</code>. Ten are built in real <a href="https://www.shadcn.io/design" style="color:var(--cyan);text-decoration:none">shadcn.io DESIGN.md</a> systems; five are originals. Click any to see it live.</p>
+      <p class="lede">Landing-page directions, each a complete self-contained page deployed with <code>getonup deploy</code>. Ten are built in real <a href="https://www.shadcn.io/design" style="color:var(--cyan);text-decoration:none">shadcn.io DESIGN.md</a> systems; ten are originals. Click any to see it live.</p>
       <div class="sec-label"><h2>Design systems</h2><span>shadcn.io DESIGN.md</span><span class="rule"></span></div>
       <div class="grid">
 ${sysCards}

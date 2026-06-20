@@ -10,7 +10,7 @@
   - `POST /api/deploy` (Bearer token, fail-closed), `GET /api/list`, `DELETE /api/deploy/:id`,
     `GET /api/health`, `GET /s/:id[/*]` (R2 serve + security headers), `GET /` landing.
   - Size/file caps, path-traversal rejection, content-type map, proper status codes, styled 404.
-  - Default homepage is the **gallery** (links to all 15 landings); regenerate with `npm run demo`,
+  - Default homepage is the **gallery** (links to all 20 landings); regenerate with `npm run demo`,
     or swap to one design via `cp landings/<key>.html server/public/index.html`.
 - **CLI** (`cli/` — `getonup`):
   - Command is **`getonup`**.
@@ -25,13 +25,13 @@
 - **Verified in a real browser** — deployed `counter.tsx`; React mounts, renders, interactive.
 - **Agent integration** — `AGENTS.md` snippet + `skills/getonup` Claude Code skill.
 - **Docs** — README (5-min self-host, CLI, security, hardening), PLAN, LANDINGS, this file.
-- **15 landing-page designs** (`landings/`): **10 shadcn.io DESIGN.md systems** (Linear, Vercel,
+- **20 landing-page designs** (`landings/`): **10 shadcn.io DESIGN.md systems** (Linear, Vercel,
   Stripe, Supabase, Raycast, GitHub, Cursor, Notion, Figma, Hugging Face — each built from the
-  system's real fetched tokens) + **5 originals** (Midnight, Scanini, Shellshare, PostHog,
-  Claude). A **gallery** (`gallery/`) links to all 15 and is the homepage. Every page (and the
+  system's real fetched tokens) + **10 originals** (Midnight, Scanini, Shellshare, PostHog,
+  Claude, Funkadelic, Groovy Hacker, Pixel Funk, Pixel Hog, Ship It). A **gallery** (`gallery/`) links to all 20 and is the homepage. Every page (and the
   gallery, a multi-file deploy) was **deployed through getonup's own CLI**. Screenshots in
   `docs/landings/`, gallery in `docs/gallery.png`.
-- **Reproducible demo** — `npm run demo` (`scripts/publish-demo.mjs`) redeploys all 15 landings +
+- **Reproducible demo** — `npm run demo` (`scripts/publish-demo.mjs`) redeploys all 20 landings +
   the gallery to your server and sets the homepage, so deploy IDs aren't hand-managed.
 
 ## Verified
