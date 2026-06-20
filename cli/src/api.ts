@@ -8,6 +8,8 @@ export interface DeployFile {
 export interface DeployBody {
   id?: string;
   title?: string | null;
+  /** Auto-generated one-line summary (see cli/src/describe.ts); omitted when none was derived. */
+  description?: string | null;
   type?: string;
   files: DeployFile[];
 }

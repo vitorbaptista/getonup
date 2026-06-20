@@ -6,6 +6,7 @@ import * as api from "./api.js";
 import { parseArgs, type Args } from "./args.js";
 import { walkDir } from "./files.js";
 import { detectType, wrapToHtml, type ArtifactType } from "./wrap.js";
+import { describeHtml } from "./describe.js";
 import { serve } from "./serve.js";
 import { runMcp } from "./mcp.js";
 
@@ -116,6 +117,10 @@ async function cmdDeploy(args: Args): Promise<void> {
     }
   }
 
+  // Auto-derive a one-line description from the entry HTML (best-effort; undefined when none found).
+  const entry = files.find((f) => f.path === "index.html");
+  const description = entry && entry.encoding === "utf8" ? describeHtml(entry.content, title) : undefined;
+
   if (!quiet && !json) {
     const bytes = files.reduce((n, f) => n + Buffer.byteLength(f.content), 0);
     process.stderr.write(
@@ -125,7 +130,7 @@ async function cmdDeploy(args: Args): Promise<void> {
 
   let result: api.DeployResult;
   try {
-    result = await api.deploy(url, token, { id, title: title || null, type, files });
+    result = await api.deploy(url, token, { id, title: title || null, description, type, files });
   } catch (e) {
     const ae = e as api.ApiError;
     if (ae.status === 401) {

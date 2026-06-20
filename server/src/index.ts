@@ -2,7 +2,8 @@
  * getonup server — a single Cloudflare Worker.
  *
  *   POST   /api/deploy        (Bearer token)  -> store an artifact in R2, return { id, url }
- *   GET    /api/list          (Bearer token)  -> list deploys
+ *   GET    /api/list          (Bearer token)  -> list deploys (full metadata)
+ *   GET    /api/index         (public)        -> trimmed list of all deploys (the homepage's data)
  *   DELETE /api/deploy/:id    (Bearer token)  -> delete a deploy
  *   GET    /api/health                        -> liveness + capabilities
  *   GET    /s/:id[/*]                          -> serve a deployed artifact from R2 (public)
@@ -190,7 +191,7 @@ async function handleDeploy(req: Request, env: Env): Promise<Response> {
   // chunked requests carry no content-length and skip this — the per-file loop below is the hard cap.
   if (declared && declared > maxBytes * 2) return json({ error: "payload too large" }, 413);
 
-  let body: { id?: string; title?: string; type?: string; files?: UploadFile[] };
+  let body: { id?: string; title?: string; description?: string; type?: string; files?: UploadFile[] };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -240,6 +241,9 @@ async function handleDeploy(req: Request, env: Env): Promise<Response> {
   const meta = {
     id,
     title: (String(body.title ?? "").trim().slice(0, 200)) || null,
+    // An auto-generated one-line summary the CLI derives from the artifact (see cli/src/describe.ts).
+    // Surfaced on the public index; absent for older deploys, which the page falls back to synthesizing.
+    description: (String(body.description ?? "").trim().slice(0, 200)) || null,
     type: String(body.type ?? "static"),
     files: normalized.map((f) => f.path),
     bytes: total,
@@ -335,8 +339,8 @@ async function handleServe(url: URL, env: Env): Promise<Response> {
   return new Response(obj.body, { headers });
 }
 
-async function handleList(req: Request, env: Env): Promise<Response> {
-  if (!(await isAuthed(req, env))) return json({ error: "unauthorized" }, 401);
+/** Top-level deploy ids (R2 "directories"), paginated so it isn't capped at 1000. */
+async function listDeployIds(env: Env): Promise<string[]> {
   const ids: string[] = [];
   let cursor: string | undefined;
   do {
@@ -344,20 +348,45 @@ async function handleList(req: Request, env: Env): Promise<Response> {
     for (const p of page.delimitedPrefixes || []) ids.push(p.replace(/\/$/, ""));
     cursor = page.truncated ? page.cursor : undefined;
   } while (cursor);
-  const deploys: unknown[] = [];
+  return ids;
+}
+
+/** The parsed _meta.json for every deploy, newest first. Missing/malformed metas are skipped. */
+async function readMetas(env: Env): Promise<any[]> {
+  const ids = await listDeployIds(env);
+  const metas: any[] = [];
   await Promise.all(
     ids.map(async (id) => {
       const m = await env.BUCKET.get(`${id}/_meta.json`);
-      if (m) {
-        try {
-          deploys.push(await m.json());
-        } catch {
-          /* ignore malformed meta */
-        }
+      if (!m) return;
+      try {
+        metas.push(await m.json());
+      } catch {
+        /* ignore malformed meta */
       }
     }),
   );
-  deploys.sort((a: any, b: any) => String(b?.created_at || "").localeCompare(String(a?.created_at || "")));
+  metas.sort((a, b) => String(b?.created_at || "").localeCompare(String(a?.created_at || "")));
+  return metas;
+}
+
+async function handleList(req: Request, env: Env): Promise<Response> {
+  if (!(await isAuthed(req, env))) return json({ error: "unauthorized" }, 401);
+  return json({ deploys: await readMetas(env) });
+}
+
+/** Public, unauthenticated index of every deploy — the homepage's data source. Returns a trimmed
+ *  projection (never the file list) so it's safe to expose without a token. This is the one place
+ *  "all deploys are public" becomes real; see docs/specs/2026-06-20-live-index-page.md. */
+async function handleIndex(env: Env): Promise<Response> {
+  const deploys = (await readMetas(env)).map((m) => ({
+    id: m?.id ?? null,
+    title: m?.title ?? null,
+    description: m?.description ?? null,
+    type: m?.type ?? "static",
+    created_at: m?.created_at ?? null,
+    bytes: typeof m?.bytes === "number" ? m.bytes : null,
+  }));
   return json({ deploys });
 }
 
@@ -389,6 +418,7 @@ export default {
       }
       if (p === "/api/deploy" && req.method === "POST") return await handleDeploy(req, env);
       if (p === "/api/list" && req.method === "GET") return await handleList(req, env);
+      if (p === "/api/index" && req.method === "GET") return await handleIndex(env);
 
       const del = p.match(/^\/api\/deploy\/([^/]+)\/?$/);
       if (del && req.method === "DELETE") return await handleDelete(req, env, decodeURIComponent(del[1]));

@@ -7,11 +7,12 @@
 
 - **Monorepo** — npm workspaces (`cli`, `server`), MIT, `.gitignore`, `install.sh`, examples.
 - **Server** (`server/` — one Cloudflare Worker + R2):
-  - `POST /api/deploy` (Bearer token, fail-closed), `GET /api/list`, `DELETE /api/deploy/:id`,
-    `GET /api/health`, `GET /s/:id[/*]` (R2 serve + security headers), `GET /` landing.
+  - `POST /api/deploy` (Bearer token, fail-closed), `GET /api/list` (token), `GET /api/index`
+    (public), `DELETE /api/deploy/:id`, `GET /api/health`, `GET /s/:id[/*]` (R2 serve + security
+    headers), `GET /` live index.
   - Size/file caps, path-traversal rejection, content-type map, proper status codes, styled 404.
-  - Default homepage is the **gallery** (links to all 20 landings); regenerate with `npm run demo`,
-    or swap to one design via `cp landings/<key>.html server/public/index.html`.
+  - Default homepage is the **live index** — auto-generated from `GET /api/index`, listing every
+    deploy by month; swap to one design via `cp landings/<key>.html server/public/index.html`.
 - **CLI** (`cli/` — `getonup`):
   - Command is **`getonup`**.
   - `login`, `deploy <file|dir|->`, **`serve`** (zero-config local hosting + auto-wrap + live-reload,
@@ -28,11 +29,12 @@
 - **20 landing-page designs** (`landings/`): **10 shadcn.io DESIGN.md systems** (Linear, Vercel,
   Stripe, Supabase, Raycast, GitHub, Cursor, Notion, Figma, Hugging Face — each built from the
   system's real fetched tokens) + **10 originals** (Midnight, Scanini, Shellshare, PostHog,
-  Claude, Funkadelic, Groovy Hacker, Pixel Funk, Pixel Hog, Ship It). A **gallery** (`gallery/`) links to all 20 and is the homepage. Every page (and the
-  gallery, a multi-file deploy) was **deployed through getonup's own CLI**. Screenshots in
-  `docs/landings/`, gallery in `docs/gallery.png`.
-- **Reproducible demo** — `npm run demo` (`scripts/publish-demo.mjs`) redeploys all 20 landings +
-  the gallery to your server and sets the homepage, so deploy IDs aren't hand-managed.
+  Claude, Funkadelic, Groovy Hacker, Pixel Funk, Pixel Hog, Ship It). Every page was **deployed
+  through getonup's own CLI** and shows up on the live index. The original hand-built gallery is
+  preserved as a mockup in `docs/mockups/`. Screenshots in `docs/landings/`, gallery in
+  `docs/gallery.png`.
+- **Reproducible demo** — `npm run demo` (`scripts/publish-demo.mjs`) redeploys all 20 landings to
+  your server; they appear on the live index automatically, so deploy IDs aren't hand-managed.
 
 ## Verified
 

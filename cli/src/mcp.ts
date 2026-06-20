@@ -14,6 +14,7 @@ import { join, relative, sep, extname, basename } from "node:path";
 import { loadConfig } from "./config.js";
 import * as api from "./api.js";
 import { detectType, wrapToHtml, type ArtifactType } from "./wrap.js";
+import { describeHtml } from "./describe.js";
 
 const VERSION = "0.1.0";
 const TEXT_EXTS = new Set([
@@ -128,7 +129,9 @@ async function callTool(name: string, args: any): Promise<{ content: { type: str
 
   if (name === "deploy_artifact") {
     const { files, type, title } = await collect(args || {});
-    const r = await api.deploy(url, token, { title, type, files });
+    const entry = files.find((f) => f.path === "index.html");
+    const description = entry && entry.encoding === "utf8" ? describeHtml(entry.content, title) : undefined;
+    const r = await api.deploy(url, token, { title, type, files, description });
     return toolResult(`Deployed. Live URL: ${r.url}\nid: ${r.id} · files: ${r.files.length} · ${r.bytes} bytes`);
   }
   if (name === "list_deploys") {
