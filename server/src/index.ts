@@ -22,6 +22,10 @@ export interface Env {
   GETONUP_PUBLIC_URL?: string;
   MAX_BYTES?: string;
   MAX_FILES?: string;
+  /** Framing policy for served artifacts (tri-state): unset -> `X-Frame-Options: SAMEORIGIN`
+   *  (default); a value (e.g. `'self'`) -> `Content-Security-Policy: frame-ancestors <value>`;
+   *  empty string -> no framing headers (artifacts embeddable anywhere). */
+  GETONUP_FRAME_ANCESTORS?: string;
 }
 
 const VERSION = "0.1.0";
@@ -186,6 +190,7 @@ async function handleDeploy(req: Request, env: Env): Promise<Response> {
   for (const f of files) {
     const sp = safePath(f?.path ?? "");
     if (!sp) return json({ error: `invalid file path: ${String(f?.path)}` }, 400);
+    if (sp === "_meta.json") return json({ error: "reserved path: _meta.json" }, 400);
     if (sp === "index.html") hasIndex = true;
 
     let bytes: Uint8Array;
@@ -261,7 +266,7 @@ async function handleServe(url: URL, env: Env): Promise<Response> {
   else if (rest.endsWith("/")) rest += "index.html";
 
   const sp = safePath(rest);
-  if (!sp) return notFound();
+  if (!sp || sp === "_meta.json") return notFound(); // _meta.json is server-internal, never public
 
   let obj = await env.BUCKET.get(`${id}/${sp}`);
   // Soft SPA fallback: an extension-less path that isn't a real file serves the entry.
@@ -275,6 +280,11 @@ async function handleServe(url: URL, env: Env): Promise<Response> {
   // artifact has no host session to steal; these just reduce incidental risk.
   headers.set("x-content-type-options", "nosniff");
   headers.set("referrer-policy", "no-referrer");
+  // Framing policy (tri-state on GETONUP_FRAME_ANCESTORS): unset -> SAMEORIGIN; a value -> CSP
+  // frame-ancestors; "" -> no header (embeddable). Note: an absent env var is undefined, not "".
+  const fa = env.GETONUP_FRAME_ANCESTORS;
+  if (fa === undefined) headers.set("x-frame-options", "SAMEORIGIN");
+  else if (fa !== "") headers.set("content-security-policy", `frame-ancestors ${fa}`);
   headers.set("x-getonup-id", id);
   if (obj.httpEtag) headers.set("etag", obj.httpEtag);
 

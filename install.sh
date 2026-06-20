@@ -4,14 +4,14 @@
 #   From a cloned repo:   ./install.sh
 #   (once published):     npm i -g getonup    # or: npx getonup
 #
-# Builds the CLI from this checkout and symlinks `getonup` (+ aliases) into ~/.local/bin (override
-# with GETONUP_PREFIX). Requires Node.js >= 20.
+# Builds the CLI from this checkout and symlinks the `getonup` binary into ~/.local/bin (override
+# with GETONUP_PREFIX). Sub-commands like `up`/`ls` live inside it. Requires Node.js >= 22.18.
 set -e
 
 PREFIX="${GETONUP_PREFIX:-$HOME/.local/bin}"
 
 if ! command -v node >/dev/null 2>&1; then
-  echo "getonup needs Node.js >= 20 — install it from https://nodejs.org and re-run." >&2
+  echo "getonup needs Node.js >= 22.18 — install it from https://nodejs.org and re-run." >&2
   exit 1
 fi
 

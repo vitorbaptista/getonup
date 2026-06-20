@@ -1,18 +1,15 @@
-import { readFile, readdir, stat } from "node:fs/promises";
-import { join, relative, sep, basename, extname } from "node:path";
+import { readFile, stat } from "node:fs/promises";
+import { basename } from "node:path";
 import { spawn } from "node:child_process";
 import { loadConfig, saveConfig } from "./config.js";
 import * as api from "./api.js";
+import { parseArgs, type Args } from "./args.js";
+import { walkDir } from "./files.js";
 import { detectType, wrapToHtml, type ArtifactType } from "./wrap.js";
 import { serve } from "./serve.js";
 import { runMcp } from "./mcp.js";
 
 const VERSION = "0.1.0";
-
-const TEXT_EXTS = new Set([
-  "html", "htm", "css", "js", "mjs", "cjs", "json", "map", "svg", "txt", "md",
-  "xml", "csv", "ts", "tsx", "jsx", "vue", "webmanifest", "yml", "yaml",
-]);
 
 // ---- tiny output helpers ---------------------------------------------------
 const c = {
@@ -27,55 +24,10 @@ function err(msg: string): never {
   process.exit(1);
 }
 
-// ---- arg parsing (subcommand + simple flags) -------------------------------
-interface Args {
-  _: string[];
-  flags: Record<string, string | boolean>;
-}
-function parse(argv: string[]): Args {
-  const _: string[] = [];
-  const flags: Record<string, string | boolean> = {};
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a.startsWith("--")) {
-      const key = a.slice(2);
-      const eq = key.indexOf("=");
-      if (eq >= 0) flags[key.slice(0, eq)] = key.slice(eq + 1);
-      else if (i + 1 < argv.length && !argv[i + 1].startsWith("-")) flags[key] = argv[++i];
-      else flags[key] = true;
-    } else if (a === "-") {
-      _.push("-");
-    } else {
-      _.push(a);
-    }
-  }
-  return { _, flags };
-}
-
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];
   for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
   return Buffer.concat(chunks).toString("utf8");
-}
-
-function fileToDeploy(relPath: string, buf: Buffer): api.DeployFile {
-  const ext = extname(relPath).slice(1).toLowerCase();
-  if (TEXT_EXTS.has(ext)) {
-    return { path: relPath, content: buf.toString("utf8"), encoding: "utf8" };
-  }
-  return { path: relPath, content: buf.toString("base64"), encoding: "base64" };
-}
-
-async function walkDir(dir: string, baseDir: string, out: api.DeployFile[]): Promise<void> {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    if (entry.name === ".git" || entry.name === "node_modules" || entry.name === ".DS_Store") continue;
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) await walkDir(full, baseDir, out);
-    else if (entry.isFile()) {
-      const rel = relative(baseDir, full).split(sep).join("/");
-      out.push(fileToDeploy(rel, await readFile(full)));
-    }
-  }
 }
 
 function openInBrowser(url: string): void {
@@ -246,9 +198,9 @@ async function cmdOpen(args: Args): Promise<void> {
   const { url } = await loadConfig();
   const idOrUrl = args._[0];
   if (!idOrUrl) err("usage: getonup open <id|url>");
-  const full = /^https?:\/\//.test(idOrUrl)
-    ? idOrUrl
-    : `${(url || "").replace(/\/+$/, "")}/s/${idOrUrl}`;
+  const isUrl = /^https?:\/\//.test(idOrUrl);
+  if (!isUrl && !url) err("not configured. Run: getonup login --url <server> --token <token>  (or pass a full URL)");
+  const full = isUrl ? idOrUrl : `${url!.replace(/\/+$/, "")}/s/${idOrUrl}`;
   openInBrowser(full);
   process.stdout.write(full + "\n");
 }
@@ -287,7 +239,7 @@ Config lives in ~/.config/getonup/config.json, or env GETONUP_URL / GETONUP_TOKE
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const cmd = argv[0];
-  const args = parse(argv.slice(1));
+  const args = parseArgs(argv.slice(1));
 
   switch (cmd) {
     case "login": return cmdLogin(args);

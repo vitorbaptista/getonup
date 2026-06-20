@@ -14,7 +14,7 @@
 import { parse } from "@babel/parser";
 import { marked } from "marked";
 
-export type ArtifactType = "html" | "react" | "vue" | "js" | "markdown" | "static";
+export type ArtifactType = "html" | "react" | "vue" | "js" | "markdown" | "text" | "static";
 
 export interface WrapOptions {
   title?: string;
@@ -28,10 +28,12 @@ const REACT_VERSION = "18";
 // ---------------------------------------------------------------------------
 
 function looksReact(c: string): boolean {
+  // A self-closing tag on its own (`<br/>`, `<img/>`) is NOT a React signal — plain HTML
+  // fragments use them too. Require a real JS/React marker (react import, default export,
+  // `return (`, or a hook/createRoot) so a bare HTML fragment isn't misdetected as React.
   return (
     /from\s+['"]react['"]/.test(c) ||
     /\bexport\s+default\s+(function|class|\(|[A-Za-z_$])/.test(c) ||
-    /<[A-Za-z][^>]*\/>/.test(c) ||
     /return\s*\(\s*</.test(c) ||
     /\b(useState|useEffect|useRef|useMemo|createRoot|ReactDOM)\b/.test(c)
   );
@@ -41,12 +43,19 @@ function looksMarkdown(c: string): boolean {
   return /^#{1,6}\s+\S/m.test(c) || /^```/m.test(c);
 }
 
+// Other non-runnable text/data/config types (markdown is handled above): show them in a
+// readable, escaped viewer instead of handing them to Babel (which parses CSS/JSON as JS).
+const TEXT_EXTS = new Set([
+  "css", "json", "txt", "xml", "yml", "yaml", "csv", "tsv", "toml", "ini", "log",
+]);
+
 export function detectType(filename: string, content: string): ArtifactType {
   const ext = (filename.split(".").pop() || "").toLowerCase();
   if (ext === "html" || ext === "htm") return "html";
   if (ext === "vue") return "vue";
   if (ext === "jsx" || ext === "tsx") return "react";
   if (ext === "md" || ext === "markdown") return "markdown";
+  if (TEXT_EXTS.has(ext)) return "text";
   if (ext === "js" || ext === "mjs" || ext === "ts") {
     return looksReact(content) ? "react" : "js";
   }
@@ -55,10 +64,11 @@ export function detectType(filename: string, content: string): ArtifactType {
   if (/<template[\s>]/.test(c) || /<script\s+setup/.test(c)) return "vue";
   if (/<!doctype\s+html/i.test(c) || /<html[\s>]/i.test(c)) return "html";
   if (looksReact(c)) return "react";
-  if (/<[a-z][\s\S]*?>[\s\S]*<\/[a-z]+>/i.test(c)) return "html"; // looks like HTML markup
+  if (/<[a-z][\s\S]*?>[\s\S]*<\/[a-z]+>/i.test(c)) return "html"; // markup with a tag pair
   // Conservative markdown sniff (ATX heading or fenced code block) so piped markdown
   // (`cat doc.md | getonup serve -`) doesn't fall through to the JS branch and break.
   if (looksMarkdown(c)) return "markdown";
+  if (/<[a-z][^>]*\/>/.test(c)) return "html"; // a lone self-closing tag (no JS/React marker above)
   return "js";
 }
 
@@ -346,6 +356,25 @@ function wrapMarkdown(code: string, opts: WrapOptions): string {
 }
 
 // ---------------------------------------------------------------------------
+// Text / data (css, json, …) — escaped read-only viewer, never Babel.
+// ---------------------------------------------------------------------------
+
+function wrapText(code: string, opts: WrapOptions): string {
+  const title = opts.title || "getonup artifact";
+  return [
+    "<!doctype html>",
+    '<html lang="en"><head>',
+    '<meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    `<title>${escapeHtml(title)}</title>`,
+    `<style>${BASE_STYLE}body{padding:24px;background:#0b0d10;color:#e7e9ee}pre{margin:0;white-space:pre-wrap;word-break:break-word;font:13px/1.6 ui-monospace,Menlo,Consolas,monospace}</style>`,
+    "</head><body>",
+    `<pre>${escapeHtml(code)}</pre>`,
+    "</body></html>",
+  ].join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // HTML
 // ---------------------------------------------------------------------------
 
@@ -381,6 +410,8 @@ export function wrapToHtml(code: string, type: ArtifactType, opts: WrapOptions =
       return wrapJs(code, opts);
     case "markdown":
       return wrapMarkdown(code, opts);
+    case "text":
+      return wrapText(code, opts);
     case "html":
       return wrapHtml(code, opts);
     default:

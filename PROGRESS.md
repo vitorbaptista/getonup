@@ -42,6 +42,6 @@
 
 ## Roadmap (not blocking; ask anytime)
 
-- "Deploy to Cloudflare" one-click button (needs the repo public on GitHub).
+- "Deploy to Cloudflare" one-click button (repo is public now; button not yet added).
 - Single-binary packaging (`bun build --compile`) + `curl | sh` install.
 - Per-deploy subdomain isolation; optional D1 metadata index; browser paste UI.

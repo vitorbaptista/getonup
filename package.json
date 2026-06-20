@@ -15,7 +15,7 @@
     "deploy": "npm --workspace server run deploy",
     "getonup": "npm --workspace cli run dev --",
     "build": "npm --workspace cli run build",
-    "test": "npm --workspace cli run test",
+    "test": "npm test --workspaces --if-present",
     "typecheck": "npm --workspace cli run typecheck && npm --workspace server run typecheck",
     "demo": "node scripts/publish-demo.mjs"
   },

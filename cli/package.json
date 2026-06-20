@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "prepack": "cp ../README.md README.md",
-    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/index.js --banner:js=\"#!/usr/bin/env node\" && chmod +x dist/index.js",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/index.js --banner:js=\"#!/usr/bin/env node\" && chmod +x dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test test/*.test.ts"
   },
@@ -27,6 +27,14 @@
     "self-hosted"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vitorbaptista/getonup.git",
+    "directory": "cli"
+  },
+  "homepage": "https://github.com/vitorbaptista/getonup#readme",
+  "bugs": "https://github.com/vitorbaptista/getonup/issues",
+  "author": "Vitor Baptista",
   "engines": {
     "node": ">=22.18"
   },
