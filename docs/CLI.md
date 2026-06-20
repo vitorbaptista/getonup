@@ -7,10 +7,11 @@ Configuration is read from `~/.config/getonup/config.json` (written by `getonup 
 `GETONUP_URL` / `GETONUP_TOKEN` environment variables, which take precedence (handy for CI and
 agents). `deploy` and `serve` print the live URL as the last line of stdout.
 
-If your instance sits behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/),
-also set `GETONUP_ACCESS_CLIENT_ID` / `GETONUP_ACCESS_CLIENT_SECRET` (a service token); the CLI
-sends them as `CF-Access-Client-Id` / `CF-Access-Client-Secret` so it gets past Access at the edge.
-See [Deploy behind Cloudflare Access](./SELF-HOSTING.md#deploy-behind-cloudflare-access-service-token).
+If your instance sits behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/)
+(Zero Trust), also set `GETONUP_ACCESS_CLIENT_ID` / `GETONUP_ACCESS_CLIENT_SECRET` (a service
+token); the CLI sends them as `CF-Access-Client-Id` / `CF-Access-Client-Secret` so it gets past
+Access at the edge.
+See [Deploy behind Cloudflare Access](./SELF-HOSTING.md#deploy-behind-cloudflare-access-zero-trust).
 
 ## Commands
 
