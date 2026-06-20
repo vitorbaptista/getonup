@@ -27,7 +27,7 @@
   ],
   "license": "MIT",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.18"
   },
   "devDependencies": {
     "@babel/parser": "^8.0.0",
