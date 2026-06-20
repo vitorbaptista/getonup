@@ -9,8 +9,7 @@ import { detectType, wrapToHtml, type ArtifactType } from "./wrap.js";
 import { describeHtml } from "./describe.js";
 import { serve } from "./serve.js";
 import { runMcp } from "./mcp.js";
-
-const VERSION = "0.1.0";
+import { version as VERSION } from "../package.json";
 
 // ---- tiny output helpers ---------------------------------------------------
 const c = {
@@ -47,7 +46,10 @@ function openInBrowser(url: string): void {
 async function cmdLogin(args: Args): Promise<void> {
   const url = (args.flags.url as string) || args._[0];
   const token = (args.flags.token as string) || args._[1];
-  if (!url) err("usage: getonup login --url <server-url> --token <deploy-token>");
+  if (!url)
+    err(
+      "usage: getonup login --url <server-url> --token <deploy-token> [--access-client-id <id>] [--access-client-secret <secret>]",
+    );
   // Optional Cloudflare Access service-token (for instances behind Access), from flags or env.
   const accessClientId =
     (args.flags["access-client-id"] as string) || process.env.GETONUP_ACCESS_CLIENT_ID || undefined;
@@ -245,6 +247,7 @@ function help(): void {
 
 ${c.bold("Usage")}
   getonup login --url <server> --token <token>
+                                [--access-client-id <id>] [--access-client-secret <secret>]   ${c.dim("# behind Cloudflare Access")}
   getonup deploy <file|dir|->   [--name <title>] [--id <slug>] [--type html|react|vue|js|markdown|static]
                                 [--no-wrap] [--no-tailwind] [--open] [--json] [--quiet]
   getonup serve <file|dir|->    [--port N] [--host H] [--open] [--watch] [--no-wrap]   ${c.dim("# local preview, no deploy")}
