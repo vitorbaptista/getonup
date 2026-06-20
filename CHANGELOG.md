@@ -13,7 +13,7 @@ All notable changes to getonup are recorded here. The format follows
   pass `--access-client-id` / `--access-client-secret` to `getonup login`) and the CLI sends the
   `CF-Access-Client-Id` / `CF-Access-Client-Secret` service-token headers so it gets past an
   Access-protected instance at the edge. Stacks on top of the deploy token; `whoami` reports it.
-  See [docs/SELF-HOSTING.md](docs/SELF-HOSTING.md#deploy-behind-cloudflare-access-service-token).
+  See [docs/SELF-HOSTING.md](docs/SELF-HOSTING.md#deploy-behind-cloudflare-access-zero-trust).
 
 ## [0.3.0] — 2026-06-20
 
