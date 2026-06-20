@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadConfig } from "../src/config.js";
+import { loadConfig, resolveAccess } from "../src/config.js";
 
 // loadConfig reads GETONUP_CONFIG_DIR/config.json, with GETONUP_URL/GETONUP_TOKEN overriding it.
 async function withEnv(env: Record<string, string | undefined>, fn: () => Promise<void>): Promise<void> {
@@ -49,6 +49,32 @@ test("env vars take precedence over the config file", async () => {
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+test("Access service-token: env overrides file, like url/token", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "getonup-cfg-"));
+  try {
+    await writeFile(
+      join(dir, "config.json"),
+      JSON.stringify({ url: "u", accessClientId: "file-id", accessClientSecret: "file-sec" }),
+    );
+    await withEnv({ GETONUP_CONFIG_DIR: dir, GETONUP_URL: undefined, GETONUP_TOKEN: undefined, GETONUP_ACCESS_CLIENT_ID: undefined, GETONUP_ACCESS_CLIENT_SECRET: undefined }, async () => {
+      const cfg = await loadConfig();
+      assert.deepEqual(resolveAccess(cfg), { clientId: "file-id", clientSecret: "file-sec" });
+    });
+    await withEnv({ GETONUP_CONFIG_DIR: dir, GETONUP_ACCESS_CLIENT_ID: "env-id", GETONUP_ACCESS_CLIENT_SECRET: "env-sec" }, async () => {
+      const cfg = await loadConfig();
+      assert.deepEqual(resolveAccess(cfg), { clientId: "env-id", clientSecret: "env-sec" });
+    });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("resolveAccess: undefined when neither half is set, throws when only one is", () => {
+  assert.equal(resolveAccess({ url: "u" }), undefined);
+  assert.throws(() => resolveAccess({ url: "u", accessClientId: "id" }), /both/);
+  assert.throws(() => resolveAccess({ url: "u", accessClientSecret: "sec" }), /both/);
 });
 
 test("malformed config JSON falls back cleanly instead of throwing", async () => {

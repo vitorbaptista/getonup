@@ -1,10 +1,14 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
+import type { Access } from "./api.js";
 
 export interface Config {
   url?: string;
   token?: string;
+  // Optional Cloudflare Access service-token, for instances put behind Access (Zero Trust).
+  accessClientId?: string;
+  accessClientSecret?: string;
 }
 
 function configDir(): string {
@@ -29,7 +33,22 @@ export async function loadConfig(): Promise<Config> {
   return {
     url: process.env.GETONUP_URL || fileCfg.url,
     token: process.env.GETONUP_TOKEN || fileCfg.token,
+    accessClientId: process.env.GETONUP_ACCESS_CLIENT_ID || fileCfg.accessClientId,
+    accessClientSecret: process.env.GETONUP_ACCESS_CLIENT_SECRET || fileCfg.accessClientSecret,
   };
+}
+
+/** Turn config into a Cloudflare Access service-token, or undefined if not configured.
+ *  Both halves are required — a lone id or secret is a misconfiguration, so fail loudly. */
+export function resolveAccess(cfg: Config): Access | undefined {
+  const { accessClientId: clientId, accessClientSecret: clientSecret } = cfg;
+  if (clientId && clientSecret) return { clientId, clientSecret };
+  if (clientId || clientSecret) {
+    throw new Error(
+      "Cloudflare Access needs both GETONUP_ACCESS_CLIENT_ID and GETONUP_ACCESS_CLIENT_SECRET — only one is set.",
+    );
+  }
+  return undefined;
 }
 
 export async function saveConfig(cfg: Config): Promise<string> {
