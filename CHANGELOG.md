@@ -6,6 +6,8 @@ All notable changes to getonup are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-06-20
+
 ### Fixed
 - Auto-wrap no longer misdetects plain HTML fragments that contain a self-closing tag
   (`<br/>`, `<img/>`) as React, and no longer hands non-runnable files (`.css`, `.json`, `.yml`, …)
@@ -41,6 +43,7 @@ All notable changes to getonup are recorded here. The format follows
 Initial release: the `getonup` CLI (`deploy`/`serve`/`list`/`rm`/`open`/`mcp`, auto-wrap for
 HTML/React/Vue/JS) and the single Cloudflare Worker + R2 server.
 
-[Unreleased]: https://github.com/vitorbaptista/getonup/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/vitorbaptista/getonup/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/vitorbaptista/getonup/releases/tag/v0.3.0
 [0.2.0]: https://github.com/vitorbaptista/getonup/releases/tag/v0.2.0
 [0.1.0]: https://github.com/vitorbaptista/getonup/releases/tag/v0.1.0
