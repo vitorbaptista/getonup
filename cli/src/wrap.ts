@@ -12,8 +12,9 @@
  */
 
 import { parse } from "@babel/parser";
+import { marked } from "marked";
 
-export type ArtifactType = "html" | "react" | "vue" | "js" | "static";
+export type ArtifactType = "html" | "react" | "vue" | "js" | "markdown" | "static";
 
 export interface WrapOptions {
   title?: string;
@@ -36,11 +37,16 @@ function looksReact(c: string): boolean {
   );
 }
 
+function looksMarkdown(c: string): boolean {
+  return /^#{1,6}\s+\S/m.test(c) || /^```/m.test(c);
+}
+
 export function detectType(filename: string, content: string): ArtifactType {
   const ext = (filename.split(".").pop() || "").toLowerCase();
   if (ext === "html" || ext === "htm") return "html";
   if (ext === "vue") return "vue";
   if (ext === "jsx" || ext === "tsx") return "react";
+  if (ext === "md" || ext === "markdown") return "markdown";
   if (ext === "js" || ext === "mjs" || ext === "ts") {
     return looksReact(content) ? "react" : "js";
   }
@@ -50,6 +56,9 @@ export function detectType(filename: string, content: string): ArtifactType {
   if (/<!doctype\s+html/i.test(c) || /<html[\s>]/i.test(c)) return "html";
   if (looksReact(c)) return "react";
   if (/<[a-z][\s\S]*?>[\s\S]*<\/[a-z]+>/i.test(c)) return "html"; // looks like HTML markup
+  // Conservative markdown sniff (ATX heading or fenced code block) so piped markdown
+  // (`cat doc.md | getonup serve -`) doesn't fall through to the JS branch and break.
+  if (looksMarkdown(c)) return "markdown";
   return "js";
 }
 
@@ -282,6 +291,61 @@ function wrapJs(code: string, opts: WrapOptions): string {
 }
 
 // ---------------------------------------------------------------------------
+// Markdown
+// ---------------------------------------------------------------------------
+
+const PROSE_STYLE =
+  `body{background:#fff;color:#1f2328}` +
+  `.prose{max-width:46rem;margin:0 auto;padding:3rem 1.25rem 5rem;line-height:1.65;font-size:16px}` +
+  `.prose h1,.prose h2,.prose h3,.prose h4{line-height:1.25;font-weight:600;margin:2em 0 .6em}` +
+  `.prose h1{font-size:2rem;margin-top:0}.prose h2{font-size:1.5rem;border-bottom:1px solid #e1e4e8;padding-bottom:.3em}` +
+  `.prose h3{font-size:1.25rem}.prose p{margin:0 0 1em}` +
+  `.prose a{color:#0969da;text-decoration:none}.prose a:hover{text-decoration:underline}` +
+  `.prose code{background:#eff1f3;border-radius:6px;padding:.2em .4em;font-size:.875em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}` +
+  `.prose pre{background:#f6f8fa;border-radius:8px;padding:1rem;overflow:auto;line-height:1.45}` +
+  `.prose pre code{background:none;padding:0;font-size:.875em}` +
+  `.prose blockquote{margin:0 0 1em;padding:0 1em;color:#59636e;border-left:.25em solid #d1d9e0}` +
+  `.prose ul,.prose ol{margin:0 0 1em;padding-left:2em}.prose li{margin:.25em 0}` +
+  `.prose table{border-collapse:collapse;margin:0 0 1em;display:block;overflow:auto}` +
+  `.prose th,.prose td{border:1px solid #d1d9e0;padding:.5em .9em}.prose th{background:#f6f8fa}` +
+  `.prose img{max-width:100%}.prose hr{border:0;border-top:1px solid #e1e4e8;margin:2em 0}` +
+  `@media (prefers-color-scheme:dark){body{background:#0d1117;color:#e6edf3}` +
+  `.prose h2{border-bottom-color:#30363d}.prose a{color:#4493f8}.prose code{background:#262c36}` +
+  `.prose pre{background:#161b22}.prose blockquote{color:#9198a1;border-left-color:#3d444d}` +
+  `.prose th,.prose td{border-color:#3d444d}.prose th{background:#161b22}.prose hr{border-top-color:#30363d}}`;
+
+/** Strip a leading YAML frontmatter fence (`---\n…\n---`) — common in agent/memory files,
+ *  which marked would otherwise render as a stray <hr> plus loose text. */
+function stripFrontmatter(c: string): string {
+  const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(c);
+  return m ? c.slice(m[0].length) : c;
+}
+
+function firstHeading(c: string): string | undefined {
+  const m = /^#{1,6}\s+(.+?)\s*#*\s*$/m.exec(c);
+  return m ? m[1].trim() : undefined;
+}
+
+function wrapMarkdown(code: string, opts: WrapOptions): string {
+  const src = stripFrontmatter(code);
+  const title = firstHeading(src) || opts.title || "getonup artifact";
+  const html = marked.parse(src, { gfm: true, async: false }) as string;
+  return [
+    "<!doctype html>",
+    '<html lang="en"><head>',
+    '<meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    `<title>${escapeHtml(title)}</title>`,
+    `<style>${BASE_STYLE}${PROSE_STYLE}</style>`,
+    "</head><body>",
+    `<main class="prose">`,
+    html,
+    "</main>",
+    "</body></html>",
+  ].join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // HTML
 // ---------------------------------------------------------------------------
 
@@ -315,6 +379,8 @@ export function wrapToHtml(code: string, type: ArtifactType, opts: WrapOptions =
       return wrapVue(code, opts);
     case "js":
       return wrapJs(code, opts);
+    case "markdown":
+      return wrapMarkdown(code, opts);
     case "html":
       return wrapHtml(code, opts);
     default:

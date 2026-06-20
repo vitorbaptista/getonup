@@ -117,7 +117,7 @@ async function cmdDeploy(args: Args): Promise<void> {
   if (!url) err("not configured. Run: getonup login --url <server> --token <token>  (or set GETONUP_URL/GETONUP_TOKEN)");
 
   const target = args._[0];
-  if (!target) err("usage: getonup deploy <file|dir|->  [--name <title>] [--type html|react|vue|js|static] [--no-wrap] [--open] [--json]");
+  if (!target) err("usage: getonup deploy <file|dir|->  [--name <title>] [--type html|react|vue|js|markdown|static] [--no-wrap] [--open] [--json]");
 
   const json = !!args.flags.json;
   const quiet = !!args.flags.quiet;
@@ -203,7 +203,7 @@ async function cmdServe(args: Args): Promise<void> {
   };
   const target = args._[0];
   if (target === "-") return serve(null, opts, await readStdin());
-  if (!target) err("usage: getonup serve <file|dir|-> [--port N] [--open] [--watch] [--type html|react|vue|js|static] [--no-wrap]");
+  if (!target) err("usage: getonup serve <file|dir|-> [--port N] [--open] [--watch] [--type html|react|vue|js|markdown|static] [--no-wrap]");
   try {
     await stat(target);
   } catch {
@@ -264,7 +264,7 @@ function help(): void {
 
 ${c.bold("Usage")}
   getonup login --url <server> --token <token>
-  getonup deploy <file|dir|->   [--name <title>] [--type html|react|vue|js|static]
+  getonup deploy <file|dir|->   [--name <title>] [--type html|react|vue|js|markdown|static]
                                 [--no-wrap] [--no-tailwind] [--open] [--json] [--quiet]
   getonup serve <file|dir|->    [--port N] [--host H] [--open] [--watch] [--no-wrap]   ${c.dim("# local preview, no deploy")}
   getonup list
