@@ -1,20 +1,59 @@
-name: Publish to npm
+name: Release
 
-# Publishes the `getonup` CLI to npm whenever a GitHub Release is published.
-# Create a release whose tag matches the cli version (e.g. tag `v0.1.0` for
-# cli/package.json version 0.1.0) and this workflow does the rest.
+# Cuts a release whenever a `vX.Y.Z` tag is pushed: it runs the tests, creates
+# the GitHub Release (auto-generated notes), then publishes the `getonup` CLI to
+# npm. No manual "create a release" step — just bump the version and push the tag:
 #
-# Auth is via npm Trusted Publishing (OIDC) — no NPM_TOKEN secret. Configure a
+#   git tag vX.Y.Z && git push origin vX.Y.Z
+#
+# The tag must match the `version` in cli/package.json.
+#
+# npm auth is via Trusted Publishing (OIDC) — no NPM_TOKEN secret. Configure a
 # trusted publisher for the `getonup` package on npmjs.com pointing at this repo
 # and this workflow file (.github/workflows/publish.yml). The package must be
 # published once manually first; trusted publishing only covers later versions.
 
 on:
-  release:
-    types: [published]
+  push:
+    tags: ['v*']
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # required to create the GitHub Release
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify release tag matches cli version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./cli/package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::Release tag ($tag) does not match cli/package.json version ($pkg)."
+            exit 1
+          fi
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+
   publish:
+    needs: release
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -33,15 +72,6 @@ jobs:
         run: npm install -g npm@latest
 
       - run: npm install
-
-      - name: Verify release tag matches cli version
-        run: |
-          tag="${GITHUB_REF_NAME#v}"
-          pkg="$(node -p "require('./cli/package.json').version")"
-          if [ "$tag" != "$pkg" ]; then
-            echo "::error::Release tag ($tag) does not match cli/package.json version ($pkg)."
-            exit 1
-          fi
 
       - name: Build the CLI bundle
         run: npm run build --workspace cli
