@@ -23,7 +23,7 @@ repos:
         pass_filenames: false
 
       - id: test
-        name: tests (cli)
+        name: tests (cli + server)
         entry: npm test
         language: system
         files: \.(ts|tsx)$
