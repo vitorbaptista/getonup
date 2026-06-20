@@ -77,6 +77,29 @@ test("serving an unknown id returns 404", async () => {
   assert.equal((await fetch(`${base}/s/zzzzzzzz/`)).status, 404);
 });
 
+test("a custom --id deploys to a stable URL and overwrites in place, pruning stale files", async () => {
+  const slug = "my-app";
+  const r1 = await deploy({ id: slug, files: [file("index.html", "v1"), file("extra.txt", "x")] });
+  assert.equal(r1.status, 201);
+  const j1 = (await r1.json()) as { id: string; url: string };
+  assert.equal(j1.id, slug);
+  assert.ok(j1.url.endsWith(`/s/${slug}`));
+  assert.equal(await (await fetch(`${base}/s/${slug}/`)).text(), "v1");
+  assert.equal((await fetch(`${base}/s/${slug}/extra.txt`)).status, 200);
+
+  // Redeploy the same id with only index.html: content replaced and extra.txt pruned.
+  const r2 = await deploy({ id: slug, files: [file("index.html", "v2")] });
+  assert.equal(r2.status, 201);
+  assert.equal(await (await fetch(`${base}/s/${slug}/`)).text(), "v2");
+  assert.equal((await fetch(`${base}/s/${slug}/extra.txt`)).status, 404);
+});
+
+test("an invalid --id slug is rejected (400)", async () => {
+  assert.equal((await deploy({ id: "AB", files: [file("index.html", "x")] })).status, 400); // uppercase
+  assert.equal((await deploy({ id: "-bad", files: [file("index.html", "x")] })).status, 400); // leading hyphen
+  assert.equal((await deploy({ id: "a", files: [file("index.html", "x")] })).status, 400); // too short
+});
+
 test("the CLI api client round-trips through the live worker", async () => {
   // Closes the cli/src/api.ts -> Worker contract (Bearer header, response shape) end-to-end.
   const res = await api.deploy(base, TOKEN, {

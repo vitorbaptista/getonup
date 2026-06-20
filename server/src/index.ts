@@ -156,6 +156,24 @@ function posInt(v: string | undefined, dflt: number): number {
   return Number.isFinite(n) && n > 0 ? n : dflt;
 }
 
+// A caller-supplied deploy id (`--id`): 2–64 chars, starts alphanumeric, then [a-z0-9-]. A subset
+// of the serve/delete id charset (which permits hyphens), so a custom id is always servable.
+function validSlug(s: string): boolean {
+  return /^[a-z0-9][a-z0-9-]{1,63}$/.test(s);
+}
+
+/** All object keys under a prefix (paginated, so it isn't capped at 1000). */
+async function listKeys(env: Env, prefix: string): Promise<string[]> {
+  const keys: string[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await env.BUCKET.list({ prefix, limit: 1000, cursor });
+    for (const o of page.objects) keys.push(o.key);
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+  return keys;
+}
+
 async function handleDeploy(req: Request, env: Env): Promise<Response> {
   if (!(await isAuthed(req, env))) {
     return json(
@@ -172,7 +190,7 @@ async function handleDeploy(req: Request, env: Env): Promise<Response> {
   // chunked requests carry no content-length and skip this — the per-file loop below is the hard cap.
   if (declared && declared > maxBytes * 2) return json({ error: "payload too large" }, 413);
 
-  let body: { title?: string; type?: string; files?: UploadFile[] };
+  let body: { id?: string; title?: string; type?: string; files?: UploadFile[] };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -213,7 +231,12 @@ async function handleDeploy(req: Request, env: Env): Promise<Response> {
 
   if (!hasIndex) return json({ error: "deploy must include an index.html entry file" }, 400);
 
-  const id = genId();
+  // An optional caller-supplied id (`--id`) redeploys to a stable URL; otherwise mint a fresh one.
+  const overwrite = typeof body.id === "string" && body.id !== "";
+  if (overwrite && !validSlug(body.id!)) {
+    return json({ error: "invalid id: 2–64 chars of a–z, 0–9, hyphen, starting with a letter or digit" }, 400);
+  }
+  const id = overwrite ? body.id! : genId();
   const meta = {
     id,
     title: (String(body.title ?? "").trim().slice(0, 200)) || null,
@@ -222,6 +245,11 @@ async function handleDeploy(req: Request, env: Env): Promise<Response> {
     bytes: total,
     created_at: new Date().toISOString(),
   };
+
+  // For an overwrite, capture the prior file set first so we can prune anything the new deploy no
+  // longer includes (a smaller redeploy must not leave orphans from a larger prior one).
+  const priorKeys = overwrite ? await listKeys(env, `${id}/`) : [];
+
   try {
     await Promise.all(
       normalized.map((f) =>
@@ -232,14 +260,30 @@ async function handleDeploy(req: Request, env: Env): Promise<Response> {
       httpMetadata: { contentType: "application/json" },
     });
   } catch (e) {
-    // Best-effort rollback so a partial write leaves no unreclaimable orphan objects.
-    try {
-      const orphans = await env.BUCKET.list({ prefix: `${id}/` });
-      if (orphans.objects.length) await env.BUCKET.delete(orphans.objects.map((o) => o.key));
-    } catch {
-      /* ignore cleanup failure */
+    // Fresh deploy: roll back the partial write. For an overwrite, leave the prior content in
+    // place rather than wipe a working URL on a failed redeploy (re-run to recover).
+    if (!overwrite) {
+      try {
+        const orphans = await env.BUCKET.list({ prefix: `${id}/` });
+        if (orphans.objects.length) await env.BUCKET.delete(orphans.objects.map((o) => o.key));
+      } catch {
+        /* ignore cleanup failure */
+      }
     }
     throw e;
+  }
+
+  // Prune files left over from a previous, larger deploy at this id (bounded by MAX_FILES).
+  if (overwrite) {
+    const fresh = new Set([`${id}/_meta.json`, ...normalized.map((f) => `${id}/${f.path}`)]);
+    const stale = priorKeys.filter((k) => !fresh.has(k));
+    if (stale.length) {
+      try {
+        await env.BUCKET.delete(stale);
+      } catch {
+        /* best effort */
+      }
+    }
   }
 
   const base = (env.GETONUP_PUBLIC_URL || "").replace(/\/+$/, "") || new URL(req.url).origin;
@@ -253,7 +297,7 @@ async function handleServe(url: URL, env: Env): Promise<Response> {
   const slash = after.indexOf("/");
   const id = slash === -1 ? after : after.slice(0, slash);
   let rest = slash === -1 ? "" : after.slice(slash + 1);
-  if (!/^[a-z0-9]+$/.test(id)) return notFound();
+  if (!/^[a-z0-9-]+$/.test(id)) return notFound();
 
   // Browsers percent-encode path chars (e.g. "my%20logo.png"); decode to match the stored R2 key.
   try {
@@ -319,7 +363,7 @@ async function handleList(req: Request, env: Env): Promise<Response> {
 
 async function handleDelete(req: Request, env: Env, id: string): Promise<Response> {
   if (!(await isAuthed(req, env))) return json({ error: "unauthorized" }, 401);
-  if (!/^[a-z0-9]+$/.test(id)) return json({ error: "invalid id" }, 400);
+  if (!/^[a-z0-9-]+$/.test(id)) return json({ error: "invalid id" }, 400);
   let total = 0;
   let cursor: string | undefined;
   do {
