@@ -6,6 +6,17 @@ All notable changes to getonup are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-06-20
+
+### Fixed
+- `getonup version` (and `--version` / `-v`) now report the installed version instead of a stale,
+  hard-coded `0.1.0`. The version is read from `package.json` at build time.
+
+### Changed
+- `getonup login`'s usage line and `--help` now list the optional `--access-client-id` /
+  `--access-client-secret` Cloudflare Access flags, so they're discoverable from the command itself
+  (previously they appeared only in the help footer).
+
 ## [0.5.0] — 2026-06-20
 
 ### Added
