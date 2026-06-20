@@ -6,6 +6,18 @@ on:
   pull_request:
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - name: Run pre-commit hooks (hygiene + typecheck + test)
+        uses: j178/prek-action@v2
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -15,9 +27,5 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm install
-      - name: Typecheck (cli + server)
-        run: npm run typecheck
-      - name: Test (cli)
-        run: npm test
       - name: Build the CLI bundle
         run: npm run build --workspace cli

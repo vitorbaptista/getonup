@@ -21,6 +21,18 @@ npm test             # CLI unit tests (wrap engine, serve, mcp)
 npm run typecheck    # both workspaces
 ```
 
+### Pre-commit hooks
+
+We use [prek](https://github.com/j178/prek) (a fast, drop-in `pre-commit` replacement) to run
+file hygiene checks plus `typecheck` and `test` before every commit. Install the git hook once:
+
+```bash
+prek install              # wires up .git/hooks/pre-commit from .pre-commit-config.yaml
+prek run --all-files      # optional: run every hook against the whole repo
+```
+
+(Plain `pre-commit install` works too if you have that instead.)
+
 `npm run setup` prints a ready-to-run `getonup login` line with the generated token. Then:
 
 ```bash

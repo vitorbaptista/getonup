@@ -1,0 +1,30 @@
+# Pre-commit hooks, run via prek (https://github.com/j178/prek).
+# Install the git hook once:  prek install
+# Run against everything:     prek run --all-files
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: mixed-line-ending
+
+  - repo: local
+    hooks:
+      - id: typecheck
+        name: typecheck (tsc, cli + server)
+        entry: npm run typecheck
+        language: system
+        files: \.(ts|tsx)$
+        pass_filenames: false
+
+      - id: test
+        name: tests (cli)
+        entry: npm test
+        language: system
+        files: \.(ts|tsx)$
+        pass_filenames: false
