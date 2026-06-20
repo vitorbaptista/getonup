@@ -6,6 +6,8 @@ All notable changes to getonup are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-06-20
+
 ### Added
 - Cloudflare Access support: set `GETONUP_ACCESS_CLIENT_ID` / `GETONUP_ACCESS_CLIENT_SECRET` (or
   pass `--access-client-id` / `--access-client-secret` to `getonup login`) and the CLI sends the
