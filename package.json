@@ -1,6 +1,6 @@
 {
   "name": "getonup-monorepo",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "description": "getonup — open-source, self-hostable tool to turn any AI-generated web artifact into a live, shareable URL.",

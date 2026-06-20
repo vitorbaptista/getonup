@@ -98,6 +98,10 @@ getonup deploy <file-or-dir> --json
   need to add an HTML shell, a build step, or boilerplate. Just export your React component as
   the default export and use Tailwind classes freely.
 - `--json` prints `{"id","url","files","bytes"}`. Give the user the `url`.
+- **Crawlers are blocked server-wide**: the host serves a root `/robots.txt` of
+  `User-agent: * / Disallow: /`, so search engines and scrapers stay off every deploy. (A
+  `robots.txt` inside a deploy would live under `/s/<id>/` and be ignored by crawlers, which
+  only read it at the host root.)
 - Quick one-off from a string:
   `printf '%s' "$HTML" | getonup deploy - --type html --json`
 

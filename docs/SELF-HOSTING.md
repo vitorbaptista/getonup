@@ -76,14 +76,61 @@ getonup serves untrusted, AI-generated code. The design keeps that safe:
 
 ### Hardening
 
-- **Put the Worker behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/)**
-  for human auth with zero app code, and **disable the default `workers.dev` route** so only your
-  Access-protected custom domain is reachable.
+- **Put the deploy API behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/)**
+  (Zero Trust) for an extra, edge-enforced auth layer with zero app code — see
+  [Deploy behind Cloudflare Access](#deploy-behind-cloudflare-access-zero-trust) below.
 - **Per-deploy subdomain isolation:** map a wildcard (`*.getonup.example.com`) and serve
   `<id>.getonup.example.com` so each artifact gets its own origin. (Path-based is the simple
   default; subdomains are the upgrade.)
 - **Rate-limit `/api/*`** with a Cloudflare WAF rule — **required for any public instance** — to
   bound abuse and spend (the default Worker does no application-level throttling).
+
+### Deploy behind Cloudflare Access (Zero Trust)
+
+[Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/)
+— the access-control product in Cloudflare's **Zero Trust** suite — gates a hostname at the edge:
+any request without a valid identity is bounced to a login page *before* it reaches the Worker.
+That's great for humans but breaks a CLI — so Access issues a **service token** for non-interactive
+clients (your CLI, an agent, CI). getonup sends it as the two `CF-Access-Client-Id` /
+`CF-Access-Client-Secret` headers, which Access validates at the edge.
+
+This stacks on top of the deploy token: Access decides *who can reach the API at all*, the
+`GETONUP_DEPLOY_TOKEN` decides *who can publish*.
+
+> **Scope Access to `/api/*`, not the whole host.** Published artifacts (`/s/<id>`) are meant to be
+> public with no login. If you protect the bare hostname, every viewer hits the Access login wall.
+> Create the Access application for the **path** `getonup.example.com/api` so only the deploy/manage
+> API is gated and `/s/*` stays open.
+
+1. In the Zero Trust dashboard, **Access → Applications** → add a **Self-hosted** app for
+   `getonup.example.com/api` (and disable the default `workers.dev` route so only the
+   Access-protected custom domain is reachable).
+2. **Access → Service credentials → Service Tokens → Create.** Copy the **Client ID** and
+   **Client Secret** (the secret is shown once).
+3. Add a policy on the app with action **Service Auth** that includes that service token. (A plain
+   *Allow* policy still forces an interactive login — the action must be **Service Auth**.)
+4. Point the CLI at it — env vars (best for CI/agents) or persist them with `login`:
+
+   ```bash
+   export GETONUP_ACCESS_CLIENT_ID=<client-id>
+   export GETONUP_ACCESS_CLIENT_SECRET=<client-secret>
+   getonup deploy index.html        # now sails through Access
+
+   # …or save them alongside the server + token:
+   getonup login --url https://getonup.example.com --token <deploy-token> \
+     --access-client-id <client-id> --access-client-secret <client-secret>
+   ```
+
+   `getonup whoami` shows whether a service token is configured. Rotate by creating a new token in
+   the dashboard and updating the env vars / re-running `login`.
+
+**Not using Access?** A service token is only for the Access login gate. If your domain is just
+proxied (orange-clouded) and the CLI is being blocked by a Cloudflare **managed challenge** or
+**Bot Fight Mode**, that's bot filtering, not auth — there's no token to add. Exempt the API with a
+WAF rule instead: **Skip** (managed challenge / managed rules) when
+`http.request.uri.path starts_with "/api/"` (optionally also matching a secret header so only your
+CLI is exempted). getonup's Worker runs *at* the edge, so there's no separate origin to "bypass" —
+the only thing in front of it is whatever gate (Access or WAF) you add.
 
 ## How it works
 

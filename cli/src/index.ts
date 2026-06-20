@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 import { spawn } from "node:child_process";
-import { loadConfig, saveConfig } from "./config.js";
+import { loadConfig, saveConfig, resolveAccess, type Config } from "./config.js";
 import * as api from "./api.js";
 import { parseArgs, type Args } from "./args.js";
 import { walkDir } from "./files.js";
@@ -48,10 +48,21 @@ async function cmdLogin(args: Args): Promise<void> {
   const url = (args.flags.url as string) || args._[0];
   const token = (args.flags.token as string) || args._[1];
   if (!url) err("usage: getonup login --url <server-url> --token <deploy-token>");
-  const cfg = { url: String(url).replace(/\/+$/, ""), token: token ? String(token) : undefined };
-  // Sanity-check the server.
+  // Optional Cloudflare Access service-token (for instances behind Access), from flags or env.
+  const accessClientId =
+    (args.flags["access-client-id"] as string) || process.env.GETONUP_ACCESS_CLIENT_ID || undefined;
+  const accessClientSecret =
+    (args.flags["access-client-secret"] as string) || process.env.GETONUP_ACCESS_CLIENT_SECRET || undefined;
+  const cfg: Config = {
+    url: String(url).replace(/\/+$/, ""),
+    token: token ? String(token) : undefined,
+    accessClientId,
+    accessClientSecret,
+  };
+  const access = resolveAccess(cfg); // throws on a half-configured pair, before we hit the network
+  // Sanity-check the server (with the Access token, in case the API is behind Access).
   try {
-    const h = await api.health(cfg.url);
+    const h = await api.health(cfg.url!, access);
     if (!h?.ok) throw new Error("unexpected response");
     if (!h.deployEnabled) {
       process.stderr.write(
@@ -62,12 +73,14 @@ async function cmdLogin(args: Args): Promise<void> {
     err(`could not reach a getonup server at ${cfg.url}: ${(e as Error).message}`);
   }
   const p = await saveConfig(cfg);
-  process.stdout.write(c.green("✓") + ` logged in to ${c.cyan(cfg.url)}\n` + c.dim(`  saved to ${p}\n`));
+  process.stdout.write(c.green("✓") + ` logged in to ${c.cyan(cfg.url!)}\n` + c.dim(`  saved to ${p}\n`));
 }
 
 async function cmdDeploy(args: Args): Promise<void> {
-  const { url, token } = await loadConfig();
+  const cfg = await loadConfig();
+  const { url, token } = cfg;
   if (!url) err("not configured. Run: getonup login --url <server> --token <token>  (or set GETONUP_URL/GETONUP_TOKEN)");
+  const access = resolveAccess(cfg);
 
   const target = args._[0];
   if (!target) err("usage: getonup deploy <file|dir|->  [--name <title>] [--id <slug>] [--type html|react|vue|js|markdown|static] [--no-wrap] [--open] [--json]");
@@ -130,7 +143,7 @@ async function cmdDeploy(args: Args): Promise<void> {
 
   let result: api.DeployResult;
   try {
-    result = await api.deploy(url, token, { id, title: title || null, description, type, files });
+    result = await api.deploy(url, token, { id, title: title || null, description, type, files }, access);
   } catch (e) {
     const ae = e as api.ApiError;
     if (ae.status === 401) {
@@ -176,9 +189,10 @@ async function cmdServe(args: Args): Promise<void> {
 }
 
 async function cmdList(): Promise<void> {
-  const { url, token } = await loadConfig();
+  const cfg = await loadConfig();
+  const { url, token } = cfg;
   if (!url) err("not configured. Run: getonup login …");
-  const { deploys } = await api.list(url, token);
+  const { deploys } = await api.list(url, token, resolveAccess(cfg));
   if (!deploys.length) {
     process.stdout.write(c.dim("no deploys yet.\n"));
     return;
@@ -193,12 +207,13 @@ async function cmdList(): Promise<void> {
 }
 
 async function cmdRm(args: Args): Promise<void> {
-  const { url, token } = await loadConfig();
+  const cfg = await loadConfig();
+  const { url, token } = cfg;
   if (!url) err("not configured. Run: getonup login …");
   const id = args._[0];
   if (!id) err("usage: getonup rm <id>");
   try {
-    const r = await api.remove(url, token, id);
+    const r = await api.remove(url, token, id, resolveAccess(cfg));
     process.stdout.write(c.green("✓") + ` removed ${id} (${r.files} file(s))\n`);
   } catch (e) {
     err((e as Error).message);
@@ -217,9 +232,12 @@ async function cmdOpen(args: Args): Promise<void> {
 }
 
 async function cmdWhoami(): Promise<void> {
-  const { url, token } = await loadConfig();
+  const { url, token, accessClientId, accessClientSecret } = await loadConfig();
   process.stdout.write(`server: ${url || c.dim("(not set)")}\n`);
   process.stdout.write(`token:  ${token ? c.dim("configured") : c.dim("(not set)")}\n`);
+  if (accessClientId || accessClientSecret) {
+    process.stdout.write(`access: ${accessClientId && accessClientSecret ? c.dim("service token configured") : c.red("incomplete (set both id and secret)")}\n`);
+  }
 }
 
 function help(): void {
@@ -245,6 +263,8 @@ ${c.bold("Examples")}
   getonup serve counter.tsx --open --watch   ${c.dim("# instant local preview, live reload, no deploy")}
 
 Config lives in ~/.config/getonup/config.json, or env GETONUP_URL / GETONUP_TOKEN.
+Behind Cloudflare Access? Add a service token: GETONUP_ACCESS_CLIENT_ID / GETONUP_ACCESS_CLIENT_SECRET
+(or pass --access-client-id / --access-client-secret to login).
 `);
 }
 
