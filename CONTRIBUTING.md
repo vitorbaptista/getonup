@@ -6,9 +6,10 @@ Thanks for helping! getonup is a small, dependency-light monorepo — easy to ha
 
 ```
 cli/      the `getonup` CLI (Node + TypeScript) — auto-wrap engine, deploy/serve/build/mcp
-server/   one Cloudflare Worker — token-auth deploy API + R2 static hosting at /s/:id
-landings/ + gallery/   the demo landing-page designs (deployed through getonup itself)
+server/   one Cloudflare Worker — token-auth deploy API + R2 static hosting at /s/:id + live index
+landings/ the demo landing-page designs (deployed through getonup itself)
 examples/ sample artifacts you can deploy/serve
+docs/mockups/   the original hand-built landing gallery, kept as a design reference
 ```
 
 ## Develop

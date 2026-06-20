@@ -139,7 +139,7 @@ the only thing in front of it is whatever gate (Access or WAF) you add.
   ───────                              ─────────────────────
   detect + auto-wrap   ──POST /api/deploy (Bearer token)──▶   store files in R2 under <id>/
   the artifact          ◀──────────── { id, url } ──────────  write <id>/_meta.json
-  share the URL  ◀──────── GET /s/<id>[/*] stream from R2 ──   GET / → gallery / landing
+  share the URL  ◀──────── GET /s/<id>[/*] stream from R2 ──   GET / → live index (GET /api/index)
 ```
 
 - **The server is a dumb static host.** All the cleverness (type detection, wrapping, import maps)

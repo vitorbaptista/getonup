@@ -77,6 +77,42 @@ test("serving an unknown id returns 404", async () => {
   assert.equal((await fetch(`${base}/s/zzzzzzzz/`)).status, 404);
 });
 
+test("/api/index is public and exposes a trimmed, description-bearing projection", async () => {
+  const r = await deploy({
+    title: "Indexed",
+    description: "A short summary.",
+    type: "html",
+    files: [file("index.html", "<h1>hi</h1>")],
+  });
+  assert.equal(r.status, 201);
+  const { id } = (await r.json()) as { id: string };
+
+  // Public: no Authorization header is sent.
+  const idx = await fetch(`${base}/api/index`);
+  assert.equal(idx.status, 200);
+  const { deploys } = (await idx.json()) as { deploys: any[] };
+  const found = deploys.find((d) => d.id === id);
+  assert.ok(found, "the deploy should appear in the public index");
+  assert.equal(found.title, "Indexed");
+  assert.equal(found.description, "A short summary.");
+  assert.equal(found.type, "html");
+  assert.equal(typeof found.created_at, "string");
+  // The public projection must never leak the file list.
+  assert.equal("files" in found, false);
+});
+
+test("a deploy with no description surfaces description: null on the index", async () => {
+  const r = await deploy({ title: "Plain", type: "html", files: [file("index.html", "<p>x</p>")] });
+  const { id } = (await r.json()) as { id: string };
+  const { deploys } = (await (await fetch(`${base}/api/index`)).json()) as { deploys: any[] };
+  assert.equal(deploys.find((d) => d.id === id)?.description, null);
+});
+
+test("/api/list still requires a token, while /api/index does not", async () => {
+  assert.equal((await fetch(`${base}/api/list`)).status, 401);
+  assert.equal((await fetch(`${base}/api/index`)).status, 200);
+});
+
 test("a custom --id deploys to a stable URL and overwrites in place, pruning stale files", async () => {
   const slug = "my-app";
   const r1 = await deploy({ id: slug, files: [file("index.html", "v1"), file("extra.txt", "x")] });

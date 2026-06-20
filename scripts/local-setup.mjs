@@ -50,7 +50,7 @@ process.stdout.write(`
        getonup deploy ./path/to/artifact.html        # → prints a live /s/<id> URL
        getonup serve  ./path/to/artifact.html         # …or preview with no server at all
 
-  3. (Optional) rebuild the demo gallery on your local server:
+  3. (Optional) publish the demo landings to your local server (they appear on the live index at /):
        GETONUP_URL=http://localhost:8787 GETONUP_TOKEN=${token} npm run demo
 
   The token lives in server/.dev.vars (gitignored). If \`getonup\` isn't on your PATH, this setup

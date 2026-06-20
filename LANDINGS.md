@@ -4,16 +4,18 @@ Twenty landing-page directions for getonup, each a complete self-contained HTML 
 [`landings/`](./landings). **Ten** are built in real
 [shadcn.io DESIGN.md](https://www.shadcn.io/design) systems (each agent fetched the system's
 exact tokens — colors, typography, components — and applied them); **ten** are house originals.
-Every page — and the gallery itself, a multi-file deploy — was **published with
-`getonup deploy`**, so this is also a live demo of the product.
+Every page was **published with `getonup deploy`**, so this is also a live demo of the product.
 
-The **gallery** is the homepage: a single page linking to all twenty.
+The homepage (`/`) is the **live index** — an auto-generated list of everything published to the
+instance (see [`docs/specs/2026-06-20-live-index-page.md`](./docs/specs/2026-06-20-live-index-page.md)),
+so these demos show up there automatically. The original hand-built gallery is kept as a design
+reference in [`docs/mockups/`](./docs/mockups).
 
-![Gallery](docs/gallery.png)
+![The preserved landing-gallery mockup](docs/gallery.png)
 
 ```bash
-npm run dev         # http://localhost:8787 → serves the committed gallery
-npm run demo        # (re)deploy all 20 + the gallery to your server and set the homepage
+npm run dev         # http://localhost:8787 → serves the live index homepage
+npm run demo        # (re)deploy all 20 landings; they appear on the live index automatically
 ```
 
 ## Design systems (shadcn.io DESIGN.md)
@@ -46,14 +48,14 @@ npm run demo        # (re)deploy all 20 + the gallery to your server and set the
 | Pixel Hog 🦔 | `landings/pixelhog.html` |
 | Ship It 🚀 | `landings/shipit.html` |
 
-Run `npm run demo` to publish all twenty + the gallery to your server, then open the homepage
-(`/`) to browse them live. Deploy IDs are assigned per-server at publish time, so they aren't
+Run `npm run demo` to publish all twenty to your server, then open the homepage (`/`) — the live
+index lists them, newest first. Deploy IDs are assigned per-server at publish time, so they aren't
 listed here. Per-design screenshots are in [`docs/landings/`](./docs/landings).
 
-**Make one design the homepage** (instead of the gallery):
+**Make one design the homepage** (instead of the live index):
 
 ```bash
 cp landings/<key>.html server/public/index.html
-# restore the gallery as homepage:
-cp gallery/index.html server/public/index.html && cp gallery/thumbs/*.png server/public/thumbs/
+# restore the live index homepage:
+git checkout server/public/index.html
 ```
