@@ -34,6 +34,7 @@
     "@babel/parser": "^8.0.0",
     "@types/node": "^20.14.0",
     "esbuild": "^0.23.0",
+    "marked": "^18.0.5",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   }

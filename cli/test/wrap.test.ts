@@ -8,6 +8,48 @@ test("detects types by extension", () => {
   assert.equal(detectType("a.jsx", "export default () => <div/>"), "react");
   assert.equal(detectType("a.vue", "<template><div/></template>"), "vue");
   assert.equal(detectType("a.js", "console.log(1)"), "js");
+  assert.equal(detectType("AGENTS.md", "# Title\n\ntext"), "markdown");
+  assert.equal(detectType("readme.markdown", "# Title"), "markdown");
+});
+
+test("sniffs markdown from content (no extension) via headings/fences", () => {
+  assert.equal(detectType("stdin", "# Heading\n\nsome prose here"), "markdown");
+  assert.equal(detectType("stdin", "```js\ncode\n```"), "markdown");
+  // plain prose without strong markers stays js (conservative)
+  assert.equal(detectType("stdin", "just a line of text"), "js");
+});
+
+test("markdown wrap renders to static HTML — no Babel, no error overlay", () => {
+  const out = wrapToHtml("# Hello\n\nSome **bold** text and a [link](https://x.dev).", "markdown");
+  assert.match(out, /<!doctype html>/);
+  assert.match(out, /<h1[^>]*>Hello<\/h1>/);
+  assert.match(out, /<strong>bold<\/strong>/);
+  assert.match(out, /<a href="https:\/\/x\.dev">link<\/a>/);
+  assert.doesNotMatch(out, /text\/babel/); // must NOT go through Babel
+  assert.doesNotMatch(out, /__getonup_err/); // no runtime error overlay needed
+});
+
+test("markdown title comes from the first H1, falls back to opts.title", () => {
+  assert.match(wrapToHtml("# Real Title\n\nbody", "markdown"), /<title>Real Title<\/title>/);
+  assert.match(wrapToHtml("no heading here", "markdown", { title: "Fallback" }), /<title>Fallback<\/title>/);
+});
+
+test("markdown strips a leading YAML frontmatter block", () => {
+  const out = wrapToHtml("---\nname: x\ndesc: y\n---\n\n# Doc\n\nbody", "markdown");
+  assert.match(out, /<h1[^>]*>Doc<\/h1>/);
+  assert.doesNotMatch(out, /name: x/); // frontmatter not rendered as a table/hr+text
+});
+
+test("markdown heading-only file (with closing #s) still yields title + h1", () => {
+  const out = wrapToHtml("# Title #", "markdown");
+  assert.match(out, /<title>Title<\/title>/); // trailing #s stripped
+  assert.match(out, /<h1[^>]*>Title<\/h1>/);
+});
+
+test("markdown preserves angle brackets inside code spans (the AGENTS.md case)", () => {
+  const out = wrapToHtml("Run `getonup login --url <server> --token <token>`", "markdown");
+  assert.match(out, /&lt;server&gt;/);
+  assert.match(out, /&lt;token&gt;/);
 });
 
 test("detects react from content in .js", () => {

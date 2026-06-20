@@ -16,14 +16,14 @@ server is reachable and warns if its deploy API is disabled.
 ### `getonup deploy <file|dir|->`  ·  aliases: `up`, `push`
 Publish an artifact to a live URL.
 
-- `<file>` — `.html`, `.jsx`/`.tsx`, `.vue`, `.js`/`.ts`. Single components are auto-wrapped.
+- `<file>` — `.html`, `.jsx`/`.tsx`, `.vue`, `.js`/`.ts`, `.md`/`.markdown`. Single components are auto-wrapped.
 - `<dir>` — a built static site (must contain `index.html` at its root).
 - `-` — read the artifact from stdin (pair with `--type`).
 
 | Flag | Effect |
 |---|---|
 | `--name <title>` | a human title for the deploy |
-| `--type html\|react\|vue\|js\|static` | override type detection |
+| `--type html\|react\|vue\|js\|markdown\|static` | override type detection |
 | `--no-wrap` | host the source verbatim (skip auto-wrap) |
 | `--no-tailwind` | don't inject the Tailwind CDN |
 | `--open` | open the URL in your browser |
@@ -95,6 +95,7 @@ Print the version / usage. `--version`, `-v`, `--help`, and `-h` work too.
 | `.jsx` / `.tsx` | React 18 + Babel + esm.sh import map + Tailwind; mounts the default export |
 | `.vue` | Vue 3 via `vue3-sfc-loader` |
 | `.js` / `.ts` | a module shell, transpiled in-browser, with an esm.sh import map for bare imports |
+| `.md` / `.markdown` | rendered to a styled static HTML page (GFM, light/dark); leading YAML frontmatter stripped |
 | a directory | uploaded as a static site (entry: `index.html`) |
 
 Bare `import`s of npm packages resolve at runtime via [esm.sh](https://esm.sh) — no bundler, no
