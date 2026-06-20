@@ -23,6 +23,7 @@ Publish an artifact to a live URL.
 | Flag | Effect |
 |---|---|
 | `--name <title>` | a human title for the deploy |
+| `--id <slug>` (alias `--slug`) | redeploy to a **stable URL** `/s/<slug>`, overwriting whatever is there. 2–64 chars, `a–z 0–9 -`, starts alphanumeric. Without it, each deploy mints a fresh id. |
 | `--type html\|react\|vue\|js\|markdown\|static` | override type detection |
 | `--no-wrap` | host the source verbatim (skip auto-wrap) |
 | `--no-tailwind` | don't inject the Tailwind CDN |
