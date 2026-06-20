@@ -36,6 +36,20 @@ publishes them to a real URL from the command line, on infrastructure you own:
 
 ---
 
+## Install
+
+The CLI is published on npm. To publish to an existing getonup server:
+
+```bash
+npm i -g getonup                  # or run it ad-hoc with: npx getonup <args>
+getonup login --url https://your-getonup.example --token <token>
+getonup deploy counter.tsx
+```
+
+To run your **own** server (no Cloudflare account needed), keep reading.
+
+---
+
 ## Run it locally (no Cloudflare account)
 
 `npm run dev` runs the whole server on your machine via Wrangler's local
@@ -43,7 +57,7 @@ publishes them to a real URL from the command line, on infrastructure you own:
 account, no login, no bucket.** The fastest way to try it:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/getonup.git && cd getonup
+git clone https://github.com/vitorbaptista/getonup.git && cd getonup
 npm install
 npm run setup        # builds + links the getonup CLI, writes a local deploy token, prints the next step
 npm run dev          # serves at http://localhost:8787  (Ctrl-C to stop)

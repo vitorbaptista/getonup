@@ -10,10 +10,10 @@ getonup's backend is **one Cloudflare Worker + one R2 bucket** — it scales to 
 ## Deploy to Cloudflare (≈ 5 minutes)
 
 You need a free [Cloudflare account](https://dash.cloudflare.com/sign-up) and
-[Node](https://nodejs.org) ≥ 20.
+[Node](https://nodejs.org) ≥ 22.18.
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/getonup.git   # your fork
+git clone https://github.com/vitorbaptista/getonup.git   # or your own fork
 cd getonup
 npm install
 
@@ -62,7 +62,15 @@ getonup serves untrusted, AI-generated code. The design keeps that safe:
   token. A malicious artifact's JS has nothing to exfiltrate from your account.
 - **Fail-closed deploys.** If `GETONUP_DEPLOY_TOKEN` isn't set, the deploy API is disabled.
 - **Hard caps** on total size (`MAX_BYTES`) and file count (`MAX_FILES`), path-traversal rejection,
-  and `nosniff` / `no-referrer` headers on served files.
+  and `nosniff` / `no-referrer` / `X-Frame-Options: SAMEORIGIN` headers on served files (set
+  `GETONUP_FRAME_ANCESTORS` to a CSP value, or `""`, if you need artifacts embeddable elsewhere).
+- **The deploy token is the trust boundary.** Anyone holding `GETONUP_DEPLOY_TOKEN` can deploy any
+  content and choose its served `Content-Type`, so `nosniff` protects viewers from MIME-sniffing,
+  not against what the token-holder serves. Treat the token like a deploy key.
+- **No built-in rate limiting.** The default Worker does not throttle `/api/*` or failed auth. For
+  any publicly reachable instance the Cloudflare WAF rate-limit rule under [Hardening](#hardening)
+  is **required, not optional** — the 256-bit token makes online brute-force infeasible, but
+  unthrottled requests can still burn quota.
 - **Path-based by default** (`/s/<id>`). For stronger isolation between deployments, serve each on
   its own subdomain (see Hardening).
 
@@ -74,7 +82,8 @@ getonup serves untrusted, AI-generated code. The design keeps that safe:
 - **Per-deploy subdomain isolation:** map a wildcard (`*.getonup.example.com`) and serve
   `<id>.getonup.example.com` so each artifact gets its own origin. (Path-based is the simple
   default; subdomains are the upgrade.)
-- **Rate-limit `/api/*`** with a Cloudflare WAF rule to bound abuse and spend.
+- **Rate-limit `/api/*`** with a Cloudflare WAF rule — **required for any public instance** — to
+  bound abuse and spend (the default Worker does no application-level throttling).
 
 ## How it works
 

@@ -1,7 +1,7 @@
 # `getonup` — CLI reference
 
-getonup's CLI. The command is **`getonup`**. From the repo without installing, use
-`npm run getonup -- <args>`.
+getonup's CLI. The command is **`getonup`**. Install it with `npm i -g getonup` (or run it
+ad-hoc with `npx getonup <args>`). From a clone without installing, use `npm run getonup -- <args>`.
 
 Configuration is read from `~/.config/getonup/config.json` (written by `getonup login`) or the
 `GETONUP_URL` / `GETONUP_TOKEN` environment variables, which take precedence (handy for CI and

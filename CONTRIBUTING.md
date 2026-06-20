@@ -17,7 +17,7 @@ examples/ sample artifacts you can deploy/serve
 npm install
 npm run setup        # build + link the getonup CLI, write a local deploy token (server/.dev.vars)
 npm run dev          # wrangler dev — local server at http://localhost:8787 (no Cloudflare needed)
-npm test             # CLI unit tests (wrap engine, serve, mcp)
+npm test             # unit tests (cli) + server tests — both workspaces
 npm run typecheck    # both workspaces
 ```
 
@@ -48,6 +48,19 @@ npm run getonup -- deploy examples/counter.tsx  # runs the CLI from source via t
 - **Server**: `server/src/index.ts` — keep it a dumb static host (near-zero CPU so it stays in
   the free-tier budget). Validate inputs, return correct status codes.
 - **CLI commands**: `cli/src/index.ts` (dispatch) + `serve.ts` / `mcp.ts`.
+
+## Releasing
+
+The CLI publishes to npm automatically on a GitHub Release, via the OIDC trusted-publish workflow
+([`.github/workflows/publish.yml`](.github/workflows/publish.yml)). The release tag must match the
+`version` in `cli/package.json`. To cut a release:
+
+1. Bump `version` in `cli/package.json` and move the `## [Unreleased]` notes in
+   [`CHANGELOG.md`](./CHANGELOG.md) under the new version heading.
+2. Commit and merge to `main`.
+3. `git tag vX.Y.Z && git push origin vX.Y.Z`, then create a GitHub Release for that tag
+   (`gh release create vX.Y.Z --generate-notes`).
+4. `publish.yml` builds the CLI and runs `npm publish --workspace cli --provenance`.
 
 ## Ground rules
 
