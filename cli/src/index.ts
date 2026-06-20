@@ -94,7 +94,7 @@ function openInBrowser(url: string): void {
 async function cmdLogin(args: Args): Promise<void> {
   const url = (args.flags.url as string) || args._[0];
   const token = (args.flags.token as string) || args._[1];
-  if (!url) err("usage: cjr login --url <server-url> --token <deploy-token>");
+  if (!url) err("usage: getonup login --url <server-url> --token <deploy-token>");
   const cfg = { url: String(url).replace(/\/+$/, ""), token: token ? String(token) : undefined };
   // Sanity-check the server.
   try {
@@ -102,11 +102,11 @@ async function cmdLogin(args: Args): Promise<void> {
     if (!h?.ok) throw new Error("unexpected response");
     if (!h.deployEnabled) {
       process.stderr.write(
-        c.dim("note: server reports CONJURE_DEPLOY_TOKEN is not set — deploys will be rejected until it is.\n"),
+        c.dim("note: server reports GETONUP_DEPLOY_TOKEN is not set — deploys will be rejected until it is.\n"),
       );
     }
   } catch (e) {
-    err(`could not reach a Conjure server at ${cfg.url}: ${(e as Error).message}`);
+    err(`could not reach a getonup server at ${cfg.url}: ${(e as Error).message}`);
   }
   const p = await saveConfig(cfg);
   process.stdout.write(c.green("✓") + ` logged in to ${c.cyan(cfg.url)}\n` + c.dim(`  saved to ${p}\n`));
@@ -114,10 +114,10 @@ async function cmdLogin(args: Args): Promise<void> {
 
 async function cmdDeploy(args: Args): Promise<void> {
   const { url, token } = await loadConfig();
-  if (!url) err("not configured. Run: cjr login --url <server> --token <token>  (or set CONJURE_URL/CONJURE_TOKEN)");
+  if (!url) err("not configured. Run: getonup login --url <server> --token <token>  (or set GETONUP_URL/GETONUP_TOKEN)");
 
   const target = args._[0];
-  if (!target) err("usage: cjr deploy <file|dir|->  [--name <title>] [--type html|react|vue|js|static] [--no-wrap] [--open] [--json]");
+  if (!target) err("usage: getonup deploy <file|dir|->  [--name <title>] [--type html|react|vue|js|static] [--no-wrap] [--open] [--json]");
 
   const json = !!args.flags.json;
   const quiet = !!args.flags.quiet;
@@ -174,8 +174,8 @@ async function cmdDeploy(args: Args): Promise<void> {
       const msg = (ae.data as { error?: string } | undefined)?.error;
       // Distinguish "the server has no token configured" from "wrong CLI token".
       err(msg && /disabled/i.test(msg)
-        ? `${msg} — for local dev run \`npm run setup\` (writes server/.dev.vars); in production use \`wrangler secret put CONJURE_DEPLOY_TOKEN\`.`
-        : `unauthorized — check your deploy token (run \`cjr login\`).`);
+        ? `${msg} — for local dev run \`npm run setup\` (writes server/.dev.vars); in production use \`wrangler secret put GETONUP_DEPLOY_TOKEN\`.`
+        : `unauthorized — check your deploy token (run \`getonup login\`).`);
     }
     err((e as Error).message);
   }
@@ -203,7 +203,7 @@ async function cmdServe(args: Args): Promise<void> {
   };
   const target = args._[0];
   if (target === "-") return serve(null, opts, await readStdin());
-  if (!target) err("usage: cjr serve <file|dir|-> [--port N] [--open] [--watch] [--type html|react|vue|js|static] [--no-wrap]");
+  if (!target) err("usage: getonup serve <file|dir|-> [--port N] [--open] [--watch] [--type html|react|vue|js|static] [--no-wrap]");
   try {
     await stat(target);
   } catch {
@@ -214,7 +214,7 @@ async function cmdServe(args: Args): Promise<void> {
 
 async function cmdList(): Promise<void> {
   const { url, token } = await loadConfig();
-  if (!url) err("not configured. Run: cjr login …");
+  if (!url) err("not configured. Run: getonup login …");
   const { deploys } = await api.list(url, token);
   if (!deploys.length) {
     process.stdout.write(c.dim("no deploys yet.\n"));
@@ -231,9 +231,9 @@ async function cmdList(): Promise<void> {
 
 async function cmdRm(args: Args): Promise<void> {
   const { url, token } = await loadConfig();
-  if (!url) err("not configured. Run: cjr login …");
+  if (!url) err("not configured. Run: getonup login …");
   const id = args._[0];
-  if (!id) err("usage: cjr rm <id>");
+  if (!id) err("usage: getonup rm <id>");
   try {
     const r = await api.remove(url, token, id);
     process.stdout.write(c.green("✓") + ` removed ${id} (${r.files} file(s))\n`);
@@ -245,7 +245,7 @@ async function cmdRm(args: Args): Promise<void> {
 async function cmdOpen(args: Args): Promise<void> {
   const { url } = await loadConfig();
   const idOrUrl = args._[0];
-  if (!idOrUrl) err("usage: cjr open <id|url>");
+  if (!idOrUrl) err("usage: getonup open <id|url>");
   const full = /^https?:\/\//.test(idOrUrl)
     ? idOrUrl
     : `${(url || "").replace(/\/+$/, "")}/s/${idOrUrl}`;
@@ -260,27 +260,27 @@ async function cmdWhoami(): Promise<void> {
 }
 
 function help(): void {
-  process.stdout.write(`${c.bold("conjure")} — your AI artifact, live in seconds.
+  process.stdout.write(`${c.bold("getonup")} — your AI artifact, live in seconds.
 
 ${c.bold("Usage")}
-  cjr login --url <server> --token <token>
-  cjr deploy <file|dir|->   [--name <title>] [--type html|react|vue|js|static]
+  getonup login --url <server> --token <token>
+  getonup deploy <file|dir|->   [--name <title>] [--type html|react|vue|js|static]
                                 [--no-wrap] [--no-tailwind] [--open] [--json] [--quiet]
-  cjr serve <file|dir|->    [--port N] [--host H] [--open] [--watch] [--no-wrap]   ${c.dim("# local preview, no deploy")}
-  cjr list
-  cjr open <id|url>
-  cjr rm <id>
-  cjr whoami
-  cjr mcp                       ${c.dim("# run as an MCP server (stdio) for agents")}
+  getonup serve <file|dir|->    [--port N] [--host H] [--open] [--watch] [--no-wrap]   ${c.dim("# local preview, no deploy")}
+  getonup list
+  getonup open <id|url>
+  getonup rm <id>
+  getonup whoami
+  getonup mcp                       ${c.dim("# run as an MCP server (stdio) for agents")}
 
 ${c.bold("Examples")}
-  cjr deploy index.html
-  cjr deploy counter.tsx --open
-  cat art.html | cjr deploy - --name demo
-  cjr deploy ./dist            ${c.dim("# a built static site (needs index.html)")}
-  cjr serve counter.tsx --open --watch   ${c.dim("# instant local preview, live reload, no deploy")}
+  getonup deploy index.html
+  getonup deploy counter.tsx --open
+  cat art.html | getonup deploy - --name demo
+  getonup deploy ./dist            ${c.dim("# a built static site (needs index.html)")}
+  getonup serve counter.tsx --open --watch   ${c.dim("# instant local preview, live reload, no deploy")}
 
-Config lives in ~/.config/conjure/config.json, or env CONJURE_URL / CONJURE_TOKEN.
+Config lives in ~/.config/getonup/config.json, or env GETONUP_URL / GETONUP_TOKEN.
 `);
 }
 
@@ -298,7 +298,7 @@ async function main(): Promise<void> {
     case "rm": case "delete": case "remove": return cmdRm(args);
     case "open": return cmdOpen(args);
     case "whoami": case "config": return cmdWhoami();
-    case "version": case "--version": case "-v": process.stdout.write(`conjure ${VERSION}\n`); return;
+    case "version": case "--version": case "-v": process.stdout.write(`getonup ${VERSION}\n`); return;
     case undefined: case "help": case "--help": case "-h": help(); return;
     default:
       process.stderr.write(c.red(`unknown command: ${cmd}\n\n`));

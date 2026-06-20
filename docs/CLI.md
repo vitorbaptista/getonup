@@ -1,20 +1,19 @@
-# `cjr` — CLI reference
+# `getonup` — CLI reference
 
-Conjure's CLI. The command is **`cjr`**; `conjure` and `conjure-live` are aliases (bare `conjure`
-clashes with ImageMagick on many systems, so docs use `cjr`). From the repo without installing,
-use `npm run cjr -- <args>`.
+getonup's CLI. The command is **`getonup`**. From the repo without installing, use
+`npm run getonup -- <args>`.
 
-Configuration is read from `~/.config/conjure/config.json` (written by `cjr login`) or the
-`CONJURE_URL` / `CONJURE_TOKEN` environment variables, which take precedence (handy for CI and
+Configuration is read from `~/.config/getonup/config.json` (written by `getonup login`) or the
+`GETONUP_URL` / `GETONUP_TOKEN` environment variables, which take precedence (handy for CI and
 agents). `deploy` and `serve` print the live URL as the last line of stdout.
 
 ## Commands
 
-### `cjr login --url <server> --token <token>`
-Save the server URL + deploy token to `~/.config/conjure/config.json`. Sanity-checks that the
+### `getonup login --url <server> --token <token>`
+Save the server URL + deploy token to `~/.config/getonup/config.json`. Sanity-checks that the
 server is reachable and warns if its deploy API is disabled.
 
-### `cjr deploy <file|dir|->`  ·  aliases: `up`, `push`
+### `getonup deploy <file|dir|->`  ·  aliases: `up`, `push`
 Publish an artifact to a live URL.
 
 - `<file>` — `.html`, `.jsx`/`.tsx`, `.vue`, `.js`/`.ts`. Single components are auto-wrapped.
@@ -32,13 +31,13 @@ Publish an artifact to a live URL.
 | `--quiet` | print only the URL |
 
 ```bash
-cjr deploy report.html
-cjr deploy dashboard.tsx --open
-cat app.html | cjr deploy - --type html --json
-cjr deploy ./dist --name "my site"
+getonup deploy report.html
+getonup deploy dashboard.tsx --open
+cat app.html | getonup deploy - --type html --json
+getonup deploy ./dist --name "my site"
 ```
 
-### `cjr serve <file|dir|->`  ·  alias: `preview`
+### `getonup serve <file|dir|->`  ·  alias: `preview`
 Wrap + host an artifact on `localhost` — no token, no deploy, nothing leaves your machine.
 
 | Flag | Effect |
@@ -50,41 +49,41 @@ Wrap + host an artifact on `localhost` — no token, no deploy, nothing leaves y
 | `--no-wrap` / `--no-tailwind` | host raw source / skip the Tailwind CDN |
 
 ```bash
-cjr serve counter.tsx --open --watch
-cjr serve ./dist --host 0.0.0.0
-cat page.html | cjr serve -
+getonup serve counter.tsx --open --watch
+getonup serve ./dist --host 0.0.0.0
+cat page.html | getonup serve -
 ```
 
-### `cjr list`  ·  alias: `ls`
+### `getonup list`  ·  alias: `ls`
 List everything published to the configured server.
 
-### `cjr rm <id>`  ·  aliases: `delete`, `remove`
+### `getonup rm <id>`  ·  aliases: `delete`, `remove`
 Delete a published artifact by its id (the `<id>` in `/s/<id>`).
 
-### `cjr open <id|url>`
+### `getonup open <id|url>`
 Open a published artifact in your browser.
 
-### `cjr whoami`  ·  alias: `config`
+### `getonup whoami`  ·  alias: `config`
 Show the configured server and whether a token is set.
 
-### `cjr mcp`
-Run Conjure as an [MCP](https://modelcontextprotocol.io) server over stdio, exposing
+### `getonup mcp`
+Run getonup as an [MCP](https://modelcontextprotocol.io) server over stdio, exposing
 `deploy_artifact`, `list_deploys`, and `remove_deploy` tools to MCP-aware agents (Claude Code,
 Cursor, …). Configure it with:
 
 ```json
 {
   "mcpServers": {
-    "conjure": {
-      "command": "cjr",
+    "getonup": {
+      "command": "getonup",
       "args": ["mcp"],
-      "env": { "CONJURE_URL": "https://your-conjure.example", "CONJURE_TOKEN": "your-token" }
+      "env": { "GETONUP_URL": "https://your-getonup.example", "GETONUP_TOKEN": "your-token" }
     }
   }
 }
 ```
 
-### `cjr version`  ·  `cjr help`
+### `getonup version`  ·  `getonup help`
 Print the version / usage. `--version`, `-v`, `--help`, and `-h` work too.
 
 ## Auto-wrap quick reference

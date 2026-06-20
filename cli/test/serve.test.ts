@@ -10,7 +10,7 @@ test("serve wraps a React artifact and hosts it locally", async () => {
     assert.match(res.headers.get("content-type") || "", /text\/html/);
     const html = await res.text();
     assert.match(html, /type="importmap"/);
-    assert.match(html, /window\.__conjure_default = function App/);
+    assert.match(html, /window\.__getonup_default = function App/);
     // SPA-ish fallback: unknown extension-less path serves the entry
     assert.equal((await fetch(url + "/whatever")).status, 200);
     // a missing asset (with extension) 404s
@@ -32,7 +32,7 @@ test("serve hosts a raw HTML string unchanged", async () => {
 test("serve --watch injects a live-reload client", async () => {
   const { url, close } = await startServer(null, { port: 4401, watch: true }, "<!doctype html><body>hello</body>");
   try {
-    assert.match(await (await fetch(url)).text(), /EventSource\("\/__conjure_live"\)/);
+    assert.match(await (await fetch(url)).text(), /EventSource\("\/__getonup_live"\)/);
   } finally {
     close();
   }

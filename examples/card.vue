@@ -12,7 +12,7 @@
 <script setup>
 import { ref, computed } from "vue";
 const name = "Ada Lovelace";
-const role = "conjured with vue 3";
+const role = "getonupd with vue 3";
 const likes = ref(0);
 const initials = computed(() =>
   name.split(" ").map((w) => w[0]).join("")

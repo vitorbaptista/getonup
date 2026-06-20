@@ -1,13 +1,13 @@
 /**
- * `cjr mcp` — run Conjure as an MCP server over stdio.
+ * `getonup mcp` — run getonup as an MCP server over stdio.
  *
  * Lets any MCP-aware agent (Claude Code, Cursor, …) publish artifacts as tools, without
  * shelling out to the CLI. Hand-rolled minimal JSON-RPC 2.0 (newline-delimited) so the CLI
  * stays dependency-free. Tools: deploy_artifact, list_deploys, remove_deploy.
  *
  * Configure in an agent (env carries the server + token):
- *   { "mcpServers": { "conjure": { "command": "cjr", "args": ["mcp"],
- *       "env": { "CONJURE_URL": "https://…", "CONJURE_TOKEN": "…" } } } }
+ *   { "mcpServers": { "getonup": { "command": "getonup", "args": ["mcp"],
+ *       "env": { "GETONUP_URL": "https://…", "GETONUP_TOKEN": "…" } } } }
  */
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, relative, sep, extname, basename } from "node:path";
@@ -92,7 +92,7 @@ const TOOLS = [
   {
     name: "deploy_artifact",
     description:
-      "Publish a web artifact to a live, shareable URL on the configured Conjure server. Pass `content` (the artifact source — HTML, a React/Vue/JS component) OR `path` (a file or built folder on disk). Single components are auto-wrapped (React 18/Babel/Tailwind, Vue 3). Returns the live URL.",
+      "Publish a web artifact to a live, shareable URL on the configured getonup server. Pass `content` (the artifact source — HTML, a React/Vue/JS component) OR `path` (a file or built folder on disk). Single components are auto-wrapped (React 18/Babel/Tailwind, Vue 3). Returns the live URL.",
     inputSchema: {
       type: "object",
       properties: {
@@ -106,7 +106,7 @@ const TOOLS = [
   },
   {
     name: "list_deploys",
-    description: "List artifacts published to the configured Conjure server.",
+    description: "List artifacts published to the configured getonup server.",
     inputSchema: { type: "object", properties: {} },
   },
   {
@@ -121,7 +121,7 @@ async function callTool(name: string, args: any): Promise<{ content: { type: str
   const { url, token } = await loadConfig();
   if (!url) {
     return toolResult(
-      "Conjure is not configured. Set CONJURE_URL (and CONJURE_TOKEN) in this MCP server's env, or run `cjr login` first.",
+      "getonup is not configured. Set GETONUP_URL (and GETONUP_TOKEN) in this MCP server's env, or run `getonup login` first.",
       true,
     );
   }
@@ -159,7 +159,7 @@ export async function respond(msg: RpcMessage): Promise<RpcMessage | null> {
       result: {
         protocolVersion: params?.protocolVersion || "2025-06-18",
         capabilities: { tools: {} },
-        serverInfo: { name: "conjure", version: VERSION },
+        serverInfo: { name: "getonup", version: VERSION },
       },
     };
   }

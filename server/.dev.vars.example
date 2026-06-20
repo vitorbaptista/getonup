@@ -1,6 +1,6 @@
 # `npm run setup` creates server/.dev.vars with a random token automatically — you usually don't
 # need to touch this file. To set it up by hand, copy this to server/.dev.vars. In production, set
-# the real secret with:  wrangler secret put CONJURE_DEPLOY_TOKEN
+# the real secret with:  wrangler secret put GETONUP_DEPLOY_TOKEN
 #
 # Generate a strong token, e.g.:  openssl rand -hex 32
-CONJURE_DEPLOY_TOKEN=dev-local-token-change-me
+GETONUP_DEPLOY_TOKEN=dev-local-token-change-me

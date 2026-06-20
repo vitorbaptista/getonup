@@ -8,16 +8,16 @@ export interface Config {
 }
 
 function configDir(): string {
-  if (process.env.CONJURE_CONFIG_DIR) return process.env.CONJURE_CONFIG_DIR;
+  if (process.env.GETONUP_CONFIG_DIR) return process.env.GETONUP_CONFIG_DIR;
   const base = process.env.XDG_CONFIG_HOME || join(homedir(), ".config");
-  return join(base, "conjure");
+  return join(base, "getonup");
 }
 
 function configPath(): string {
   return join(configDir(), "config.json");
 }
 
-/** File config, with CONJURE_URL / CONJURE_TOKEN env vars taking precedence. */
+/** File config, with GETONUP_URL / GETONUP_TOKEN env vars taking precedence. */
 export async function loadConfig(): Promise<Config> {
   let fileCfg: Config = {};
   try {
@@ -27,8 +27,8 @@ export async function loadConfig(): Promise<Config> {
     /* no config file yet, or malformed — fall back to env/empty */
   }
   return {
-    url: process.env.CONJURE_URL || fileCfg.url,
-    token: process.env.CONJURE_TOKEN || fileCfg.token,
+    url: process.env.GETONUP_URL || fileCfg.url,
+    token: process.env.GETONUP_TOKEN || fileCfg.token,
   };
 }
 

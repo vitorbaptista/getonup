@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Conjure — Your AI artifact, live in seconds.</title>
-<meta name="description" content="Conjure turns any AI-generated web artifact into a live, shareable URL with one CLI command. Open-source, self-hostable, scales to zero. One Cloudflare Worker + R2." />
+<title>getonup — Your AI artifact, live in seconds.</title>
+<meta name="description" content="getonup turns any AI-generated web artifact into a live, shareable URL with one CLI command. Open-source, self-hostable, scales to zero. One Cloudflare Worker + R2." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
@@ -234,7 +234,7 @@
 
 <nav>
   <div class="wrap nav-in">
-    <a href="#top" class="brand" style="text-decoration:none"><span class="star">✦</span>Conjure</a>
+    <a href="#top" class="brand" style="text-decoration:none"><span class="star">✦</span>getonup</a>
     <div class="nav-links">
       <a class="lnk" href="#how">How it works</a>
       <a class="lnk" href="#features">Features</a>
@@ -257,7 +257,7 @@
         </span>
       </h1>
       <p class="sub rv">
-        Hand it one <b>.html</b>, <b>.tsx</b>, or <b>.vue</b> — Conjure auto-wraps it
+        Hand it one <b>.html</b>, <b>.tsx</b>, or <b>.vue</b> — getonup auto-wraps it
         and ships a real, shareable URL with a single command. One Cloudflare
         Worker + R2. No database. No always-on server. <b>~$0 idle.</b>
       </p>
@@ -274,16 +274,16 @@
           <path d="M112 6 l-9 1 m9-1 l-2 9" stroke="#1D4AFF" stroke-width="3" stroke-linecap="round"/>
         </svg>
       </p>
-      <div class="term" role="img" aria-label="Terminal running: cjr deploy counter.tsx, returns a live URL">
+      <div class="term" role="img" aria-label="Terminal running: getonup deploy counter.tsx, returns a live URL">
         <div class="term-bar">
           <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
-          <span class="term-title">~/agent/artifacts — conjure</span>
+          <span class="term-title">~/agent/artifacts — getonup</span>
         </div>
         <div class="term-body" id="tbody">
           <span class="ln"><span class="prompt">$ </span><span class="cmd" id="typed"></span><span class="caret" id="caret"></span></span>
           <span class="ln out" id="o1" style="display:none"><span class="muted">› wrapping React 18 + Tailwind…</span></span>
           <span class="ln out" id="o2" style="display:none"><span class="muted">› uploading to R2…</span></span>
-          <span class="ln out" id="o3" style="display:none"><span class="ok">✓ live</span> → <span class="url">https://conjure.example.com/s/iwcmg3dt</span></span>
+          <span class="ln out" id="o3" style="display:none"><span class="ok">✓ live</span> → <span class="url">https://getonup.example.com/s/iwcmg3dt</span></span>
         </div>
       </div>
     </div>
@@ -300,7 +300,7 @@
         <span class="kicker rv">Three steps. That's it.</span>
         <h2 class="rv">From file to live URL.</h2>
       </div>
-      <p class="sec-note rv">No viewer login. No dashboard wrangling. Your agent writes a file, Conjure does the rest.</p>
+      <p class="sec-note rv">No viewer login. No dashboard wrangling. Your agent writes a file, getonup does the rest.</p>
     </div>
 
     <div class="steps">
@@ -312,7 +312,7 @@
       <div class="step rv">
         <span class="num">2</span>
         <h3>Run one command</h3>
-        <p><code>cjr deploy &lt;file&gt;</code> auto-wraps the component into a self-contained page and uploads it straight to your bucket.</p>
+        <p><code>getonup deploy &lt;file&gt;</code> auto-wraps the component into a self-contained page and uploads it straight to your bucket.</p>
       </div>
       <div class="step rv">
         <span class="num">3</span>
@@ -372,10 +372,10 @@
   <div class="wrap">
     <div class="bigcta rv">
       <h2>Ship your next artifact live.</h2>
-      <p>Clone the repo, point it at your Cloudflare account, and start conjuring URLs in minutes.</p>
+      <p>Clone the repo, point it at your Cloudflare account, and start shipping URLs in minutes.</p>
       <div style="display:flex;justify-content:center;margin-bottom:24px">
         <div class="copyline">
-          <span><span class="pl">$</span> cjr deploy counter.tsx</span>
+          <span><span class="pl">$</span> getonup deploy counter.tsx</span>
           <button class="copybtn" id="copy" aria-label="Copy command">Copy</button>
         </div>
       </div>
@@ -392,7 +392,7 @@
   <div class="wrap">
     <div class="foot">
       <div>
-        <a href="#top" class="brand" style="text-decoration:none"><span class="star">✦</span>Conjure</a>
+        <a href="#top" class="brand" style="text-decoration:none"><span class="star">✦</span>getonup</a>
         <p style="font-size:13.5px;margin-top:12px;max-width:280px">The one-command way to turn any AI-generated web artifact into a live, shareable URL.</p>
         <div class="foot-tags">
           <span class="pill">self-hosted</span>
@@ -410,7 +410,7 @@
       </div>
     </div>
     <div class="foot-bottom">
-      <span>© 2026 Conjure — free software, MIT licensed.</span>
+      <span>© 2026 getonup — free software, MIT licensed.</span>
       <span>Built by devs, for devs &amp; their agents. ✦</span>
     </div>
   </div>
@@ -419,7 +419,7 @@
 <script>
   // Typewriter for hero terminal
   (function(){
-    var cmd = "cjr deploy counter.tsx";
+    var cmd = "getonup deploy counter.tsx";
     var el = document.getElementById('typed');
     var caret = document.getElementById('caret');
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -451,7 +451,7 @@
     var btn=document.getElementById('copy');
     if(!btn) return;
     btn.addEventListener('click', function(){
-      var text="cjr deploy counter.tsx";
+      var text="getonup deploy counter.tsx";
       var done=function(){
         btn.textContent="Copied ✓"; btn.classList.add('done');
         setTimeout(function(){btn.textContent="Copy";btn.classList.remove('done');},1600);

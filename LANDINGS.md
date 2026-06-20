@@ -1,11 +1,11 @@
-# Conjure — landing page designs
+# getonup — landing page designs
 
-Fifteen landing-page directions for Conjure, each a complete self-contained HTML file in
+Fifteen landing-page directions for getonup, each a complete self-contained HTML file in
 [`landings/`](./landings). **Ten** are built in real
 [shadcn.io DESIGN.md](https://www.shadcn.io/design) systems (each agent fetched the system's
 exact tokens — colors, typography, components — and applied them); **five** are house originals.
 Every page — and the gallery itself, a multi-file deploy — was **published with
-`cjr deploy`**, so this is also a live demo of the product.
+`getonup deploy`**, so this is also a live demo of the product.
 
 The **gallery** is the homepage: a single page linking to all fifteen.
 

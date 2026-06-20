@@ -1,6 +1,6 @@
 <div align="center">
 
-# ✨ Conjure
+# ✨ getonup
 
 **Your AI artifact, live in seconds.**
 
@@ -8,8 +8,8 @@ Turn any AI-generated web artifact — an HTML file, a React/Vue component, or a
 folder — into a **live, shareable URL** with one command. Open-source, self-hosted, scale-to-zero.
 
 ```bash
-cjr deploy counter.tsx
-✓ live → https://conjure.example.com/s/iwcmg3dt
+getonup deploy counter.tsx
+✓ live → https://getonup.example.com/s/iwcmg3dt
 ```
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-22d3ee)](./LICENSE)
@@ -17,7 +17,7 @@ cjr deploy counter.tsx
 
 <br/>
 
-<img src="docs/landings/midnight.png" alt="Conjure landing page" width="760" />
+<img src="docs/landings/midnight.png" alt="getonup landing page" width="760" />
 
 </div>
 
@@ -25,10 +25,10 @@ cjr deploy counter.tsx
 
 ## Why
 
-AI assistants generate gorgeous little apps — but they're trapped in a chat window. Conjure
+AI assistants generate gorgeous little apps — but they're trapped in a chat window. getonup
 publishes them to a real URL from the command line, on infrastructure you own:
 
-- **One command** — `cjr deploy app.tsx` prints a live URL. No build step, no boilerplate.
+- **One command** — `getonup deploy app.tsx` prints a live URL. No build step, no boilerplate.
 - **Agent-native** — drop a snippet in `AGENTS.md` and any coding agent can publish its own work.
 - **Auto-wrap** — hand it a bare `.tsx`/`.vue`/`.js` and it becomes a self-contained, runnable
   page (React 18 + Babel + Tailwind, Vue 3). HTML files and static folders are served as-is.
@@ -43,19 +43,19 @@ publishes them to a real URL from the command line, on infrastructure you own:
 account, no login, no bucket.** The fastest way to try it:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/conjure.git && cd conjure
+git clone https://github.com/YOUR_USERNAME/getonup.git && cd getonup
 npm install
-npm run setup        # builds + links the cjr CLI, writes a local deploy token, prints the next step
+npm run setup        # builds + links the getonup CLI, writes a local deploy token, prints the next step
 npm run dev          # serves at http://localhost:8787  (Ctrl-C to stop)
 ```
 
-`npm run setup` prints a ready-to-run `cjr login` line with your generated token. In a second
+`npm run setup` prints a ready-to-run `getonup login` line with your generated token. In a second
 terminal:
 
 ```bash
-cjr login --url http://localhost:8787 --token <token-from-setup>
-cjr deploy examples/counter.tsx        # auto-wrapped React → http://localhost:8787/s/<id>
-cjr serve  examples/counter.tsx        # …or just preview it — no server, no token
+getonup login --url http://localhost:8787 --token <token-from-setup>
+getonup deploy examples/counter.tsx        # auto-wrapped React → http://localhost:8787/s/<id>
+getonup serve  examples/counter.tsx        # …or just preview it — no server, no token
 ```
 
 Ready for a public URL? See **[Self-hosting on Cloudflare »](docs/SELF-HOSTING.md)**.
@@ -65,15 +65,15 @@ Ready for a public URL? See **[Self-hosting on Cloudflare »](docs/SELF-HOSTING.
 ## Using the CLI
 
 ```bash
-cjr deploy index.html              # a full HTML file → served as-is
-cjr deploy counter.tsx --open      # a React component → auto-wrapped & opened in your browser
-cjr deploy card.vue                # a Vue SFC → auto-wrapped
-cat art.html | cjr deploy -        # pipe from stdin
-cjr deploy ./dist                  # a built static site (folder with index.html)
+getonup deploy index.html              # a full HTML file → served as-is
+getonup deploy counter.tsx --open      # a React component → auto-wrapped & opened in your browser
+getonup deploy card.vue                # a Vue SFC → auto-wrapped
+cat art.html | getonup deploy -        # pipe from stdin
+getonup deploy ./dist                  # a built static site (folder with index.html)
 
-cjr list                           # everything you've published
-cjr rm <id>                        # take one down
-cjr serve app.tsx --watch          # local preview with live-reload (no deploy, no token)
+getonup list                           # everything you've published
+getonup rm <id>                        # take one down
+getonup serve app.tsx --watch          # local preview with live-reload (no deploy, no token)
 ```
 
 `deploy` prints the live URL as the last stdout line — `--json` for structured output, `--quiet`
@@ -81,7 +81,7 @@ for just the URL. Full command + flag reference: **[docs/CLI.md](docs/CLI.md)**.
 
 ### What you can deploy
 
-| You give it | Conjure does |
+| You give it | getonup does |
 |---|---|
 | `.html` (full document) | serves it verbatim |
 | `.html` (fragment) | wraps it in a minimal styled page |
@@ -102,36 +102,35 @@ for just the URL. Full command + flag reference: **[docs/CLI.md](docs/CLI.md)**.
 
 ## Give it to your agent
 
-The point of Conjure: your coding agent publishes its own work. Add this to your project's
+The point of getonup: your coding agent publishes its own work. Add this to your project's
 `AGENTS.md` (or `CLAUDE.md`, `.cursorrules`, …):
 
 ```markdown
 ## Publishing artifacts
 To share a web artifact (HTML page, React/Vue component, or built static site) as a live URL,
-run: `cjr deploy <file-or-dir>` and give the user the printed URL.
+run: `getonup deploy <file-or-dir>` and give the user the printed URL.
 - Single components are auto-wrapped (React/Vue/Tailwind) — just point at the .tsx/.vue/.html.
 - Use `--json` to parse the result.
 ```
 
 A ready-to-copy block is in [`AGENTS.md`](./AGENTS.md), and there's a Claude Code skill in
-[`skills/conjure`](./skills/conjure).
+[`skills/getonup`](./skills/getonup).
 
-**…or as an MCP server:** `cjr mcp` exposes `deploy_artifact`, `list_deploys`, and `remove_deploy`
+**…or as an MCP server:** `getonup mcp` exposes `deploy_artifact`, `list_deploys`, and `remove_deploy`
 over stdio to any MCP-aware agent:
 
 ```json
-{ "mcpServers": { "conjure": { "command": "cjr", "args": ["mcp"],
-  "env": { "CONJURE_URL": "https://your-conjure.example", "CONJURE_TOKEN": "your-token" } } } }
+{ "mcpServers": { "getonup": { "command": "getonup", "args": ["mcp"],
+  "env": { "GETONUP_URL": "https://your-getonup.example", "GETONUP_TOKEN": "your-token" } } } }
 ```
 
 ---
 
-## The `cjr` command
+## The `getonup` command
 
-`cjr` is the CLI (short and collision-free). `conjure` and `conjure-live` are aliases — but bare
-`conjure` clashes with ImageMagick's `/usr/bin/conjure` on many systems, so the docs use `cjr`.
-Config lives in `~/.config/conjure/config.json`, or pass `CONJURE_URL` / `CONJURE_TOKEN` env vars
-(handy for CI and agents). From the repo without installing: `npm run cjr -- <args>`.
+`getonup` is the CLI. Config lives in `~/.config/getonup/config.json`, or pass `GETONUP_URL` /
+`GETONUP_TOKEN` env vars (handy for CI and agents). From the repo without installing:
+`npm run getonup -- <args>`.
 
 ---
 
@@ -141,9 +140,9 @@ Config lives in `~/.config/conjure/config.json`, or pass `CONJURE_URL` / `CONJUR
   secure, and harden your instance; plus hosting alternatives (GitHub Pages, Datasette Apps).
 - **[CLI reference »](docs/CLI.md)** — every command and flag.
 - **[Architecture & design »](PLAN.md)** — how the CLI and Worker fit together.
-- **[Landing designs »](LANDINGS.md)** — fifteen demo landing pages, all deployed through Conjure.
+- **[Landing designs »](LANDINGS.md)** — fifteen demo landing pages, all deployed through getonup.
 - **[Contributing »](CONTRIBUTING.md)** — dev setup and project layout.
 
 ## License
 
-[MIT](./LICENSE) — Conjure contributors.
+[MIT](./LICENSE) — getonup contributors.

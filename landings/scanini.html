@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Conjure — Your AI artifact, live in seconds</title>
-<meta name="description" content="Conjure turns any AI-generated web artifact into a live, shareable URL with one CLI command. One Cloudflare Worker + R2. Scales to zero. MIT." />
+<title>getonup — Your AI artifact, live in seconds</title>
+<meta name="description" content="getonup turns any AI-generated web artifact into a live, shareable URL with one CLI command. One Cloudflare Worker + R2. Scales to zero. MIT." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Boldonse&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -379,11 +379,11 @@
 <body>
 
   <div class="announce">
-    <span><b>New:</b> Drop a snippet in <b>AGENTS.md</b> and any coding agent can publish — <b>cjr deploy</b></span>
+    <span><b>New:</b> Drop a snippet in <b>AGENTS.md</b> and any coding agent can publish — <b>getonup deploy</b></span>
   </div>
 
   <nav>
-    <div class="brand"><span class="dot"></span>Conjure</div>
+    <div class="brand"><span class="dot"></span>getonup</div>
     <div class="nav-links">
       <a class="txt" href="#how">How it works</a>
       <a class="txt" href="#features">Features</a>
@@ -399,7 +399,7 @@
     <span class="hero-eyebrow">Open source · self-hostable</span>
     <h1 class="display">Your AI artifact, <span class="red">live in seconds.</span></h1>
     <p class="subhead">
-      Conjure turns any AI-generated web artifact — an HTML file, a React or Vue
+      getonup turns any AI-generated web artifact — an HTML file, a React or Vue
       component, or a built static folder — into a live, shareable URL with one
       CLI command. One Cloudflare Worker, one R2 bucket, zero servers to babysit.
     </p>
@@ -409,18 +409,18 @@
       <a class="pill pill-out" href="#">View on GitHub</a>
     </div>
 
-    <div class="terminal" role="img" aria-label="Terminal running cjr deploy counter.tsx, returning a live URL">
+    <div class="terminal" role="img" aria-label="Terminal running getonup deploy counter.tsx, returning a live URL">
       <div class="term-bar">
         <span class="tdot td1"></span><span class="tdot td2"></span><span class="tdot td3"></span>
-        <span class="tlabel">~/project — conjure</span>
+        <span class="tlabel">~/project — getonup</span>
       </div>
       <div class="term-body">
-        <div><span class="prompt">$</span> <span class="cmd">cjr deploy</span> <span class="flag">counter.tsx</span></div>
+        <div><span class="prompt">$</span> <span class="cmd">getonup deploy</span> <span class="flag">counter.tsx</span></div>
         <div class="ok">✓ auto-wrapped React 18 + Tailwind</div>
         <div class="ok">✓ uploaded to R2 · 14&nbsp;KB</div>
-        <div class="ok">✓ live <span class="arrow">→</span> <span class="url">https://conjure.example.com/s/iwcmg3dt</span><span class="caret" id="caret"></span></div>
+        <div class="ok">✓ live <span class="arrow">→</span> <span class="url">https://getonup.example.com/s/iwcmg3dt</span><span class="caret" id="caret"></span></div>
         <div class="term-copy">
-          <button class="copybtn" id="copybtn" data-cmd="cjr deploy counter.tsx">Copy command</button>
+          <button class="copybtn" id="copybtn" data-cmd="getonup deploy counter.tsx">Copy command</button>
           <span style="font-size:12px;color:#7d8590">no viewer login · public link</span>
         </div>
       </div>
@@ -428,7 +428,7 @@
   </header>
 
   <!-- stats -->
-  <section class="stats" aria-label="Conjure at a glance">
+  <section class="stats" aria-label="getonup at a glance">
     <div class="stats-inner">
       <div class="stat reveal"><div class="fig">1</div><div class="lab">Worker + bucket — the whole backend</div></div>
       <div class="stat reveal"><div class="fig">$0</div><div class="lab">When idle — it truly scales to zero</div></div>
@@ -450,7 +450,7 @@
       <div class="section-head">
         <span class="kicker">How it works</span>
         <h2 class="sh">Three steps from file to <span class="red">live link.</span></h2>
-        <p>No dashboard, no build pipeline, no waiting on a server to spin up. Hand Conjure one file and it does the rest.</p>
+        <p>No dashboard, no build pipeline, no waiting on a server to spin up. Hand getonup one file and it does the rest.</p>
       </div>
       <div class="steps">
         <div class="step reveal">
@@ -461,7 +461,7 @@
         <div class="step reveal">
           <div class="num">02</div>
           <h3>Run one command</h3>
-          <p><code>cjr deploy</code> auto-wraps single components into a self-contained page and uploads it to your R2 bucket in seconds.</p>
+          <p><code>getonup deploy</code> auto-wraps single components into a self-contained page and uploads it to your R2 bucket in seconds.</p>
         </div>
         <div class="step reveal">
           <div class="num">03</div>
@@ -478,7 +478,7 @@
       <div class="section-head">
         <span class="kicker">What you get</span>
         <h2 class="sh">Tiny footprint. <span class="red">Big reach.</span></h2>
-        <p>Conjure is deliberately small — one Worker, one bucket, no database — so it stays cheap, fast, and entirely yours.</p>
+        <p>getonup is deliberately small — one Worker, one bucket, no database — so it stays cheap, fast, and entirely yours.</p>
       </div>
       <div class="features">
         <div class="feature reveal">
@@ -493,7 +493,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="m6 9 6-6 6 6"/><circle cx="12" cy="18" r="2"/></svg>
           </div>
           <h3>Agent-native</h3>
-          <p>Drop one snippet in <b>AGENTS.md</b> and any coding agent can publish on its own. Conjure was built to be called by a machine, not clicked by a human.</p>
+          <p>Drop one snippet in <b>AGENTS.md</b> and any coding agent can publish on its own. getonup was built to be called by a machine, not clicked by a human.</p>
         </div>
         <div class="feature reveal">
           <div class="ficon" aria-hidden="true">
@@ -525,12 +525,12 @@
   </section>
 
   <!-- giant wordmark -->
-  <div class="wordmark" aria-hidden="true"><span>CONJURE</span></div>
+  <div class="wordmark" aria-hidden="true"><span>GETONUP</span></div>
 
   <!-- footer -->
   <footer>
     <div class="foot-inner">
-      <div class="foot-brand"><span class="dot"></span>Conjure</div>
+      <div class="foot-brand"><span class="dot"></span>getonup</div>
       <div class="foot-meta">
         <span class="tag">MIT licensed</span>
         <span class="tag">self-hosted · scale-to-zero</span>

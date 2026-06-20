@@ -1,9 +1,9 @@
 {
-  "name": "conjure-monorepo",
+  "name": "getonup-monorepo",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Conjure — open-source, self-hostable tool to turn any AI-generated web artifact into a live, shareable URL.",
+  "description": "getonup — open-source, self-hostable tool to turn any AI-generated web artifact into a live, shareable URL.",
   "workspaces": [
     "cli",
     "server"
@@ -13,7 +13,7 @@
     "predev": "node scripts/local-setup.mjs --quiet",
     "dev": "npm --workspace server run dev",
     "deploy": "npm --workspace server run deploy",
-    "cjr": "npm --workspace cli run dev --",
+    "getonup": "npm --workspace cli run dev --",
     "build": "npm --workspace cli run build",
     "test": "npm --workspace cli run test",
     "typecheck": "npm --workspace cli run typecheck && npm --workspace server run typecheck",

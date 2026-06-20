@@ -33,7 +33,7 @@ test("react wrap produces a runnable document", () => {
   assert.match(out, /type="importmap"/);
   assert.match(out, /esm\.sh\/react@18/);
   assert.match(out, /babel\/standalone/);
-  assert.match(out, /window\.__conjure_default = function App/); // export default rewritten
+  assert.match(out, /window\.__getonup_default = function App/); // export default rewritten
   assert.match(out, /createRoot/);
   assert.match(out, /<title>T<\/title>/);
 });
@@ -41,7 +41,7 @@ test("react wrap produces a runnable document", () => {
 test("react wrap captures the aggregate `export { X as default }` form", () => {
   const src = "function App(){ return <h1>hi</h1>; }\nexport { App as default };";
   const out = wrapToHtml(src, "react");
-  assert.match(out, /window\.__conjure_default = App;/);
+  assert.match(out, /window\.__getonup_default = App;/);
   assert.doesNotMatch(out, /export\s*\{/); // the export statement was rewritten away
 });
 
@@ -49,13 +49,13 @@ test("react wrap leaves a default re-export (`... from`) intact, not corrupted",
   const src = 'function x(){return <i/>}\nexport { Thing as default } from "./z";';
   const out = wrapToHtml(src, "react");
   assert.match(out, /export\s*\{\s*Thing as default\s*\}\s*from\s*"\.\/z"/);
-  assert.doesNotMatch(out, /window\.__conjure_default = Thing;from/); // not corrupted into a syntax error
+  assert.doesNotMatch(out, /window\.__getonup_default = Thing;from/); // not corrupted into a syntax error
 });
 
 test("react wrap preserves sibling named exports alongside the default", () => {
   const src = "function A(){return <i/>}\nfunction B(){}\nexport { A as default, B };";
   const out = wrapToHtml(src, "react");
-  assert.match(out, /window\.__conjure_default = A;/);
+  assert.match(out, /window\.__getonup_default = A;/);
   assert.match(out, /export \{ B \};/);
 });
 
@@ -69,36 +69,36 @@ test("plain .ts is transpiled (not shipped as a raw module)", () => {
 test("react wrap captures a same-line `export default` (after a `;`)", () => {
   const src = 'import React from "react"; export default function App(){ return <h1>hi</h1>; }';
   const out = wrapToHtml(src, "react");
-  assert.match(out, /window\.__conjure_default = function App/);
+  assert.match(out, /window\.__getonup_default = function App/);
   assert.doesNotMatch(out, /;\s*export default function App/); // the real export was rewritten
 });
 
 test("react wrap ignores `export default` inside strings, comments, and templates", () => {
   // a string literal that itself contains "; export default …" before the real export
   const o1 = wrapToHtml('const s = "; export default nope"; export default App;', "react");
-  assert.match(o1, /window\.__conjure_default = App;/);
+  assert.match(o1, /window\.__getonup_default = App;/);
   assert.match(o1, /"; export default nope"/); // string preserved verbatim, not rewritten
 
   // a line comment
   const o2 = wrapToHtml("// export default Fake\nexport default App;", "react");
-  assert.match(o2, /window\.__conjure_default = App;/);
+  assert.match(o2, /window\.__getonup_default = App;/);
   assert.match(o2, /\/\/ export default Fake/);
 
   // a newline inside a template literal
   const o3 = wrapToHtml("const t = `\nexport default nope`;\nexport default App;", "react");
-  assert.match(o3, /window\.__conjure_default = App;/);
+  assert.match(o3, /window\.__getonup_default = App;/);
 });
 
 test("react wrap ignores `export default` inside JSX text", () => {
   const src = "function App(){ return <pre>\nexport default nope\n</pre>; }\nexport default App;";
   const out = wrapToHtml(src, "react");
-  assert.match(out, /window\.__conjure_default = App;/);
+  assert.match(out, /window\.__getonup_default = App;/);
   assert.match(out, /export default nope/); // JSX text preserved, not rewritten
 });
 
 test("react wrap handles a parenthesized default export with no stray paren", () => {
   const out = wrapToHtml("export default (() => <h1>hi</h1>);", "react");
-  assert.match(out, /window\.__conjure_default = \(\) => <h1>hi<\/h1>;/);
+  assert.match(out, /window\.__getonup_default = \(\) => <h1>hi<\/h1>;/);
   assert.doesNotMatch(out, /<\/h1>\)\s*;/); // the original outer parens didn't leak through
 });
 

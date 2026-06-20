@@ -1,5 +1,5 @@
 /**
- * `conjure serve` — zero-config LOCAL hosting.
+ * `getonup serve` — zero-config LOCAL hosting.
  *
  * Combines the server + the auto-wrap uploader into one command: point it at an artifact
  * (file, dir, or stdin), and it wraps it (React/Vue/JS/HTML) and serves it at a localhost URL.
@@ -73,7 +73,7 @@ async function build(target: string | null, opts: ServeOptions, stdin?: string):
 }
 
 const LIVE_RELOAD =
-  `<script>(function(){try{var s=new EventSource("/__conjure_live");s.onmessage=function(){location.reload()};}catch(e){}})();</script>`;
+  `<script>(function(){try{var s=new EventSource("/__getonup_live");s.onmessage=function(){location.reload()};}catch(e){}})();</script>`;
 
 function openBrowser(url: string): void {
   const cmd = process.platform === "darwin" ? "open" : process.platform === "win32" ? "cmd" : "xdg-open";
@@ -118,7 +118,7 @@ export async function startServer(
       res.end("bad request");
       return;
     }
-    if (url === "/__conjure_live") {
+    if (url === "/__getonup_live") {
       res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
       res.write("retry: 500\n\n");
       clients.add(res);
@@ -189,7 +189,7 @@ export async function serve(target: string | null, opts: ServeOptions, stdin?: s
     process.stdout.write(url + "\n");
   } else {
     process.stdout.write(
-      `\n  \x1b[1mconjure serve\x1b[0m — local preview, no deploy needed\n` +
+      `\n  \x1b[1mgetonup serve\x1b[0m — local preview, no deploy needed\n` +
         `  \x1b[36m${url}\x1b[0m\n` +
         (opts.watch ? `  \x1b[2mwatching for changes — live reload on\x1b[0m\n` : "") +
         `  \x1b[2mpress Ctrl+C to stop\x1b[0m\n\n`,

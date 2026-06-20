@@ -1,5 +1,5 @@
 /**
- * Conjure auto-wrap engine (runs in the CLI).
+ * getonup auto-wrap engine (runs in the CLI).
  *
  * Turns a single artifact file into a self-contained, runnable HTML document:
  *   - full HTML      -> served as-is
@@ -125,13 +125,13 @@ function buildImportMap(code: string): string {
 
 const BASE_STYLE = `*{box-sizing:border-box}html,body{margin:0}body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}#root,#app{min-height:100vh}`;
 
-const OVERLAY_STYLE = `#__conjure_err{position:fixed;inset:auto 0 0 0;max-height:50vh;overflow:auto;margin:0;padding:16px 20px;background:#1b0f12;color:#ffb4b4;border-top:2px solid #ff5d5d;font:500 13px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;z-index:2147483647}#__conjure_err b{color:#ff8d8d}`;
+const OVERLAY_STYLE = `#__getonup_err{position:fixed;inset:auto 0 0 0;max-height:50vh;overflow:auto;margin:0;padding:16px 20px;background:#1b0f12;color:#ffb4b4;border-top:2px solid #ff5d5d;font:500 13px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;z-index:2147483647}#__getonup_err b{color:#ff8d8d}`;
 
 const OVERLAY_SCRIPT =
-  `(function(){function show(msg){var el=document.getElementById('__conjure_err');` +
-  `if(!el){el=document.createElement('pre');el.id='__conjure_err';document.body.appendChild(el);}` +
+  `(function(){function show(msg){var el=document.getElementById('__getonup_err');` +
+  `if(!el){el=document.createElement('pre');el.id='__getonup_err';document.body.appendChild(el);}` +
   `el.innerHTML='<b>Runtime error</b>\\n'+String(msg).replace(/&/g,'&amp;').replace(/</g,'&lt;');}` +
-  `window.__conjureError=show;` +
+  `window.__getonupError=show;` +
   `window.addEventListener('error',function(e){show((e.error&&e.error.stack)||e.message||e);});` +
   `window.addEventListener('unhandledrejection',function(e){show((e.reason&&e.reason.stack)||e.reason||e);});})();`;
 
@@ -173,14 +173,14 @@ function transformReact(code: string): string {
       // Replace the whole statement and slice the declaration by its own (balanced) span, so a
       // parenthesized expression like `export default (() => <i/>)` leaves no stray `)`.
       const d = node.declaration;
-      edits.push({ start: node.start, end: node.end, text: `window.__conjure_default = ${code.slice(d.start, d.end)};` });
+      edits.push({ start: node.start, end: node.end, text: `window.__getonup_default = ${code.slice(d.start, d.end)};` });
     } else if (node.type === "ExportNamedDeclaration" && !node.source) {
       const def = node.specifiers.find((s: any) => s.type === "ExportSpecifier" && s.exported.name === "default");
       if (!def) continue;
       const rest = node.specifiers
         .filter((s: any) => s !== def && s.type === "ExportSpecifier")
         .map((s: any) => (s.local.name === s.exported.name ? s.local.name : `${s.local.name} as ${s.exported.name}`));
-      edits.push({ start: node.start, end: node.end, text: `window.__conjure_default = ${def.local.name};` + (rest.length ? ` export { ${rest.join(", ")} };` : "") });
+      edits.push({ start: node.start, end: node.end, text: `window.__getonup_default = ${def.local.name};` + (rest.length ? ` export { ${rest.join(", ")} };` : "") });
     }
   }
   edits.sort((a, b) => b.start - a.start); // apply right-to-left so offsets stay valid
@@ -189,15 +189,15 @@ function transformReact(code: string): string {
 }
 
 function wrapReact(code: string, opts: WrapOptions): string {
-  const title = opts.title || "Conjure artifact";
+  const title = opts.title || "getonup artifact";
   const importMap = buildImportMap(code);
   const userModule = escapeScriptText(transformReact(code));
   const mount =
     `\nimport { createRoot } from "react-dom/client";\n` +
     `const __el = document.getElementById("root");\n` +
-    `const __C = window.__conjure_default;\n` +
-    `if (typeof __C === "undefined") { __el.innerHTML = '<pre id="__conjure_err"><b>No default export</b>\\nExport your component: export default function App() { ... }</pre>'; }\n` +
-    `else { try { createRoot(__el).render(React.createElement(__C)); } catch (e) { window.__conjureError(e); } }\n`;
+    `const __C = window.__getonup_default;\n` +
+    `if (typeof __C === "undefined") { __el.innerHTML = '<pre id="__getonup_err"><b>No default export</b>\\nExport your component: export default function App() { ... }</pre>'; }\n` +
+    `else { try { createRoot(__el).render(React.createElement(__C)); } catch (e) { window.__getonupError(e); } }\n`;
 
   return [
     "<!doctype html>",
@@ -225,13 +225,13 @@ function wrapReact(code: string, opts: WrapOptions): string {
 // ---------------------------------------------------------------------------
 
 function wrapVue(code: string, opts: WrapOptions): string {
-  const title = opts.title || "Conjure artifact";
+  const title = opts.title || "getonup artifact";
   const src = jsStringLiteral(code);
   const loader =
     `const { loadModule } = window['vue3-sfc-loader'];\n` +
     `const options = { moduleCache: { vue: Vue }, getFile: () => ${src}, addStyle: (t) => { const s=document.createElement('style'); s.textContent=t; document.head.appendChild(s); }, log: (...a)=>console.log(...a) };\n` +
-    `try { const app = Vue.createApp(Vue.defineAsyncComponent(() => loadModule('component.vue', options))); app.config.errorHandler = (e)=>window.__conjureError(e); app.mount('#app'); }\n` +
-    `catch (e) { window.__conjureError(e); }`;
+    `try { const app = Vue.createApp(Vue.defineAsyncComponent(() => loadModule('component.vue', options))); app.config.errorHandler = (e)=>window.__getonupError(e); app.mount('#app'); }\n` +
+    `catch (e) { window.__getonupError(e); }`;
 
   return [
     "<!doctype html>",
@@ -256,7 +256,7 @@ function wrapVue(code: string, opts: WrapOptions): string {
 // ---------------------------------------------------------------------------
 
 function wrapJs(code: string, opts: WrapOptions): string {
-  const title = opts.title || "Conjure artifact";
+  const title = opts.title || "getonup artifact";
   const specs = scanBareSpecifiers(code);
   const importMap = specs.length ? `<script type="importmap">${buildImportMap(code)}</script>` : "";
   return [
@@ -287,7 +287,7 @@ function wrapJs(code: string, opts: WrapOptions): string {
 
 function wrapHtml(code: string, opts: WrapOptions): string {
   if (isFullHtml(code)) return code; // serve as-is
-  const title = opts.title || "Conjure artifact";
+  const title = opts.title || "getonup artifact";
   return [
     "<!doctype html>",
     '<html lang="en"><head>',

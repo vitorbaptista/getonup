@@ -1,12 +1,10 @@
 {
-  "name": "conjure-live",
+  "name": "getonup",
   "version": "0.1.0",
-  "description": "Conjure CLI — deploy any AI artifact (HTML, React, Vue, static folder) to a live URL on your self-hosted, scale-to-zero Conjure server.",
+  "description": "getonup CLI — deploy any AI artifact (HTML, React, Vue, static folder) to a live URL on your self-hosted, scale-to-zero getonup server.",
   "type": "module",
   "bin": {
-    "conjure": "dist/index.js",
-    "conjure-live": "dist/index.js",
-    "cjr": "dist/index.js"
+    "getonup": "dist/index.js"
   },
   "files": [
     "dist",

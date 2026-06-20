@@ -1,9 +1,9 @@
 {
-  "name": "conjure-server",
+  "name": "getonup-server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Conjure server — a single Cloudflare Worker that stores deploys in R2 and serves them at /s/:id.",
+  "description": "getonup server — a single Cloudflare Worker that stores deploys in R2 and serves them at /s/:id.",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",

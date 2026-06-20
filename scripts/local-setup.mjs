@@ -18,7 +18,7 @@ const quiet = process.argv.includes("--quiet");
 
 let token;
 try {
-  token = (((await readFile(DEV_VARS, "utf8")).match(/^CONJURE_DEPLOY_TOKEN=(.+)$/m) || [])[1] || "").trim();
+  token = (((await readFile(DEV_VARS, "utf8")).match(/^GETONUP_DEPLOY_TOKEN=(.+)$/m) || [])[1] || "").trim();
 } catch {
   /* no .dev.vars yet */
 }
@@ -28,7 +28,7 @@ if (!token) {
   token = randomBytes(24).toString("hex");
   await writeFile(
     DEV_VARS,
-    `# Local deploy token for \`wrangler dev\` (gitignored). Regenerate by deleting this file.\nCONJURE_DEPLOY_TOKEN=${token}\n`,
+    `# Local deploy token for \`wrangler dev\` (gitignored). Regenerate by deleting this file.\nGETONUP_DEPLOY_TOKEN=${token}\n`,
     "utf8",
   );
   created = true;
@@ -46,13 +46,13 @@ process.stdout.write(`
        npm run dev
 
   2. In another terminal, point the CLI at it and publish an artifact:
-       cjr login --url http://localhost:8787 --token ${token}
-       cjr deploy ./path/to/artifact.html        # → prints a live /s/<id> URL
-       cjr serve  ./path/to/artifact.html         # …or preview with no server at all
+       getonup login --url http://localhost:8787 --token ${token}
+       getonup deploy ./path/to/artifact.html        # → prints a live /s/<id> URL
+       getonup serve  ./path/to/artifact.html         # …or preview with no server at all
 
   3. (Optional) rebuild the demo gallery on your local server:
-       CONJURE_URL=http://localhost:8787 CONJURE_TOKEN=${token} npm run demo
+       GETONUP_URL=http://localhost:8787 GETONUP_TOKEN=${token} npm run demo
 
-  The token lives in server/.dev.vars (gitignored). If \`cjr\` isn't on your PATH, this setup
-  tried to link it; otherwise run \`npm link --workspace cli\`, or use \`npm run cjr -- <args>\`.
+  The token lives in server/.dev.vars (gitignored). If \`getonup\` isn't on your PATH, this setup
+  tried to link it; otherwise run \`npm link --workspace cli\`, or use \`npm run getonup -- <args>\`.
 `);

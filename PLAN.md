@@ -1,15 +1,15 @@
-# Conjure — Plan (v2)
+# getonup — Plan (v2)
 
-> **Conjure** — open-source, self-hostable **OneClickLive**. Turn any AI-generated web
+> **getonup** — open-source, self-hostable **OneClickLive**. Turn any AI-generated web
 > artifact into a **live, shareable URL** with one command. A small CLI you (or your coding
 > agent) run locally; a self-hosted **Cloudflare Worker + R2** backend that **scales to zero**
 > (~$0 idle). Free software (MIT). You bring a deploy token; viewers need nothing.
 >
-> `cjr deploy index.html` → `https://your-conjure.example/s/ab12cd34` ✨
+> `getonup deploy index.html` → `https://your-getonup.example/s/ab12cd34` ✨
 
 _Reference product: https://oneclicklive.app (paste AI code → instant live site, auto-wraps
 React/Vue with Babel+Tailwind, Cloudflare edge sandbox, browser-only, closed-source, paid).
-Conjure does the same magic but **open-source, self-hostable, scale-to-zero, and CLI/agent-
+getonup does the same magic but **open-source, self-hostable, scale-to-zero, and CLI/agent-
 driven** so any agent gains a "publish this live" superpower._
 
 **Locked decisions (from the user):** primary input = a **single HTML file** (also a static
@@ -21,23 +21,23 @@ scale-to-zero → **static-only MVP**, dynamic deferred.
 
 ## 1. What it does (user / agent flow)
 
-1. **Install once:** `npm i -g conjure-live` (or `npx conjure …`, or a single binary via
-   `curl … | sh`). Configure: `cjr login --url https://your-conjure.example --token <T>`.
+1. **Install once:** `npm i -g getonup` (or `npx getonup …`, or a single binary via
+   `curl … | sh`). Configure: `getonup login --url https://your-getonup.example --token <T>`.
 2. **An agent (or you) builds an artifact** — a `.html`, a single `.jsx/.tsx`, a `.vue`, a
    `.js`, or a built static folder.
-3. **Publish:** `cjr deploy artifact.tsx` → the CLI auto-detects the type, **auto-wraps**
+3. **Publish:** `getonup deploy artifact.tsx` → the CLI auto-detects the type, **auto-wraps**
    single components into a self-contained page (React 18 + Babel + esm.sh import maps +
    Tailwind; Vue 3 CDN), uploads to your Worker, and prints a **live URL** in seconds.
 4. **Share the link.** No viewer login. Scales to zero between visits.
-5. **Manage:** `cjr list`, `cjr open <id>`, `cjr rm <id>`.
+5. **Manage:** `getonup list`, `getonup open <id>`, `getonup rm <id>`.
 
-Also: `cat artifact.html | cjr deploy -` (shellshare-style pipe), `--open` to launch the
+Also: `cat artifact.html | getonup deploy -` (shellshare-style pipe), `--open` to launch the
 browser, `--json` for scripts/agents.
 
 ### Why CLI (the differentiator vs OneClickLive)
-OneClickLive is browser-paste only. Conjure is **driven by a CLI** so it composes with any
+OneClickLive is browser-paste only. getonup is **driven by a CLI** so it composes with any
 agent: the agent writes a file and runs one command. We ship an `AGENTS.md` snippet + a
-Claude Code skill (+ optional MCP server, stretch) so "tell your agent to use Conjure" is
+Claude Code skill (+ optional MCP server, stretch) so "tell your agent to use getonup" is
 copy-paste.
 
 ---
@@ -46,7 +46,7 @@ copy-paste.
 
 ```
    ┌──────────── your machine ────────────┐         ┌──────────── Cloudflare (your account) ───────────┐
-   │  conjure CLI (Node/TS, one command)  │  HTTPS  │  ONE Worker (one `wrangler deploy`)               │
+   │  getonup CLI (Node/TS, one command)  │  HTTPS  │  ONE Worker (one `wrangler deploy`)               │
    │   • detect + AUTO-WRAP the artifact  │  Bearer │   POST /api/deploy   (token) → store bundle in R2 │
    │     (html / react / vue / js / dir)  │ ──────▶ │   GET  /api/list     (token) → list deploys       │
    │   • bundle → POST /api/deploy        │         │   DEL  /api/deploy/:id (token)→ delete            │
@@ -55,7 +55,7 @@ copy-paste.
                                                      │         (+ optional browser paste UI, stretch)    │
         agent calls the CLI ↑                        │  R2 bucket "BUCKET": <id>/index.html, assets, meta│
                                                      └────────────────────────────────────────────────────┘
-        secret: CONJURE_DEPLOY_TOKEN (Worker secret)            storage: R2 (scale-to-zero, no egress fees)
+        secret: GETONUP_DEPLOY_TOKEN (Worker secret)            storage: R2 (scale-to-zero, no egress fees)
 ```
 
 **Server = a pure static host.** It stores uploaded bytes in R2 and serves them with correct
@@ -66,7 +66,7 @@ logic is versioned/tested in the CLI rather than the edge.
 **Why this hits every constraint:**
 - *One unit / scale-to-zero:* one Worker + one R2 bucket; Workers bill per request, R2 per
   storage/op, no egress fees → ~$0 idle. `wrangler deploy` ships it.
-- *Trivial self-host:* set one secret (`CONJURE_DEPLOY_TOKEN`), create one R2 bucket
+- *Trivial self-host:* set one secret (`GETONUP_DEPLOY_TOKEN`), create one R2 bucket
   (Deploy-to-Cloudflare button provisions it), done. Point the CLI at it.
 - *Safe:* viewing is public and the API is **bearer-token** (not a browser cookie), so a
   served artifact's JS has no session to steal; path-based default (document the per-deploy
@@ -102,7 +102,7 @@ Detect input type and produce a single self-contained `index.html` (+ any siblin
 
 ## 4. Server (`server/`, one Worker)
 
-- **`POST /api/deploy`** (Bearer `CONJURE_DEPLOY_TOKEN`): body = a small manifest + files
+- **`POST /api/deploy`** (Bearer `GETONUP_DEPLOY_TOKEN`): body = a small manifest + files
   (single HTML inline, or a `multipart`/tar/zip for multi-file). Validate token, total-size
   cap, file count, path-safety (no `..`). Generate a short random `id` (e.g. 8 url-safe
   chars). Write each file to R2 at `<id>/<path>`; write `<id>/_meta.json`
@@ -127,15 +127,15 @@ Detect input type and produce a single self-contained `index.html` (+ any siblin
 
 ## 5. CLI (`cli/`, Node + TypeScript)
 
-- **Commands:** `login` (save `{url, token}` to `~/.config/conjure/config.json`, or read
-  `CONJURE_URL`/`CONJURE_TOKEN` env), `deploy <path|->`, `list`, `open <id>`, `rm <id>`,
+- **Commands:** `login` (save `{url, token}` to `~/.config/getonup/config.json`, or read
+  `GETONUP_URL`/`GETONUP_TOKEN` env), `deploy <path|->`, `list`, `open <id>`, `rm <id>`,
   `whoami`/`config`.
 - **`deploy`:** resolve input → detect type → auto-wrap → collect files → `POST /api/deploy`
   → print the URL (plain on stdout for piping; `--json` for agents; `--open` to launch).
   Flags: `--name`, `--type`, `--no-wrap`, `--quiet`.
 - **Agent-friendly:** deterministic output (URL is the last stdout line), non-zero exit on
   failure with a clear message, `--json`, no interactive prompts in `deploy`.
-- **Distribution:** npm package (`npx conjure-live` / `npm i -g`), plus a `bun build
+- **Distribution:** npm package (`npx getonup` / `npm i -g`), plus a `bun build
   --compile` single-binary target + a `curl … | sh` installer (the "one binary" / shellshare
   install story). Node CLI is the MVP; binary packaging follows.
 
@@ -144,8 +144,8 @@ Detect input type and produce a single self-contained `index.html` (+ any siblin
 ## 6. Agent integration (the point)
 
 - **`AGENTS.md` / README snippet:** "To publish a web artifact live, run
-  `cjr deploy <file>` and share the printed URL." Drop into Claude Code / Cursor / Aider.
-- **Claude Code skill** (`/conjure` or a `conjure-deploy` skill) that wraps the CLI.
+  `getonup deploy <file>` and share the printed URL." Drop into Claude Code / Cursor / Aider.
+- **Claude Code skill** (`/getonup` or a `getonup-deploy` skill) that wraps the CLI.
 - **(Stretch) MCP server** exposing a `deploy_artifact` tool so MCP-aware agents discover it.
 
 ---
@@ -153,12 +153,12 @@ Detect input type and produce a single self-contained `index.html` (+ any siblin
 ## 7. Repo layout
 
 ```
-conjure/
+getonup/
 ├── README.md            # Deploy-to-Cloudflare badge, 5-min self-host, CLI usage, agent snippet
 ├── LICENSE (MIT) · PLAN.md · PROGRESS.md · CONTRIBUTING.md
 ├── package.json         # npm workspaces: cli, server
 ├── cli/
-│   ├── package.json · tsconfig.json · bin/conjure.js
+│   ├── package.json · tsconfig.json · bin/getonup.js
 │   └── src/ index.ts · commands/{deploy,list,login,rm,open}.ts · wrap/{detect,react,vue,html,js,importmap}.ts · config.ts · api.ts
 ├── server/
 │   ├── wrangler.jsonc · package.json · tsconfig.json
@@ -174,11 +174,11 @@ conjure/
 ## 8. Build phases (each independently verifiable)
 
 1. **Scaffold** — workspaces; `server/` Worker (hello + R2 binding + `wrangler.jsonc`);
-   `cli/` skeleton; MIT, `.dev.vars.example` (`CONJURE_DEPLOY_TOKEN=`). `wrangler dev` runs.
+   `cli/` skeleton; MIT, `.dev.vars.example` (`GETONUP_DEPLOY_TOKEN=`). `wrangler dev` runs.
 2. **Server core** — `POST /api/deploy` (token, R2 write, id) + `GET /s/:id[/*]` (R2 serve +
    headers) + status codes. Verify with `curl` against `wrangler dev`.
 3. **CLI deploy (HTML/static)** — config, detect, upload a single HTML file & a folder, print
-   URL. End-to-end: `cjr deploy examples/hello.html` → working live URL locally.
+   URL. End-to-end: `getonup deploy examples/hello.html` → working live URL locally.
 4. **Auto-wrap** — React/TSX → self-contained page (Babel + esm.sh import maps + Tailwind);
    Vue; JS fragment; import-map scan + allowlist; error overlay. Unit tests for detection +
    wrapping. Deploy `examples/counter.tsx` and see it run.
@@ -220,9 +220,9 @@ independent module work/review; give subagents explicit goals + loop-until-tests
 
 ## 10. Definition of done (MVP)
 
-- `npm i -g conjure-live` (or `npx`) → `cjr deploy hello.html` against a self-hosted
+- `npm i -g getonup` (or `npx`) → `getonup deploy hello.html` against a self-hosted
   Worker → a working public live URL in seconds.
-- One **Deploy to Cloudflare** click → set `CONJURE_DEPLOY_TOKEN` → working instance.
+- One **Deploy to Cloudflare** click → set `GETONUP_DEPLOY_TOKEN` → working instance.
 - Auto-wraps a single `.tsx`/`.vue`/`.js` into a live page (OneClickLive parity); hosts a
   static folder; path-based `/s/:id`; `list`/`rm`/`open` work.
 - A coding agent can publish by running one CLI command (documented snippet + skill).

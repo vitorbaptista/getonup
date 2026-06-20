@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * Rebuild the Conjure demo: deploy every landing design + a gallery that links to them, and set
+ * Rebuild the getonup demo: deploy every landing design + a gallery that links to them, and set
  * the gallery as the server homepage.
  *
- * Re-runnable: each run first deletes the previous run's demo deploys (those titled "Conjure — …")
+ * Re-runnable: each run first deletes the previous run's demo deploys (those titled "getonup — …")
  * so they don't accumulate, then publishes fresh. Deploy IDs are assigned by the server per run,
  * so the /s/<id> URLs change each time — the stable entry point is the homepage (`/`).
  *
- *   CONJURE_URL=http://localhost:8787 CONJURE_TOKEN=… node scripts/publish-demo.mjs
+ *   GETONUP_URL=http://localhost:8787 GETONUP_TOKEN=… node scripts/publish-demo.mjs
  *   (or: npm run demo, after `npm run dev` is up)
  */
 import { readFile, writeFile, readdir, mkdir, copyFile, rm, stat } from "node:fs/promises";
@@ -15,9 +15,9 @@ import { fileURLToPath } from "node:url";
 import { dirname, join, extname } from "node:path";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const BASE = (process.env.CONJURE_URL || "http://localhost:8787").replace(/\/+$/, "");
-const TOKEN = process.env.CONJURE_TOKEN || "";
-const TITLE_PREFIX = "Conjure — ";
+const BASE = (process.env.GETONUP_URL || "http://localhost:8787").replace(/\/+$/, "");
+const TOKEN = process.env.GETONUP_TOKEN || "";
+const TITLE_PREFIX = "getonup — ";
 
 const SYSTEMS = [
   ["linear", "Linear", "Strict dark canvas, lavender accent, surface-lift hierarchy."],
@@ -106,8 +106,8 @@ function gallery(sysCards, origCards) {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Conjure — landing designs</title>
-    <meta name="description" content="Landing-page directions for Conjure — built in real shadcn.io DESIGN.md systems plus house originals — each deployed through Conjure itself." />
+    <title>getonup — landing designs</title>
+    <meta name="description" content="Landing-page directions for getonup — built in real shadcn.io DESIGN.md systems plus house originals — each deployed through getonup itself." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -142,9 +142,9 @@ function gallery(sysCards, origCards) {
   </head>
   <body>
     <main class="wrap">
-      <span class="badge"><span class="dot"></span> deployed through Conjure itself</span>
-      <h1>Pick a look for <span class="grad">Conjure</span>.</h1>
-      <p class="lede">Landing-page directions, each a complete self-contained page deployed with <code>cjr deploy</code>. Ten are built in real <a href="https://www.shadcn.io/design" style="color:var(--cyan);text-decoration:none">shadcn.io DESIGN.md</a> systems; five are originals. Click any to see it live.</p>
+      <span class="badge"><span class="dot"></span> deployed through getonup itself</span>
+      <h1>Pick a look for <span class="grad">getonup</span>.</h1>
+      <p class="lede">Landing-page directions, each a complete self-contained page deployed with <code>getonup deploy</code>. Ten are built in real <a href="https://www.shadcn.io/design" style="color:var(--cyan);text-decoration:none">shadcn.io DESIGN.md</a> systems; five are originals. Click any to see it live.</p>
       <div class="sec-label"><h2>Design systems</h2><span>shadcn.io DESIGN.md</span><span class="rule"></span></div>
       <div class="grid">
 ${sysCards}
@@ -153,7 +153,7 @@ ${sysCards}
       <div class="grid">
 ${origCards}
       </div>
-      <footer>Conjure · MIT · self-hosted · scale-to-zero — pages live in <span class="mono">landings/</span>, regenerate with <span class="mono">npm run demo</span>.</footer>
+      <footer>getonup · MIT · self-hosted · scale-to-zero — pages live in <span class="mono">landings/</span>, regenerate with <span class="mono">npm run demo</span>.</footer>
     </main>
   </body>
 </html>
@@ -161,7 +161,7 @@ ${origCards}
 }
 
 async function main() {
-  if (!TOKEN) throw new Error("set CONJURE_TOKEN (and CONJURE_URL) — the demo deploys to your Conjure server");
+  if (!TOKEN) throw new Error("set GETONUP_TOKEN (and GETONUP_URL) — the demo deploys to your getonup server");
 
   // Fail loudly if any thumbnail is missing rather than publishing a gallery with broken tiles.
   const missing = [];

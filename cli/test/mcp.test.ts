@@ -2,9 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { respond } from "../src/mcp.js";
 
-test("initialize returns Conjure server info and echoes protocolVersion", async () => {
+test("initialize returns getonup server info and echoes protocolVersion", async () => {
   const r = await respond({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18" } });
-  assert.equal(r?.result.serverInfo.name, "conjure");
+  assert.equal(r?.result.serverInfo.name, "getonup");
   assert.equal(r?.result.protocolVersion, "2025-06-18");
   assert.ok(r?.result.capabilities.tools);
 });

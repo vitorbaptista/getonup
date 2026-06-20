@@ -1,5 +1,5 @@
 /**
- * Conjure server — a single Cloudflare Worker.
+ * getonup server — a single Cloudflare Worker.
  *
  *   POST   /api/deploy        (Bearer token)  -> store an artifact in R2, return { id, url }
  *   GET    /api/list          (Bearer token)  -> list deploys
@@ -17,9 +17,9 @@ export interface Env {
   BUCKET: R2Bucket;
   ASSETS: Fetcher;
   /** Required to deploy. If unset, the deploy API is disabled (fail-closed). */
-  CONJURE_DEPLOY_TOKEN?: string;
+  GETONUP_DEPLOY_TOKEN?: string;
   /** Optional: force the base URL printed in deploy responses (e.g. a custom domain). */
-  CONJURE_PUBLIC_URL?: string;
+  GETONUP_PUBLIC_URL?: string;
   MAX_BYTES?: string;
   MAX_FILES?: string;
 }
@@ -91,7 +91,7 @@ async function safeEqual(a: string, b: string): Promise<boolean> {
 }
 
 async function isAuthed(req: Request, env: Env): Promise<boolean> {
-  const token = env.CONJURE_DEPLOY_TOKEN;
+  const token = env.GETONUP_DEPLOY_TOKEN;
   if (!token) return false; // fail-closed: no token configured -> no deploys
   const m = (req.headers.get("authorization") || "").match(/^Bearer\s+(.+)$/i);
   return !!m && (await safeEqual(m[1].trim(), token));
@@ -131,11 +131,11 @@ function bytesFromBase64(b64: string): Uint8Array {
 }
 
 function notFound(message = "Not found"): Response {
-  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>404 — Conjure</title><style>
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>404 — getonup</title><style>
     html,body{height:100%;margin:0}body{display:grid;place-items:center;background:#0b0d10;color:#e7e9ee;font:500 16px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
     .card{text-align:center;padding:2rem}h1{font-size:4rem;margin:0;background:linear-gradient(110deg,#7c5cff,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
     p{color:#9aa0ab}a{color:#22d3ee;text-decoration:none}</style></head>
-    <body><div class="card"><h1>404</h1><p>${message}.</p><p><a href="/">conjure</a></p></div></body></html>`;
+    <body><div class="card"><h1>404</h1><p>${message}.</p><p><a href="/">getonup</a></p></div></body></html>`;
   return new Response(html, { status: 404, headers: { "content-type": "text/html; charset=utf-8" } });
 }
 
@@ -155,7 +155,7 @@ function posInt(v: string | undefined, dflt: number): number {
 async function handleDeploy(req: Request, env: Env): Promise<Response> {
   if (!(await isAuthed(req, env))) {
     return json(
-      { error: env.CONJURE_DEPLOY_TOKEN ? "unauthorized" : "deploy disabled: set CONJURE_DEPLOY_TOKEN" },
+      { error: env.GETONUP_DEPLOY_TOKEN ? "unauthorized" : "deploy disabled: set GETONUP_DEPLOY_TOKEN" },
       401,
     );
   }
@@ -237,7 +237,7 @@ async function handleDeploy(req: Request, env: Env): Promise<Response> {
     throw e;
   }
 
-  const base = (env.CONJURE_PUBLIC_URL || "").replace(/\/+$/, "") || new URL(req.url).origin;
+  const base = (env.GETONUP_PUBLIC_URL || "").replace(/\/+$/, "") || new URL(req.url).origin;
   return json({ id, url: `${base}/s/${id}`, files: meta.files, bytes: total }, 201);
 }
 
@@ -271,11 +271,11 @@ async function handleServe(url: URL, env: Env): Promise<Response> {
   const headers = new Headers();
   headers.set("content-type", obj.httpMetadata?.contentType || ctypeFor(sp));
   headers.set("cache-control", "public, max-age=60");
-  // Defense in depth. Serving origin carries no Conjure session cookie, so a malicious
+  // Defense in depth. Serving origin carries no getonup session cookie, so a malicious
   // artifact has no host session to steal; these just reduce incidental risk.
   headers.set("x-content-type-options", "nosniff");
   headers.set("referrer-policy", "no-referrer");
-  headers.set("x-conjure-id", id);
+  headers.set("x-getonup-id", id);
   if (obj.httpEtag) headers.set("etag", obj.httpEtag);
 
   return new Response(obj.body, { headers });
@@ -331,7 +331,7 @@ export default {
     const p = url.pathname;
     try {
       if (p === "/api/health") {
-        return json({ ok: true, service: "conjure", version: VERSION, deployEnabled: !!env.CONJURE_DEPLOY_TOKEN });
+        return json({ ok: true, service: "getonup", version: VERSION, deployEnabled: !!env.GETONUP_DEPLOY_TOKEN });
       }
       if (p === "/api/deploy" && req.method === "POST") return await handleDeploy(req, env);
       if (p === "/api/list" && req.method === "GET") return await handleList(req, env);

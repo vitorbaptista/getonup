@@ -5,7 +5,7 @@ export default function Counter() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100">
       <div className="text-center space-y-6">
-        <p className="text-sm uppercase tracking-widest text-slate-400">conjured with react</p>
+        <p className="text-sm uppercase tracking-widest text-slate-400">getonupd with react</p>
         <div className="text-7xl font-bold tabular-nums bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
           {n}
         </div>

@@ -1,8 +1,8 @@
 {
-  // Conjure server — one Cloudflare Worker that stores deploys in R2 and serves them.
-  // Deploy: `wrangler deploy`.  Set the secret first: `wrangler secret put CONJURE_DEPLOY_TOKEN`.
+  // getonup server — one Cloudflare Worker that stores deploys in R2 and serves them.
+  // Deploy: `wrangler deploy`.  Set the secret first: `wrangler secret put GETONUP_DEPLOY_TOKEN`.
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "conjure",
+  "name": "getonup",
   "main": "src/index.ts",
   "compatibility_date": "2026-06-18",
 
@@ -15,17 +15,17 @@
   },
 
   // Object storage for deployed artifacts. Create it once with:
-  //   wrangler r2 bucket create conjure
+  //   wrangler r2 bucket create getonup
   "r2_buckets": [
-    { "binding": "BUCKET", "bucket_name": "conjure" }
+    { "binding": "BUCKET", "bucket_name": "getonup" }
   ],
 
-  // Non-secret config. CONJURE_DEPLOY_TOKEN is a *secret* (set via `wrangler secret put`),
+  // Non-secret config. GETONUP_DEPLOY_TOKEN is a *secret* (set via `wrangler secret put`),
   // not listed here. Optional overrides:
   "vars": {
     "MAX_BYTES": "20971520",
     "MAX_FILES": "300"
-    // "CONJURE_PUBLIC_URL": "https://conjure.example.com"  // force the printed base URL
+    // "GETONUP_PUBLIC_URL": "https://getonup.example.com"  // force the printed base URL
   },
 
   "observability": { "enabled": true }
