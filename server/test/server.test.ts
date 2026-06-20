@@ -133,6 +133,14 @@ async function servedHeadersWith(extraVars: Record<string, string>): Promise<Hea
   }
 }
 
+test("the host serves a robots.txt that blocks every crawler", async () => {
+  const r = await fetch(base + "/robots.txt");
+  assert.equal(r.status, 200);
+  const body = await r.text();
+  assert.match(body, /User-agent: \*/);
+  assert.match(body, /Disallow: \//);
+});
+
 test("a GETONUP_FRAME_ANCESTORS value sets a CSP frame-ancestors and drops X-Frame-Options", async () => {
   const h = await servedHeadersWith({ GETONUP_FRAME_ANCESTORS: "'self'" });
   assert.equal(h.get("content-security-policy"), "frame-ancestors 'self'");
