@@ -140,7 +140,7 @@ over stdio to any MCP-aware agent:
   secure, and harden your instance; plus hosting alternatives (GitHub Pages, Datasette Apps).
 - **[CLI reference »](docs/CLI.md)** — every command and flag.
 - **[Architecture & design »](PLAN.md)** — how the CLI and Worker fit together.
-- **[Landing designs »](LANDINGS.md)** — fifteen demo landing pages, all deployed through getonup.
+- **[Landing designs »](LANDINGS.md)** — eighteen demo landing pages, all deployed through getonup.
 - **[Contributing »](CONTRIBUTING.md)** — dev setup and project layout.
 
 ## License
