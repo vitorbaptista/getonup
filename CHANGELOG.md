@@ -22,9 +22,11 @@ All notable changes to getonup are recorded here. The format follows
   via `GETONUP_FRAME_ANCESTORS`).
 
 ### Added
+- `getonup deploy --id <slug>` (alias `--slug`) redeploys to a stable URL `/s/<slug>`, overwriting
+  in place and pruning any files the new deploy no longer includes — for the iterate-and-reshare loop.
 - A server test suite (local miniflare) covering the auth / caps / path-traversal security
   boundary, plus CLI unit tests for arg parsing, file encoding, config precedence, and API error
-  handling. CI runs both workspaces on a Node 20 / 22 matrix.
+  handling. CI runs both workspaces on a Node 22 / 24 matrix.
 - CLI package metadata (`repository`, `homepage`, `bugs`, `author`) so the npm page links back to
   the source.
 

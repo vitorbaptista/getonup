@@ -84,6 +84,7 @@ getonup deploy counter.tsx --open      # a React component → auto-wrapped & op
 getonup deploy card.vue                # a Vue SFC → auto-wrapped
 cat art.html | getonup deploy -        # pipe from stdin
 getonup deploy ./dist                  # a built static site (folder with index.html)
+getonup deploy app.tsx --id my-app     # redeploy to a stable URL (/s/my-app), overwriting in place
 
 getonup list                           # everything you've published
 getonup rm <id>                        # take one down

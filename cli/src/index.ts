@@ -69,13 +69,19 @@ async function cmdDeploy(args: Args): Promise<void> {
   if (!url) err("not configured. Run: getonup login --url <server> --token <token>  (or set GETONUP_URL/GETONUP_TOKEN)");
 
   const target = args._[0];
-  if (!target) err("usage: getonup deploy <file|dir|->  [--name <title>] [--type html|react|vue|js|markdown|static] [--no-wrap] [--open] [--json]");
+  if (!target) err("usage: getonup deploy <file|dir|->  [--name <title>] [--id <slug>] [--type html|react|vue|js|markdown|static] [--no-wrap] [--open] [--json]");
 
   const json = !!args.flags.json;
   const quiet = !!args.flags.quiet;
   const noWrap = args.flags["no-wrap"] === true || args.flags.wrap === false;
   const tailwind = args.flags["no-tailwind"] === true ? false : true;
   let title = (args.flags.name as string) || undefined;
+  // --id (alias --slug) redeploys to a stable URL, overwriting whatever is there. Validate the
+  // same way the server does, so a bad slug fails fast instead of after a round-trip.
+  const id = (args.flags.id as string) || (args.flags.slug as string) || undefined;
+  if (id !== undefined && !/^[a-z0-9][a-z0-9-]{1,63}$/.test(id)) {
+    err("--id must be 2–64 chars of a–z, 0–9, hyphen, starting with a letter or digit");
+  }
 
   let files: api.DeployFile[] = [];
   let type: ArtifactType = "static";
@@ -119,7 +125,7 @@ async function cmdDeploy(args: Args): Promise<void> {
 
   let result: api.DeployResult;
   try {
-    result = await api.deploy(url, token, { title: title || null, type, files });
+    result = await api.deploy(url, token, { id, title: title || null, type, files });
   } catch (e) {
     const ae = e as api.ApiError;
     if (ae.status === 401) {
@@ -216,7 +222,7 @@ function help(): void {
 
 ${c.bold("Usage")}
   getonup login --url <server> --token <token>
-  getonup deploy <file|dir|->   [--name <title>] [--type html|react|vue|js|markdown|static]
+  getonup deploy <file|dir|->   [--name <title>] [--id <slug>] [--type html|react|vue|js|markdown|static]
                                 [--no-wrap] [--no-tailwind] [--open] [--json] [--quiet]
   getonup serve <file|dir|->    [--port N] [--host H] [--open] [--watch] [--no-wrap]   ${c.dim("# local preview, no deploy")}
   getonup list
@@ -228,6 +234,7 @@ ${c.bold("Usage")}
 ${c.bold("Examples")}
   getonup deploy index.html
   getonup deploy counter.tsx --open
+  getonup deploy app.tsx --id my-app   ${c.dim("# redeploy to the same /s/my-app URL")}
   cat art.html | getonup deploy - --name demo
   getonup deploy ./dist            ${c.dim("# a built static site (needs index.html)")}
   getonup serve counter.tsx --open --watch   ${c.dim("# instant local preview, live reload, no deploy")}

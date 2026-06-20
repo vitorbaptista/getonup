@@ -6,6 +6,7 @@ export interface DeployFile {
 }
 
 export interface DeployBody {
+  id?: string;
   title?: string | null;
   type?: string;
   files: DeployFile[];
