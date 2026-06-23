@@ -150,7 +150,7 @@ test("the CLI api client round-trips through the live worker", async () => {
     files: [{ path: "index.html", content: "<p>ok</p>", encoding: "utf8" }],
   });
   assert.ok(res.id && res.url.includes(`/s/${res.id}`));
-  // res.url's host follows GETONUP_PUBLIC_URL (prod in wrangler.jsonc); fetch the local
+  // res.url's host follows the request origin (GETONUP_PUBLIC_URL is unset); fetch the local
   // worker by id so the round-trip assertion is independent of the configured base.
   const got = await fetch(`${base}/s/${res.id}/`);
   assert.equal(got.status, 200);
