@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>getonup — Your AI artifact, live in seconds.</title>
+<meta name="description" content="getonup turns any AI-generated web artifact into a live, shareable URL with one CLI command. Open-source, self-hostable, scales to zero. One Cloudflare Worker + R2." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --cream:#EEEFE9;
+    --cream2:#F5F4ED;
+    --ink:#0E0E0C;
+    --coral:#F54E00;
+    --blue:#1D4AFF;
+    --yellow:#F9BD2B;
+    --green:#37C871;
+    --paper:#FBFAF4;
+    --border:3px solid var(--ink);
+    --shadow:6px 6px 0 var(--ink);
+    --shadow-sm:4px 4px 0 var(--ink);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--cream);
+    color:var(--ink);
+    font-family:"Space Mono",ui-monospace,monospace;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.h-sans{font-family:"Sora","Space Mono",sans-serif;font-weight:800;letter-spacing:-.04em;line-height:1.02;text-wrap:balance}
+  a{color:inherit}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+  /* pixel accent font — used ONLY for wordmark, badges, kickers, button labels, pixel art */
+  .pix{font-family:"Pixelify Sans","Space Mono",monospace;font-weight:600;letter-spacing:.01em}
+  .pixel-art{image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+
+  /* dotted background texture */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-1;
+    background-image:radial-gradient(var(--ink) 1px, transparent 1px);
+    background-size:26px 26px;
+    opacity:.05;pointer-events:none;
+  }
+
+  /* ---- NAV ---- */
+  nav{
+    position:sticky;top:0;z-index:50;
+    background:var(--cream);
+    border-bottom:3px solid var(--ink);
+  }
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:62px}
+  .brand{display:flex;align-items:center;gap:11px;font-family:"Pixelify Sans","Sora",sans-serif;font-weight:700;font-size:27px;letter-spacing:.01em;line-height:1}
+  .brand .star{
+    display:inline-grid;place-items:center;width:32px;height:32px;
+    background:var(--coral);border:2.5px solid var(--ink);
+    border-radius:8px;transform:rotate(-6deg);
+    box-shadow:2px 2px 0 var(--ink);
+  }
+  .brand .star svg{width:18px;height:18px;display:block}
+  .nav-links{display:flex;align-items:center;gap:22px;font-size:14px;font-weight:700}
+  .nav-links a.lnk{text-decoration:none;padding-bottom:2px;border-bottom:2px solid transparent}
+  .nav-links a.lnk:hover{border-bottom-color:var(--coral)}
+  .nav-cta{
+    text-decoration:none;background:var(--ink);color:var(--cream);
+    padding:8px 16px;border:2.5px solid var(--ink);border-radius:9px;font-weight:700;
+    box-shadow:3px 3px 0 var(--coral);transition:transform .12s,box-shadow .12s;
+  }
+  .nav-cta .pix{font-size:15px}
+  .nav-cta:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--coral)}
+  @media(max-width:680px){.nav-links a.lnk:not(.gh){display:none}}
+
+  /* ---- HERO ---- */
+  header{padding:72px 0 46px;position:relative}
+  .badge{
+    display:inline-flex;align-items:center;gap:9px;
+    background:var(--yellow);border:2.5px solid var(--ink);border-radius:999px;
+    padding:6px 15px;font-size:14px;
+    box-shadow:3px 3px 0 var(--ink);transform:rotate(-1.5deg);
+  }
+  .badge .pix{font-size:15px;text-transform:uppercase;letter-spacing:.03em}
+  .badge .blink{width:9px;height:9px;background:var(--coral);box-shadow:0 0 0 2px var(--ink);animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  h1{font-size:clamp(44px,8.4vw,84px);letter-spacing:-.045em;margin:26px 0 0}
+  h1 .hl{position:relative;color:var(--coral);white-space:nowrap}
+  h1 .hl svg{position:absolute;left:0;right:0;bottom:-12px;width:100%;height:14px}
+  /* keep the coral phrase from overflowing the narrowest screens */
+  @media(max-width:380px){h1{font-size:clamp(34px,9vw,40px)}h1 .hl{white-space:normal}h1 .hl svg{bottom:-8px}}
+  .sub{
+    font-size:clamp(15px,2.2vw,18px);max-width:60ch;margin:26px 0 0;font-weight:400;
+  }
+  .sub b{font-weight:700;background:linear-gradient(transparent 62%,#F9BD2B70 62%)}
+
+  .cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px;align-items:center}
+  .btn{
+    text-decoration:none;display:inline-flex;align-items:center;gap:9px;
+    font-weight:700;font-size:15px;border:3px solid var(--ink);border-radius:11px;
+    padding:12px 22px;transition:transform .12s ease,box-shadow .12s ease;cursor:pointer;
+  }
+  .btn .pix{font-size:17px;font-weight:600;letter-spacing:.01em}
+  .btn-primary{background:var(--coral);color:#fff;box-shadow:var(--shadow-sm)}
+  .btn-primary:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+  .btn-ghost{background:var(--paper);color:var(--ink);box-shadow:var(--shadow-sm)}
+  .btn-ghost:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+
+  /* hero grid */
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center}
+  @media(max-width:880px){.hero-grid{grid-template-columns:1fr;gap:34px}}
+
+  /* pixel sparkles scattered in hero copy column */
+  .spark{position:absolute;image-rendering:pixelated;pointer-events:none;animation:twinkle 2.4s steps(2) infinite}
+  .spark.s2{animation-delay:.8s}
+  .spark.s3{animation-delay:1.5s}
+  @keyframes twinkle{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* ---- TERMINAL ---- */
+  .term-stage{position:relative}
+  .term{
+    background:#15140F;color:#EDEDE6;border:3px solid var(--ink);border-radius:14px;
+    box-shadow:8px 8px 0 var(--ink);overflow:hidden;font-size:14px;
+    transform:rotate(.6deg);position:relative;z-index:2;
+  }
+  .term-bar{
+    display:flex;align-items:center;gap:8px;padding:11px 14px;
+    background:#211F18;border-bottom:2px solid #000;
+  }
+  .dot{width:13px;height:13px;border:2px solid #000;image-rendering:pixelated}
+  .d1{background:#F54E00}.d2{background:#F9BD2B}.d3{background:#37C871}
+  .term-title{margin-left:8px;font-size:12px;color:#9a968a;font-family:"Pixelify Sans","Space Mono",monospace;letter-spacing:.02em}
+  .term-body{padding:20px 18px;min-height:166px}
+  .ln{display:block;white-space:pre-wrap;word-break:break-word}
+  .prompt{color:var(--yellow)}
+  .caret-px{color:var(--coral)}
+  .cmd{color:#fff;font-weight:700}
+  .ok{color:#37C871;font-weight:700}
+  .url{color:#62A0FF;text-decoration:underline}
+  .muted{color:#8a8678}
+  .caret{display:inline-block;width:9px;height:17px;background:var(--coral);vertical-align:-3px;animation:cblink 1s steps(1) infinite;image-rendering:pixelated}
+  @keyframes cblink{50%{opacity:0}}
+
+  /* the pixel mascot — a confident hero companion vaulting over the terminal */
+  .mascot{
+    position:absolute;z-index:3;right:-30px;top:-104px;
+    image-rendering:pixelated;animation:cheer 1.4s steps(2) infinite;
+    filter:drop-shadow(4px 4px 0 rgba(14,14,12,.22));
+  }
+  @keyframes cheer{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-9px) rotate(3deg)}}
+  @media(max-width:880px){.mascot{right:0;top:-86px;width:128px;height:auto}}
+  @media(max-width:480px){.mascot{right:-6px;top:-72px;width:104px;height:auto}}
+
+  /* pixel "LIVE" sticker tucked at the terminal corner — one deliberate pixel beat */
+  .live-sticker{
+    position:absolute;z-index:4;left:-16px;bottom:-18px;
+    display:inline-flex;align-items:center;gap:7px;
+    background:var(--green);border:3px solid var(--ink);border-radius:9px;
+    padding:5px 11px 5px 10px;box-shadow:3px 3px 0 var(--ink);
+    transform:rotate(-4deg);
+  }
+  .live-sticker .pix{font-family:"Pixelify Sans","Space Mono",monospace;font-weight:700;
+    font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink);line-height:1}
+  .live-sticker .lblink{width:9px;height:9px;background:var(--ink);
+    image-rendering:pixelated;animation:blink 1s steps(1) infinite}
+  @media(max-width:880px){.live-sticker{left:4px;bottom:-14px}}
+
+  .squig{display:block;margin:0 0 8px;color:var(--blue)}
+
+  /* ---- SECTION HEADS ---- */
+  .sec{padding:64px 0}
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:34px}
+  .kicker{
+    font-size:16px;color:var(--coral);
+    display:inline-flex;align-items:center;gap:9px;text-transform:uppercase;letter-spacing:.03em;
+  }
+  .kicker::before{content:"";width:26px;height:3px;background:var(--coral)}
+  .sec h2{font-size:clamp(30px,5vw,46px);margin-top:10px;max-width:18ch}
+  .sec-note{font-size:14px;max-width:42ch}
+
+  /* divider stripe */
+  .stripe{
+    height:34px;background:
+      repeating-linear-gradient(45deg,var(--ink) 0 14px,transparent 14px 28px);
+    border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);
+    opacity:.92;
+  }
+  .stripe.coral{background:repeating-linear-gradient(45deg,var(--coral) 0 14px,transparent 14px 28px)}
+
+  /* ---- STEPS ---- */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  @media(max-width:780px){.steps{grid-template-columns:1fr}}
+  .step{
+    background:var(--paper);border:var(--border);border-radius:14px;padding:24px 22px 26px;
+    box-shadow:var(--shadow);position:relative;
+  }
+  .step .num{
+    position:absolute;top:-18px;left:20px;width:44px;height:44px;display:grid;place-items:center;
+    background:var(--blue);color:#fff;border:3px solid var(--ink);border-radius:50%;
+    font-family:"Pixelify Sans",sans-serif;font-weight:700;font-size:22px;box-shadow:3px 3px 0 var(--ink);
+  }
+  .step:nth-child(2) .num{background:var(--coral)}
+  .step:nth-child(3) .num{background:var(--yellow);color:var(--ink)}
+  .step .step-spr{width:38px;height:38px;image-rendering:pixelated;margin:8px 0 2px}
+  .step h3{font-size:20px;margin:10px 0 8px}
+  .step p{font-size:14px;max-width:34ch}
+  .step code{background:var(--cream);border:2px solid var(--ink);border-radius:6px;padding:1px 6px;font-size:12.5px;font-weight:700}
+
+  /* ---- FEATURES ---- */
+  .feat-wrap{background:var(--cream2)}
+  .feats{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+  @media(max-width:740px){.feats{grid-template-columns:1fr}}
+  .feat{
+    background:var(--paper);border:var(--border);border-radius:14px;padding:26px 24px;
+    box-shadow:var(--shadow-sm);transition:transform .14s ease,box-shadow .14s ease;position:relative;
+  }
+  .feat:hover{transform:translate(-3px,-3px);box-shadow:7px 7px 0 var(--ink)}
+  .feat .ic{
+    width:58px;height:58px;display:grid;place-items:center;
+    border:3px solid var(--ink);border-radius:12px;margin-bottom:16px;box-shadow:3px 3px 0 var(--ink);
+  }
+  .feat .ic svg{width:36px;height:36px;image-rendering:pixelated;display:block}
+  .feat:nth-child(1) .ic{background:var(--coral)}
+  .feat:nth-child(2) .ic{background:var(--blue)}
+  .feat:nth-child(3) .ic{background:var(--yellow)}
+  .feat:nth-child(4) .ic{background:var(--green)}
+  /* vary the cards: feature #1 is the wider hero feature */
+  .feat.lead{grid-column:1 / -1;display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:start;background:var(--ink);color:var(--cream)}
+  .feat.lead .ic{margin-bottom:0}
+  .feat.lead h3{color:#fff}
+  .feat.lead p{color:#d6d3c9}
+  .feat.lead .tag{background:#26241d;color:var(--cream);border-color:var(--cream)}
+  @media(max-width:520px){.feat.lead{grid-template-columns:1fr}}
+  .feat h3{font-size:21px;margin-bottom:8px}
+  .feat p{font-size:14.5px;max-width:58ch}
+  .feat code{background:var(--cream);border:2px solid var(--ink);border-radius:6px;padding:1px 6px;font-size:12.5px;font-weight:700}
+  .feat.lead code{background:#26241d;border-color:var(--cream);color:var(--cream)}
+  .feat .tag{
+    display:inline-flex;align-items:center;gap:7px;margin-top:14px;font-size:13px;
+    font-family:"Pixelify Sans","Space Mono",monospace;font-weight:600;text-transform:uppercase;letter-spacing:.03em;
+    background:var(--cream);border:2px solid var(--ink);border-radius:999px;padding:3px 12px;
+  }
+  .feat .tag .pxdot{width:8px;height:8px;image-rendering:pixelated;display:inline-block}
+
+  /* ---- CTA STRIP ---- */
+  .bigcta{background:var(--ink);color:var(--cream);border-radius:18px;padding:46px 34px;text-align:center;
+    box-shadow:8px 8px 0 var(--coral);border:3px solid var(--ink);position:relative;overflow:hidden}
+  .bigcta h2{color:#fff;font-size:clamp(26px,4.6vw,40px);max-width:20ch;margin:0 auto}
+  .bigcta p{margin:14px auto 26px;max-width:52ch;font-size:15px;color:#d6d3c9}
+  .bigcta .btn-primary{box-shadow:4px 4px 0 var(--cream)}
+  .bigcta .btn-primary:hover{box-shadow:6px 6px 0 var(--cream)}
+  .bigcta .btn-ghost{background:transparent;color:#fff;border-color:var(--cream);box-shadow:4px 4px 0 var(--cream)}
+  .bigcta .btn-ghost:hover{box-shadow:6px 6px 0 var(--cream)}
+  .bigcta .cta-spark{position:absolute;image-rendering:pixelated;opacity:.9}
+
+  /* copy command sticker */
+  .copyline{
+    display:inline-flex;align-items:center;gap:12px;margin-top:8px;
+    background:var(--paper);border:3px solid var(--ink);border-radius:11px;padding:10px 12px 10px 16px;
+    box-shadow:var(--shadow-sm);font-size:14px;font-weight:700;flex-wrap:wrap;color:var(--ink);
+    transform:rotate(-1deg);
+  }
+  .copyline .pl{color:var(--coral)}
+  .copybtn{
+    border:2.5px solid var(--ink);background:var(--yellow);border-radius:8px;padding:6px 13px;
+    font-family:"Pixelify Sans","Space Mono",monospace;font-weight:600;font-size:14px;cursor:pointer;
+    text-transform:uppercase;letter-spacing:.03em;transition:transform .1s;color:var(--ink);
+  }
+  .copybtn:hover{transform:translateY(-1px)}
+  .copybtn.done{background:#37C871}
+
+  /* ---- FOOTER ---- */
+  footer{border-top:3px solid var(--ink);background:var(--cream);padding:40px 0 30px}
+  .foot{display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;align-items:flex-start}
+  .foot .brand{font-size:24px}
+  .foot-links{display:flex;flex-wrap:wrap;gap:10px 22px;font-size:13.5px;font-weight:700}
+  .foot-links a{text-decoration:none;border-bottom:2px solid transparent}
+  .foot-links a:hover{border-bottom-color:var(--coral)}
+  .foot-tags{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .pill{font-size:13px;font-family:"Pixelify Sans","Space Mono",monospace;font-weight:600;text-transform:uppercase;letter-spacing:.03em;
+    background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:3px 12px;display:inline-flex;align-items:center;gap:7px}
+  .pill .pxdot{width:8px;height:8px;image-rendering:pixelated}
+  .foot-bottom{margin-top:28px;padding-top:18px;border-top:2px dashed var(--ink);
+    font-size:12.5px;color:#56544c;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+
+  /* reveal — ENHANCES already-visible content. Default (no JS) is fully painted &
+     visible. The opacity:0 start-state is applied ONLY after JS opts in via the
+     html.js-on gate, and a safety timer guarantees nothing stays hidden. */
+  .rv{transition:opacity .5s ease-out,transform .5s ease-out}
+  html.js-on .rv:not(.in){opacity:0;transform:translateY(18px)}
+  .rv.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){
+    html.js-on .rv:not(.in){opacity:1;transform:none}
+    .rv{transition:none}
+    .caret,.spark,.mascot,.badge .blink,.live-sticker .lblink{animation:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<nav>
+  <div class="wrap nav-in">
+    <a href="#top" class="brand" style="text-decoration:none">
+      <span class="star" aria-hidden="true">
+        <!-- pixel-art coral star wordmark mark -->
+        <svg viewBox="0 0 8 8" shape-rendering="crispEdges" fill="#fff">
+          <rect x="3" y="0" width="2" height="2"/><rect x="3" y="6" width="2" height="2"/>
+          <rect x="0" y="3" width="2" height="2"/><rect x="6" y="3" width="2" height="2"/>
+          <rect x="2" y="2" width="4" height="4"/>
+          <rect x="1" y="1" width="2" height="2"/><rect x="5" y="1" width="2" height="2"/>
+          <rect x="1" y="5" width="2" height="2"/><rect x="5" y="5" width="2" height="2"/>
+        </svg>
+      </span>getonup</a>
+    <div class="nav-links">
+      <a class="lnk" href="#how">How it works</a>
+      <a class="lnk" href="#features">Features</a>
+      <a class="lnk gh" href="#">GitHub ★</a>
+      <a class="nav-cta" href="#get"><span class="pix">Self-host it</span></a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header id="top">
+  <div class="wrap hero-grid">
+    <div style="position:relative">
+      <!-- pixel sparkles -->
+      <svg class="spark" style="top:-6px;left:-2px" width="20" height="20" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="3" y="0" width="2" height="8" fill="#1D4AFF"/><rect x="0" y="3" width="8" height="2" fill="#1D4AFF"/>
+      </svg>
+      <svg class="spark s2" style="top:118px;right:24px" width="16" height="16" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="3" y="0" width="2" height="8" fill="#F9BD2B"/><rect x="0" y="3" width="8" height="2" fill="#F9BD2B"/>
+      </svg>
+
+      <span class="badge rv"><span class="blink"></span><span class="pix">MIT · self-hostable · open source</span></span>
+      <h1 class="rv">
+        Your AI artifact,<br/>
+        <span class="hl">live in seconds.
+          <svg viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M2 9 C 60 2, 120 13, 180 6 S 280 3, 298 8" fill="none" stroke="#1D4AFF" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        </span>
+      </h1>
+      <p class="sub rv">
+        Hand it a <b>.html</b>, <b>.tsx</b>, or <b>.vue</b> and getonup auto-wraps it
+        into a real, shareable URL with one command. It runs on a single Cloudflare
+        Worker plus an R2 bucket, so there's nothing to babysit and it costs
+        <b>about nothing when idle.</b>
+      </p>
+      <div class="cta-row rv">
+        <a class="btn btn-primary" href="#get"><span class="pix">Self-host it</span> →</a>
+        <a class="btn btn-ghost" href="#"><span class="pix">★ View on GitHub</span></a>
+      </div>
+    </div>
+
+    <div class="rv">
+      <p class="squig" aria-hidden="true">
+        <svg width="120" height="34" viewBox="0 0 120 34" fill="none">
+          <path d="M4 30 C 30 26, 26 6, 50 8 S 92 22, 112 6" stroke="#1D4AFF" stroke-width="3" stroke-linecap="round"/>
+          <path d="M112 6 l-9 1 m9-1 l-2 9" stroke="#1D4AFF" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </p>
+      <div class="term-stage">
+        <!-- PIXEL MASCOT: hero-scale hedgehog, coral spikes, arms thrown up (getonup spirit) -->
+        <svg class="mascot" width="172" height="191" viewBox="0 0 18 20" shape-rendering="crispEdges" aria-hidden="true">
+          <!-- raised arms -->
+          <rect x="1" y="3" width="2" height="2" fill="#0E0E0C"/>
+          <rect x="15" y="3" width="2" height="2" fill="#0E0E0C"/>
+          <rect x="2" y="5" width="2" height="2" fill="#0E0E0C"/>
+          <rect x="14" y="5" width="2" height="2" fill="#0E0E0C"/>
+          <!-- coral spike crown — tall, unmistakable hedgehog spikes -->
+          <rect x="6" y="0" width="1" height="2" fill="#F54E00"/>
+          <rect x="9" y="0" width="1" height="2" fill="#F54E00"/>
+          <rect x="12" y="0" width="1" height="2" fill="#F54E00"/>
+          <rect x="5" y="1" width="9" height="1" fill="#F54E00"/>
+          <rect x="7" y="1" width="1" height="1" fill="#F54E00"/>
+          <rect x="10" y="1" width="1" height="1" fill="#F54E00"/>
+          <rect x="5" y="2" width="8" height="1" fill="#0E0E0C"/>
+          <!-- body / face block -->
+          <rect x="4" y="3" width="10" height="9" fill="#0E0E0C"/>
+          <rect x="5" y="4" width="8" height="7" fill="#F9BD2B"/>
+          <!-- coral spike roots blending into the crown -->
+          <rect x="5" y="3" width="1" height="1" fill="#F54E00"/>
+          <rect x="7" y="3" width="1" height="1" fill="#F54E00"/>
+          <rect x="9" y="3" width="1" height="1" fill="#F54E00"/>
+          <rect x="11" y="3" width="1" height="1" fill="#F54E00"/>
+          <!-- eyes -->
+          <rect x="6" y="6" width="2" height="2" fill="#0E0E0C"/>
+          <rect x="10" y="6" width="2" height="2" fill="#0E0E0C"/>
+          <rect x="6" y="6" width="1" height="1" fill="#fff"/>
+          <rect x="10" y="6" width="1" height="1" fill="#fff"/>
+          <!-- smile -->
+          <rect x="7" y="9" width="4" height="1" fill="#F54E00"/>
+          <rect x="6" y="8" width="1" height="1" fill="#F54E00"/>
+          <rect x="11" y="8" width="1" height="1" fill="#F54E00"/>
+          <!-- little feet -->
+          <rect x="6" y="12" width="2" height="2" fill="#0E0E0C"/>
+          <rect x="10" y="12" width="2" height="2" fill="#0E0E0C"/>
+          <!-- joy sparkle -->
+          <rect x="14" y="1" width="1" height="3" fill="#1D4AFF"/>
+          <rect x="13" y="2" width="3" height="1" fill="#1D4AFF"/>
+        </svg>
+
+        <div class="term" role="img" aria-label="Terminal running: getonup deploy counter.tsx, returns a live URL">
+          <div class="term-bar">
+            <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
+            <span class="term-title">~/agent/artifacts — getonup</span>
+          </div>
+          <div class="term-body" id="tbody">
+            <span class="ln"><span class="prompt">$ </span><span class="cmd" id="typed">getonup deploy counter.tsx</span><span class="caret" id="caret"></span></span>
+            <span class="ln out" id="o1"><span class="muted">› wrapping React 18 + Tailwind…</span></span>
+            <span class="ln out" id="o2"><span class="muted">› uploading to R2…</span></span>
+            <span class="ln out" id="o3"><span class="ok">✓ live</span> <span class="caret-px">▸</span> <span class="url">https://app.getonup.dev/s/ix3k9d2</span></span>
+          </div>
+        </div>
+        <!-- pixel LIVE sticker — the deliberate extra pixel beat -->
+        <span class="live-sticker" aria-hidden="true"><span class="lblink"></span><span class="pix">Live</span></span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="stripe coral" aria-hidden="true"></div>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="sec" id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <span class="kicker rv pix">Three steps. That's it.</span>
+        <h2 class="rv">From file to live URL.</h2>
+      </div>
+      <p class="sec-note rv">Skip the viewer logins and dashboard wrangling. Your agent writes a file and getonup does the rest.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step rv">
+        <span class="num">1</span>
+        <!-- pixel file glyph -->
+        <svg class="step-spr" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="3" y="1" width="8" height="14" fill="#0E0E0C"/>
+          <rect x="4" y="2" width="6" height="12" fill="#FBFAF4"/>
+          <rect x="10" y="1" width="3" height="3" fill="#0E0E0C"/>
+          <rect x="11" y="2" width="2" height="2" fill="#FBFAF4"/>
+          <rect x="5" y="5" width="4" height="1" fill="#1D4AFF"/>
+          <rect x="5" y="7" width="5" height="1" fill="#0E0E0C"/>
+          <rect x="5" y="9" width="5" height="1" fill="#0E0E0C"/>
+          <rect x="5" y="11" width="3" height="1" fill="#0E0E0C"/>
+        </svg>
+        <h3>Build an artifact</h3>
+        <p>Your coding agent writes a <code>.html</code>, <code>.tsx</code>, or <code>.vue</code>. A single component is plenty, with no boilerplate or bundler config to set up.</p>
+      </div>
+      <div class="step rv">
+        <span class="num">2</span>
+        <!-- pixel terminal glyph -->
+        <svg class="step-spr" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="1" y="2" width="14" height="12" fill="#0E0E0C"/>
+          <rect x="2" y="3" width="12" height="10" fill="#15140F"/>
+          <rect x="3" y="5" width="1" height="1" fill="#F9BD2B"/>
+          <rect x="4" y="6" width="1" height="1" fill="#F9BD2B"/>
+          <rect x="3" y="7" width="1" height="1" fill="#F9BD2B"/>
+          <rect x="6" y="7" width="5" height="1" fill="#37C871"/>
+          <rect x="3" y="9" width="1" height="2" fill="#F54E00"/>
+        </svg>
+        <h3>Run one command</h3>
+        <p><code>getonup deploy &lt;file&gt;</code> auto-wraps the component into a self-contained page and uploads it straight to your bucket.</p>
+      </div>
+      <div class="step rv">
+        <span class="num">3</span>
+        <!-- pixel link/globe glyph -->
+        <svg class="step-spr" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="5" y="2" width="6" height="2" fill="#0E0E0C"/>
+          <rect x="3" y="4" width="2" height="2" fill="#0E0E0C"/>
+          <rect x="11" y="4" width="2" height="2" fill="#0E0E0C"/>
+          <rect x="2" y="6" width="2" height="4" fill="#0E0E0C"/>
+          <rect x="12" y="6" width="2" height="4" fill="#0E0E0C"/>
+          <rect x="3" y="10" width="2" height="2" fill="#0E0E0C"/>
+          <rect x="11" y="10" width="2" height="2" fill="#0E0E0C"/>
+          <rect x="5" y="12" width="6" height="2" fill="#0E0E0C"/>
+          <rect x="5" y="4" width="6" height="8" fill="#1D4AFF"/>
+          <rect x="7" y="3" width="2" height="10" fill="#FBFAF4"/>
+          <rect x="3" y="7" width="10" height="2" fill="#FBFAF4"/>
+        </svg>
+        <h3>Share the link</h3>
+        <p>You get a clean URL on your own domain with no viewer login, and it scales to zero. Share it, screenshot it, or embed it anywhere.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<div class="feat-wrap">
+  <section class="sec" id="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <span class="kicker rv pix">Built different</span>
+          <h2 class="rv">Tiny stack. Big leverage.</h2>
+        </div>
+        <p class="sec-note rv">Free software, and every piece runs in <i>your</i> Cloudflare account.</p>
+      </div>
+
+      <div class="feats">
+        <!-- LEAD feature: wide ink card, hand-pixeled cloud -->
+        <div class="feat lead rv">
+          <div class="ic" aria-hidden="true">
+            <svg viewBox="0 0 16 16" shape-rendering="crispEdges">
+              <rect x="5" y="4" width="6" height="2" fill="#0E0E0C"/>
+              <rect x="3" y="6" width="10" height="2" fill="#0E0E0C"/>
+              <rect x="2" y="8" width="12" height="3" fill="#0E0E0C"/>
+              <rect x="6" y="5" width="4" height="1" fill="#FBFAF4"/>
+              <rect x="4" y="7" width="8" height="1" fill="#FBFAF4"/>
+              <rect x="3" y="9" width="10" height="1" fill="#FBFAF4"/>
+              <rect x="4" y="11" width="1" height="2" fill="#1D4AFF"/>
+              <rect x="7" y="11" width="1" height="3" fill="#1D4AFF"/>
+              <rect x="10" y="11" width="1" height="2" fill="#1D4AFF"/>
+            </svg>
+          </div>
+          <div>
+            <h3>One Worker + R2, scale-to-zero</h3>
+            <p>There's no database and no always-on server to babysit. A single Cloudflare Worker serves while one R2 bucket stores, and it scales to zero, so idle cost is basically nothing. The whole control plane is two files you can read in an afternoon.</p>
+            <span class="tag"><span class="pxdot" style="background:#F9BD2B"></span>~$0 idle</span>
+          </div>
+        </div>
+
+        <div class="feat rv">
+          <div class="ic" aria-hidden="true">
+            <!-- pixel robot / agent -->
+            <svg viewBox="0 0 16 16" shape-rendering="crispEdges">
+              <rect x="7" y="1" width="2" height="2" fill="#0E0E0C"/>
+              <rect x="3" y="3" width="10" height="9" fill="#0E0E0C"/>
+              <rect x="4" y="4" width="8" height="7" fill="#FBFAF4"/>
+              <rect x="5" y="6" width="2" height="2" fill="#1D4AFF"/>
+              <rect x="9" y="6" width="2" height="2" fill="#1D4AFF"/>
+              <rect x="5" y="9" width="6" height="1" fill="#0E0E0C"/>
+              <rect x="1" y="6" width="2" height="3" fill="#0E0E0C"/>
+              <rect x="13" y="6" width="2" height="3" fill="#0E0E0C"/>
+              <rect x="5" y="12" width="2" height="2" fill="#0E0E0C"/>
+              <rect x="9" y="12" width="2" height="2" fill="#0E0E0C"/>
+            </svg>
+          </div>
+          <h3>Agent-native</h3>
+          <p>Drop a snippet in <code>AGENTS.md</code> and any coding agent can publish on its own. It's one CLI call any model already knows how to make, with no SDK to learn and no auth dance.</p>
+          <span class="tag"><span class="pxdot" style="background:#1D4AFF"></span>drop-in for agents</span>
+        </div>
+
+        <div class="feat rv">
+          <div class="ic" aria-hidden="true">
+            <!-- pixel magic wand -->
+            <svg viewBox="0 0 16 16" shape-rendering="crispEdges">
+              <rect x="11" y="2" width="2" height="2" fill="#0E0E0C"/>
+              <rect x="9" y="4" width="2" height="2" fill="#0E0E0C"/>
+              <rect x="7" y="6" width="2" height="2" fill="#0E0E0C"/>
+              <rect x="5" y="8" width="2" height="2" fill="#0E0E0C"/>
+              <rect x="3" y="10" width="2" height="2" fill="#0E0E0C"/>
+              <rect x="2" y="12" width="3" height="2" fill="#0E0E0C"/>
+              <rect x="11" y="2" width="1" height="1" fill="#FBFAF4"/>
+              <!-- sparkles -->
+              <rect x="6" y="2" width="1" height="3" fill="#0E0E0C"/>
+              <rect x="5" y="3" width="3" height="1" fill="#0E0E0C"/>
+              <rect x="13" y="6" width="1" height="3" fill="#0E0E0C"/>
+              <rect x="12" y="7" width="3" height="1" fill="#0E0E0C"/>
+            </svg>
+          </div>
+          <h3>Auto-wrap, no build</h3>
+          <p>Hand it one <code>.tsx</code>, <code>.vue</code>, or <code>.html</code> and it becomes a runnable page, with React 18 plus Babel and Tailwind, or Vue 3, inlined and self-contained.</p>
+          <span class="tag"><span class="pxdot" style="background:#0E0E0C"></span>React 18 · Vue 3</span>
+        </div>
+
+        <div class="feat rv">
+          <div class="ic" aria-hidden="true">
+            <!-- pixel key -->
+            <svg viewBox="0 0 16 16" shape-rendering="crispEdges">
+              <rect x="3" y="3" width="6" height="6" fill="#0E0E0C"/>
+              <rect x="4" y="4" width="4" height="4" fill="#FBFAF4"/>
+              <rect x="5" y="5" width="2" height="2" fill="#0E0E0C"/>
+              <rect x="9" y="5" width="5" height="2" fill="#0E0E0C"/>
+              <rect x="11" y="7" width="2" height="2" fill="#0E0E0C"/>
+              <rect x="13" y="7" width="2" height="3" fill="#0E0E0C"/>
+            </svg>
+          </div>
+          <h3>Yours to self-host, MIT</h3>
+          <p>Your Cloudflare account, your token, your domain, your data. It's MIT-licensed and self-hostable end to end, so you can fork it, audit it, and run it forever.</p>
+          <span class="tag"><span class="pxdot" style="background:#37C871"></span>MIT licensed</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="stripe" aria-hidden="true"></div>
+
+<!-- ============ BIG CTA ============ -->
+<section class="sec" id="get">
+  <div class="wrap">
+    <div class="bigcta rv">
+      <!-- pixel sparkles in the dark card -->
+      <svg class="cta-spark" style="top:22px;left:30px" width="18" height="18" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="3" y="0" width="2" height="8" fill="#F9BD2B"/><rect x="0" y="3" width="8" height="2" fill="#F9BD2B"/>
+      </svg>
+      <svg class="cta-spark" style="bottom:26px;right:36px" width="22" height="22" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="3" y="0" width="2" height="8" fill="#F54E00"/><rect x="0" y="3" width="8" height="2" fill="#F54E00"/>
+      </svg>
+      <h2>Ship your next artifact live.</h2>
+      <p>Clone the repo, point it at your Cloudflare account, and start shipping URLs in minutes.</p>
+      <div style="display:flex;justify-content:center;margin-bottom:26px">
+        <div class="copyline">
+          <span><span class="pl">$</span> getonup deploy counter.tsx</span>
+          <button class="copybtn" id="copy" aria-label="Copy command">Copy</button>
+        </div>
+      </div>
+      <div class="cta-row" style="justify-content:center;margin-top:0">
+        <a class="btn btn-primary" href="#"><span class="pix">Get started</span> →</a>
+        <a class="btn btn-ghost" href="#"><span class="pix">★ Star on GitHub</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a href="#top" class="brand" style="text-decoration:none">
+          <span class="star" aria-hidden="true">
+            <svg viewBox="0 0 8 8" shape-rendering="crispEdges" fill="#fff">
+              <rect x="3" y="0" width="2" height="2"/><rect x="3" y="6" width="2" height="2"/>
+              <rect x="0" y="3" width="2" height="2"/><rect x="6" y="3" width="2" height="2"/>
+              <rect x="2" y="2" width="4" height="4"/>
+              <rect x="1" y="1" width="2" height="2"/><rect x="5" y="1" width="2" height="2"/>
+              <rect x="1" y="5" width="2" height="2"/><rect x="5" y="5" width="2" height="2"/>
+            </svg>
+          </span>getonup</a>
+        <p style="font-size:13.5px;margin-top:12px;max-width:38ch">The one-command way to turn any AI-generated web artifact into a live, shareable URL.</p>
+        <div class="foot-tags">
+          <span class="pill"><span class="pxdot" style="background:#1D4AFF"></span>self-hosted</span>
+          <span class="pill"><span class="pxdot" style="background:#37C871"></span>scale-to-zero</span>
+          <span class="pill"><span class="pxdot" style="background:#F54E00"></span>MIT</span>
+        </div>
+      </div>
+      <div class="foot-links">
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#get">Self-host</a>
+        <a href="#">GitHub</a>
+        <a href="#">Docs</a>
+        <a href="#">AGENTS.md snippet</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 getonup — free software, MIT licensed.</span>
+      <span>Built by devs, for devs &amp; their agents.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Opt JS in. CSS only dims .rv elements when html.js-on is present, so a
+  // no-JS / first-paint render shows the full page. We add the class, then
+  // guarantee every .rv reveals (IO entrance + hard safety net) so a headless
+  // full-page screenshot is NEVER blank, even mid-scroll.
+  (function(){
+    var root = document.documentElement;
+    root.classList.add('js-on');
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var els = [].slice.call(document.querySelectorAll('.rv'));
+    function showAll(){ els.forEach(function(e){ e.classList.add('in'); }); }
+    if(reduce || !('IntersectionObserver' in window)){ showAll(); }
+    else {
+      // reveal anything already in/near the viewport immediately (no wait)
+      var vh = window.innerHeight || 800;
+      els.forEach(function(e){ if(e.getBoundingClientRect().top < vh*1.1){ e.classList.add('in'); } });
+      var io=new IntersectionObserver(function(entries){
+        entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target);} });
+      },{threshold:.12, rootMargin:"0px 0px -40px 0px"});
+      els.forEach(function(e){ if(!e.classList.contains('in')) io.observe(e); });
+      // SAFETY NET: nothing stays invisible. Screenshot tools wait for 'load';
+      // at that point reveal everything so a full-page capture is never blank.
+      // (The IO already handled on-scroll entrances above.)
+      window.addEventListener('load', function(){ setTimeout(showAll, 300); });
+      setTimeout(showAll, 900);
+    }
+  })();
+
+  // Typewriter for hero terminal — purely additive. The command + all output
+  // lines are visible by default and STAY visible; we only re-type the command
+  // text over itself for flavor. A blank-output screenshot is impossible.
+  (function(){
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var el = document.getElementById('typed');
+    var caret = document.getElementById('caret');
+    if(!el || reduce){ if(caret) caret.style.display='none'; return; }
+    var cmd = el.textContent, i=0;
+    el.textContent = cmd.slice(0,0); // restart the type without ever hiding outputs
+    function type(){
+      if(i<=cmd.length){ el.textContent = cmd.slice(0,i); i++; setTimeout(type, 55 + Math.random()*40); }
+      else if(caret){ caret.style.display='none'; }
+    }
+    setTimeout(type, 500);
+  })();
+
+  // Copy button
+  (function(){
+    var btn=document.getElementById('copy');
+    if(!btn) return;
+    btn.addEventListener('click', function(){
+      var text="getonup deploy counter.tsx";
+      var done=function(){
+        btn.textContent="Copied ✓"; btn.classList.add('done');
+        setTimeout(function(){btn.textContent="Copy";btn.classList.remove('done');},1600);
+      };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(done);
+      } else {
+        var t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();
+        try{document.execCommand('copy');}catch(e){} document.body.removeChild(t); done();
+      }
+    });
+  })();
+</script>
+</body>
+</html>

@@ -303,6 +303,11 @@ async function handleServe(url: URL, env: Env): Promise<Response> {
   let rest = slash === -1 ? "" : after.slice(slash + 1);
   if (!/^[a-z0-9-]+$/.test(id)) return notFound();
 
+  // A bare "/s/<id>" (no trailing slash) must redirect to "/s/<id>/" so the served
+  // index.html's relative links ("./landings/x.html") resolve against the deploy root
+  // instead of "/s/". Without this, every multi-file directory deploy 404s its own assets.
+  if (slash === -1) return new Response(null, { status: 301, headers: { location: `/s/${id}/` } });
+
   // Browsers percent-encode path chars (e.g. "my%20logo.png"); decode to match the stored R2 key.
   try {
     rest = decodeURIComponent(rest);

@@ -49,6 +49,12 @@ test("a valid deploy stores and serves the artifact with the security headers", 
   const { id, url } = (await r.json()) as { id: string; url: string };
   assert.ok(id && url.includes(`/s/${id}`));
 
+  // A bare "/s/<id>" must 301 to "/s/<id>/" so relative links in index.html resolve
+  // against the deploy root rather than "/s/".
+  const bare = await fetch(`${base}/s/${id}`, { redirect: "manual" });
+  assert.equal(bare.status, 301);
+  assert.equal(bare.headers.get("location"), `/s/${id}/`);
+
   const served = await fetch(`${base}/s/${id}/`);
   assert.equal(served.status, 200);
   assert.equal(await served.text(), "<h1>hi</h1>");
@@ -143,8 +149,10 @@ test("the CLI api client round-trips through the live worker", async () => {
     type: "html",
     files: [{ path: "index.html", content: "<p>ok</p>", encoding: "utf8" }],
   });
-  assert.ok(res.id && res.url.includes("/s/"));
-  const got = await fetch(res.url);
+  assert.ok(res.id && res.url.includes(`/s/${res.id}`));
+  // res.url's host follows GETONUP_PUBLIC_URL (prod in wrangler.jsonc); fetch the local
+  // worker by id so the round-trip assertion is independent of the configured base.
+  const got = await fetch(`${base}/s/${res.id}/`);
   assert.equal(got.status, 200);
   assert.equal(await got.text(), "<p>ok</p>");
 });

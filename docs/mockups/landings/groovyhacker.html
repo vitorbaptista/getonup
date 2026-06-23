@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>getonup — your AI artifact, live in seconds</title>
+<meta name="description" content="An open-source CLI that deploys any AI-generated web artifact to a live, shareable URL with one command. One Cloudflare Worker + R2, scales to zero, MIT.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&family=Spline+Sans+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* warm CRT phosphor on deep warm-dark ground */
+    --void:#120b0d;        /* deepest warm-black/aubergine */
+    --ground:#1a1012;      /* surface */
+    --ground-2:#22151a;    /* raised surface */
+    --amber:#ffb13b;       /* primary phosphor (warm amber) */
+    --amber-bright:#ffd089;/* hot text */
+    --amber-deep:#e8861f;  /* amber for borders/edges */
+    --magenta:#ff3d9a;     /* funk accent 1 */
+    --lime:#b6ff3d;        /* funk accent 2 (acid lime) */
+    --cream:#f6e8d8;       /* high-contrast body ink on dark */
+    --dim:#caa888;         /* warm dimmed (still ≥4.5:1 on void) */
+    --rule:#3a2620;        /* warm rule */
+    --maxw:760px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:var(--void);
+    color:var(--cream);
+    font-family:"Spline Sans Mono",ui-monospace,Menlo,monospace;
+    font-size:16px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    position:relative;
+    overflow-x:hidden;
+  }
+  /* warm radial phosphor bloom behind everything */
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:-2;
+    background:
+      radial-gradient(120% 80% at 50% -10%, rgba(255,177,59,.16), transparent 60%),
+      radial-gradient(90% 60% at 12% 8%, rgba(255,61,154,.10), transparent 55%),
+      radial-gradient(90% 70% at 92% 30%, rgba(182,255,61,.07), transparent 55%),
+      var(--void);
+  }
+  /* CRT scanlines overlay */
+  body::after{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    pointer-events:none;
+    background:repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,.16) 3px,
+      rgba(0,0,0,.16) 3px
+    );
+    mix-blend-mode:multiply;
+    animation:drift 9s linear infinite;
+  }
+  @keyframes drift{from{background-position:0 0}to{background-position:0 12px}}
+
+  a{color:inherit}
+  ::selection{background:var(--magenta);color:#fff}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .mono{font-family:"Spline Sans Mono",ui-monospace,monospace}
+  .disp{font-family:"Rubik Mono One",ui-monospace,monospace;font-weight:400}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    border-bottom:1px solid var(--rule);
+    position:sticky;top:0;z-index:50;
+    background:rgba(18,11,13,.86);
+    backdrop-filter:blur(6px);
+  }
+  .topbar .wrap{
+    display:flex;align-items:center;justify-content:space-between;
+    height:58px;gap:16px;
+  }
+  .brandmini{
+    font-family:"Rubik Mono One",monospace;
+    font-size:17px;letter-spacing:-0.04em;
+    color:var(--amber-bright);text-decoration:none;
+    text-shadow:0 0 14px rgba(255,177,59,.5);
+    white-space:nowrap;
+  }
+  .brandmini span{color:var(--magenta);text-shadow:0 0 14px rgba(255,61,154,.55)}
+  .topnav{display:flex;align-items:center;gap:18px}
+  .topnav a{
+    font-size:13px;color:var(--dim);text-decoration:none;
+    letter-spacing:.02em;transition:color .15s,text-shadow .15s;
+  }
+  .topnav a:hover{color:var(--lime);text-shadow:0 0 10px rgba(182,255,61,.5)}
+  .gh-btn{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:13px;font-weight:600;text-decoration:none;
+    color:var(--void);background:var(--amber);
+    padding:8px 14px;border-radius:6px;
+    box-shadow:0 0 18px rgba(255,177,59,.35);
+    transition:transform .14s ease,box-shadow .14s ease,background .14s;
+    white-space:nowrap;
+  }
+  .gh-btn:hover{transform:translateY(-1px);background:var(--amber-bright);box-shadow:0 0 26px rgba(255,177,59,.55)}
+  .gh-btn svg{width:15px;height:15px;flex:none}
+  .nav-links-mobile{display:none}
+
+  /* ---------- hero ---------- */
+  .hero{padding:64px 0 12px;position:relative}
+  .badge{
+    display:inline-flex;align-items:center;gap:9px;
+    font-size:12px;letter-spacing:.06em;color:var(--lime);
+    border:1px solid rgba(182,255,61,.4);
+    border-radius:999px;padding:5px 13px;margin:0 0 26px;
+    background:rgba(182,255,61,.06);
+  }
+  .badge .blip{
+    width:7px;height:7px;border-radius:50%;background:var(--lime);
+    box-shadow:0 0 10px var(--lime);
+    animation:pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  h1{
+    font-family:"Rubik Mono One",monospace;
+    font-weight:400;
+    font-size:clamp(2.05rem,7.4vw,5.4rem);
+    line-height:.98;
+    letter-spacing:-0.05em;
+    margin:0;
+    color:var(--amber-bright);
+    text-wrap:balance;
+    text-shadow:0 0 30px rgba(255,177,59,.32);
+  }
+  h1 .live{color:var(--magenta);text-shadow:0 0 34px rgba(255,61,154,.45);position:relative}
+  .blockcursor{
+    display:inline-block;width:.52em;height:.92em;
+    background:var(--amber);margin-left:.08em;
+    transform:translateY(.06em);
+    box-shadow:0 0 16px rgba(255,177,59,.6);
+    animation:blink 1.05s steps(1) infinite;
+  }
+  @keyframes blink{50%{opacity:0}}
+  .subhead{
+    margin:26px 0 0;max-width:62ch;
+    font-size:18px;line-height:1.6;color:var(--cream);
+  }
+  .subhead b{color:var(--amber);font-weight:600}
+  .subhead .lime{color:var(--lime)}
+
+  /* ---------- terminal (the hero) ---------- */
+  .terminal{
+    margin:36px 0 0;
+    background:linear-gradient(180deg,#16100f,#0f0a0c);
+    border:1px solid var(--amber-deep);
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:
+      0 0 0 1px rgba(255,177,59,.12),
+      0 30px 70px -34px rgba(0,0,0,.85),
+      0 0 60px -20px rgba(255,177,59,.25);
+    position:relative;
+  }
+  .terminal::after{ /* inner scanline + screen curvature glow */
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(120% 130% at 50% 0%, transparent 60%, rgba(0,0,0,.35) 100%),
+      repeating-linear-gradient(to bottom, rgba(255,177,59,.025) 0 1px, transparent 1px 3px);
+  }
+  .term-bar{
+    display:flex;align-items:center;gap:8px;
+    padding:11px 15px;border-bottom:1px solid var(--rule);
+    background:#1c1311;position:relative;z-index:1;
+  }
+  .term-bar i{width:11px;height:11px;border-radius:50%;display:block}
+  .term-bar i:nth-child(1){background:var(--magenta);box-shadow:0 0 8px rgba(255,61,154,.6)}
+  .term-bar i:nth-child(2){background:var(--amber);box-shadow:0 0 8px rgba(255,177,59,.6)}
+  .term-bar i:nth-child(3){background:var(--lime);box-shadow:0 0 8px rgba(182,255,61,.6)}
+  .term-bar .title{
+    margin-left:8px;font-size:11.5px;color:var(--dim);letter-spacing:.08em;
+  }
+  .term-body{
+    padding:20px 20px 22px;
+    font-size:14px;line-height:1.95;
+    color:var(--amber);
+    text-shadow:0 0 9px rgba(255,177,59,.35);
+    overflow-x:auto;position:relative;z-index:1;
+  }
+  .term-body .ln{white-space:pre;min-height:1.95em}
+  .term-body .prompt{color:var(--lime);text-shadow:0 0 9px rgba(182,255,61,.4)}
+  .term-body .cmd{color:var(--amber-bright)}
+  .term-body .mut{color:var(--dim);text-shadow:none}
+  .term-body .ok{color:var(--lime);text-shadow:0 0 10px rgba(182,255,61,.5)}
+  .term-body .url{color:var(--magenta);text-shadow:0 0 11px rgba(255,61,154,.45)}
+  .term-body .arrow{color:var(--dim);text-shadow:none}
+  .tcursor{
+    display:inline-block;width:.6em;height:1.05em;background:var(--amber);
+    transform:translateY(.18em);box-shadow:0 0 12px rgba(255,177,59,.55);
+    animation:blink 1.05s steps(1) infinite;
+  }
+
+  /* ---------- CTA row ---------- */
+  .cta-row{margin-top:30px;display:flex;gap:13px;flex-wrap:wrap}
+  .btn{
+    font-family:"Spline Sans Mono",monospace;
+    font-size:14px;font-weight:600;text-decoration:none;
+    padding:13px 22px;border-radius:8px;
+    display:inline-flex;align-items:center;gap:9px;
+    transition:transform .14s ease,box-shadow .14s ease,background .14s,border-color .14s;
+  }
+  .btn svg{width:16px;height:16px;flex:none}
+  .btn-primary{
+    background:var(--magenta);color:#1a0410;border:1px solid var(--magenta);
+    box-shadow:0 0 22px rgba(255,61,154,.4);
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 32px rgba(255,61,154,.6)}
+  .btn-ghost{
+    background:transparent;color:var(--amber-bright);
+    border:1px solid var(--amber-deep);
+  }
+  .btn-ghost:hover{transform:translateY(-2px);border-color:var(--amber);box-shadow:0 0 22px rgba(255,177,59,.3)}
+
+  /* ---------- groovy ASCII wave divider ---------- */
+  .wave{
+    margin:56px 0;color:var(--amber-deep);
+    font-size:13px;line-height:1.1;letter-spacing:0;
+    white-space:pre;overflow:hidden;text-align:center;
+    opacity:.85;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+            mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+  }
+  .wave .a{color:var(--amber)}
+  .wave .m{color:var(--magenta)}
+  .wave .l{color:var(--lime)}
+
+  /* ---------- section scaffolding ---------- */
+  section{padding:46px 0}
+  .sec-head{
+    font-family:"Rubik Mono One",monospace;
+    font-size:clamp(1.5rem,4vw,2.1rem);
+    letter-spacing:-0.04em;line-height:1.05;
+    margin:0 0 8px;color:var(--amber-bright);
+    text-wrap:balance;
+    text-shadow:0 0 22px rgba(255,177,59,.25);
+  }
+  .sec-sub{color:var(--dim);font-size:15px;margin:0 0 30px;max-width:60ch}
+  .sec-sub b{color:var(--lime)}
+
+  /* ---------- how it works ---------- */
+  .steps{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+  .step{
+    display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start;
+    border:1px solid var(--rule);border-radius:10px;
+    padding:20px 22px;background:var(--ground);
+    transition:border-color .18s,transform .18s;
+  }
+  .step:hover{border-color:var(--amber-deep);transform:translateX(3px)}
+  .step-mark{
+    font-family:"Rubik Mono One",monospace;font-size:15px;
+    color:var(--void);background:var(--amber);
+    width:38px;height:38px;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 16px rgba(255,177,59,.4);flex:none;
+  }
+  .step:nth-child(2) .step-mark{background:var(--magenta);color:#fff;box-shadow:0 0 16px rgba(255,61,154,.4)}
+  .step:nth-child(3) .step-mark{background:var(--lime);color:var(--void);box-shadow:0 0 16px rgba(182,255,61,.4)}
+  .step-h{font-weight:700;font-size:15.5px;color:var(--amber-bright);margin:5px 0 6px}
+  .step-b{color:var(--cream);font-size:14.5px;line-height:1.6;margin:0;max-width:62ch}
+  .step-b code{
+    font-size:12.5px;color:var(--lime);background:rgba(182,255,61,.08);
+    border:1px solid rgba(182,255,61,.22);border-radius:4px;padding:1px 6px;
+  }
+
+  /* ---------- what you get ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .card{
+    border:1px solid var(--rule);border-radius:10px;
+    padding:22px;background:var(--ground);position:relative;overflow:hidden;
+    transition:border-color .18s,transform .18s;
+  }
+  .card:hover{border-color:var(--amber-deep);transform:translateY(-3px)}
+  .card .tag{
+    font-family:"Rubik Mono One",monospace;font-size:11px;
+    letter-spacing:-0.02em;color:var(--void);
+    padding:3px 9px;border-radius:5px;display:inline-block;margin:0 0 13px;
+  }
+  .card:nth-child(1) .tag{background:var(--amber)}
+  .card:nth-child(2) .tag{background:var(--magenta);color:#1a0410}
+  .card:nth-child(3) .tag{background:var(--lime)}
+  .card:nth-child(4) .tag{background:var(--amber-bright)}
+  .card-h{font-weight:700;font-size:16px;color:var(--amber-bright);margin:0 0 8px}
+  .card-b{color:var(--cream);font-size:14.5px;line-height:1.6;margin:0}
+  .card-b code{
+    font-size:12.5px;color:var(--lime);background:rgba(182,255,61,.08);
+    border:1px solid rgba(182,255,61,.22);border-radius:4px;padding:1px 6px;
+  }
+  .card-b b{color:var(--amber)}
+
+  /* ---------- closing CTA ---------- */
+  .closing{
+    text-align:center;
+    border:1px solid var(--amber-deep);border-radius:16px;
+    padding:52px 28px;
+    background:
+      radial-gradient(100% 120% at 50% 0%, rgba(255,177,59,.12), transparent 70%),
+      var(--ground);
+    box-shadow:0 0 60px -28px rgba(255,177,59,.4);
+    position:relative;overflow:hidden;
+  }
+  .closing h2{
+    font-family:"Rubik Mono One",monospace;
+    font-size:clamp(1.8rem,5.5vw,3rem);letter-spacing:-0.045em;
+    line-height:1.02;margin:0 0 14px;color:var(--amber-bright);
+    text-wrap:balance;text-shadow:0 0 26px rgba(255,177,59,.3);
+  }
+  .closing h2 .m{color:var(--magenta);text-shadow:0 0 26px rgba(255,61,154,.4)}
+  .closing p{color:var(--cream);font-size:16px;margin:0 auto 28px;max-width:54ch}
+  .closing .cta-row{justify-content:center}
+
+  /* ---------- footer ---------- */
+  footer{border-top:1px solid var(--rule);padding:30px 0 46px;margin-top:36px}
+  footer .wrap{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
+  .foot-brand{font-family:"Rubik Mono One",monospace;font-size:15px;color:var(--amber-bright);letter-spacing:-0.04em}
+  .foot-brand span{color:var(--magenta)}
+  .foot-meta{font-size:12.5px;color:var(--dim);letter-spacing:.04em}
+  .foot-meta .dot{color:var(--amber-deep);margin:0 7px}
+
+  /* reveal: ENHANCE already-visible content */
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .55s ease-out,transform .55s ease-out}
+  .reveal.in{opacity:1;transform:none}
+
+  @media (prefers-reduced-motion:reduce){
+    body::after{animation:none}
+    .blockcursor,.tcursor,.badge .blip{animation:none}
+    .reveal{opacity:1;transform:none;transition:none}
+  }
+
+  /* responsive */
+  @media (max-width:680px){
+    .topnav .topnav-link{display:none}
+    .subhead{font-size:16.5px}
+    .term-body{font-size:12px}
+    .wave{font-size:9px}
+    section{padding:38px 0}
+    .step{grid-template-columns:1fr;gap:12px}
+  }
+  @media (max-width:420px){
+    .wave{font-size:7px}
+    .brandmini{font-size:15px}
+    h1{letter-spacing:-0.06em}
+  }
+</style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brandmini" href="#top">get<span>onup</span></a>
+      <nav class="topnav">
+        <a class="topnav-link" href="#how">How it works</a>
+        <a class="topnav-link" href="#get">What you get</a>
+        <a class="topnav-link" href="#docs">Docs</a>
+        <a class="gh-btn" href="https://github.com/getonup/getonup" rel="noopener">
+          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 .2A8 8 0 0 0 5.5 15.8c.4.07.55-.17.55-.38l-.01-1.34c-2.22.48-2.69-1.07-2.69-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.71 1.23 1.87.87 2.33.67.07-.52.28-.87.5-1.07-1.77-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.22 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.52.56.83 1.28.83 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48l-.01 2.2c0 .21.15.46.55.38A8 8 0 0 0 8 .2Z"/></svg>
+          Star
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap">
+        <span class="badge"><span class="blip" aria-hidden="true"></span>ssh funkmachine // phosphor online</span>
+
+        <h1>Your AI&nbsp;artifact,<br><span class="live">live</span> in seconds.<span class="blockcursor" aria-hidden="true"></span></h1>
+
+        <p class="subhead">
+          One command. <b>Self-hosted</b> on a single Cloudflare Worker + R2 that
+          <span class="lime">scales to zero</span>. Hand it an <code class="mono" style="font-size:.85em;color:var(--amber)">.html</code>,
+          a React <code class="mono" style="font-size:.85em;color:var(--amber)">.tsx</code>, or a
+          <code class="mono" style="font-size:.85em;color:var(--amber)">.vue</code> — get a live link back.
+        </p>
+
+        <!-- THE TERMINAL: typed boot/deploy sequence -->
+        <div class="terminal" role="img" aria-label="Terminal: getonup deploy counter.tsx uploads, wraps React plus Tailwind, and returns a live URL">
+          <div class="term-bar">
+            <i></i><i></i><i></i>
+            <span class="title">funkmachine:~/artifacts $ getonup</span>
+          </div>
+          <div class="term-body" id="term">
+<div class="ln"><span class="prompt">$</span> <span class="cmd">getonup deploy counter.tsx</span></div>
+<div class="ln"><span class="mut">  uploading… wrapped React + Tailwind</span></div>
+<div class="ln"><span class="ok">✓</span> <span class="cmd">live</span> <span class="arrow">→</span> <span class="url">https://app.getonup.dev/s/ix3k9d2</span></div>
+<div class="ln"><span class="mut">  no login to view · scales to zero</span><span class="tcursor" aria-hidden="true"></span></div>
+          </div>
+        </div>
+
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#get">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 8h12M9 3l5 5-5 5"/></svg>
+            Get started
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/getonup/getonup" rel="noopener">
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 .9 9.9 5l4.5.5-3.4 3 1 4.5L8 10.8 4 13l1-4.5-3.4-3L6.1 5 8 .9Z"/></svg>
+            Star on GitHub
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- groovy ASCII wave divider in phosphor -->
+    <div class="wrap">
+      <div class="wave" aria-hidden="true"><span class="a">≈≋≈</span><span class="m">∿∿∿</span><span class="l">≈≋≈</span><span class="a">∿∿∿</span><span class="m">≈≋≈</span><span class="l">∿∿∿</span><span class="a">≈≋≈</span><span class="m">∿∿∿</span><span class="l">≈≋≈</span><span class="a">∿∿∿</span><span class="m">≈≋≈</span><span class="l">∿∿∿</span><span class="a">≈≋≈</span><span class="m">∿∿∿</span><span class="l">≈≋≈</span><span class="a">∿∿∿</span><span class="m">≈≋≈</span><span class="l">∿∿∿</span></div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <section id="how" class="reveal">
+      <div class="wrap">
+        <h2 class="sec-head">How it works</h2>
+        <p class="sec-sub">Three moves and you're on the air. <b>No build step, no babysitting.</b></p>
+        <ol class="steps">
+          <li class="step">
+            <span class="step-mark">1</span>
+            <div>
+              <p class="step-h">Your agent builds the artifact</p>
+              <p class="step-b">A coding agent writes a single file — an <code>.html</code> page, a React <code>.tsx</code>, or a Vue <code>.vue</code> component. No project scaffolding, no config.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step-mark">2</span>
+            <div>
+              <p class="step-h">Run <code style="font-size:.92em">getonup deploy &lt;file&gt;</code></p>
+              <p class="step-b">getonup auto-wraps a bare component into a runnable page and pushes it straight to your R2 bucket. The whole round trip takes seconds.</p>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step-mark">3</span>
+            <div>
+              <p class="step-h">Share the live link</p>
+              <p class="step-b">You get back a clean, shareable URL — paste it into a PR, a chat, or a review. No viewer login, nothing left running.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- WHAT YOU GET -->
+    <section id="get" class="reveal">
+      <div class="wrap">
+        <h2 class="sec-head">What you get</h2>
+        <p class="sec-sub">A whole publishing stack that fits in one Worker — and it's <b>yours</b>.</p>
+        <div class="grid">
+          <div class="card">
+            <span class="tag">WORKER + R2</span>
+            <p class="card-h">Scales to zero</p>
+            <p class="card-b">One Cloudflare Worker fronts an R2 bucket. No database, no always-on server — idle cost rounds to <b>~$0</b>.</p>
+          </div>
+          <div class="card">
+            <span class="tag">AGENT-NATIVE</span>
+            <p class="card-h">Built for coding agents</p>
+            <p class="card-b">Drop a line in <code>AGENTS.md</code> and any agent can publish its own work and hand back a link — no human in the loop.</p>
+          </div>
+          <div class="card">
+            <span class="tag">AUTO-WRAP</span>
+            <p class="card-h">React / Vue / TS, no build</p>
+            <p class="card-b">Hand it one bare component and it becomes a self-contained page — React + Tailwind or Vue 3, transformed in the browser.</p>
+          </div>
+          <div class="card">
+            <span class="tag">MIT</span>
+            <p class="card-h">Yours to self-host</p>
+            <p class="card-b">Your Cloudflare account, your token, your data. Free and open source under the <b>MIT</b> license — fork it, run it.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLOSING CTA -->
+    <section id="docs" class="reveal">
+      <div class="wrap">
+        <div class="closing">
+          <h2>Get <span class="m">on up.</span><br>Ship the artifact.</h2>
+          <p>Self-host the whole thing in an afternoon, then let your agents deploy straight to a live URL.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#top">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 8h12M9 3l5 5-5 5"/></svg>
+              Get started
+            </a>
+            <a class="btn btn-ghost" href="https://github.com/getonup/getonup" rel="noopener">
+              <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 .9 9.9 5l4.5.5-3.4 3 1 4.5L8 10.8 4 13l1-4.5-3.4-3L6.1 5 8 .9Z"/></svg>
+              Star on GitHub
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span class="foot-brand">get<span>onup</span></span>
+      <span class="foot-meta">
+        MIT<span class="dot">·</span>self-hosted<span class="dot">·</span>scale-to-zero
+      </span>
+    </div>
+  </footer>
+
+<script>
+(function(){
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* reveal-on-scroll: content is visible by default; this only enhances */
+  if(!reduce && 'IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}
+      });
+    },{threshold:0.12});
+    document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+  }else{
+    document.querySelectorAll('.reveal').forEach(function(el){el.classList.add('in');});
+  }
+
+  /* subtle CRT flicker on the terminal phosphor (enhancement only) */
+  if(!reduce){
+    var term=document.getElementById('term');
+    if(term){
+      setInterval(function(){
+        var f=0.92+Math.random()*0.13;       /* 0.92 – 1.05 */
+        term.style.filter='brightness('+f.toFixed(3)+')';
+      },140);
+    }
+  }
+})();
+</script>
+</body>
+</html>

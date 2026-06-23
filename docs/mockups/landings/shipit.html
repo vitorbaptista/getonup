@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>getonup — Your AI artifact, live in seconds.</title>
+<meta name="description" content="getonup ships any AI-generated web artifact to a live, shareable URL with one CLI command. Open-source, self-hostable, scales to zero. One Cloudflare Worker plus R2." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Pixelify+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --cream:#EEEFE9;
+    --cream2:#F5F4ED;
+    --ink:#0E0E0C;
+    --coral:#F54E00;
+    --blue:#1D4AFF;
+    --yellow:#F9BD2B;
+    --green:#37C871;
+    --paper:#FBFAF4;
+    --border:3px solid var(--ink);
+    --shadow:6px 6px 0 var(--ink);
+    --shadow-sm:4px 4px 0 var(--ink);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--cream);
+    color:var(--ink);
+    font-family:"Space Mono",ui-monospace,monospace;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.h-sans{font-family:"Sora","Space Mono",sans-serif;font-weight:800;letter-spacing:-.04em;line-height:1.02;text-wrap:balance}
+  a{color:inherit}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+  .pix{font-family:"Pixelify Sans","Space Mono",monospace;font-weight:600;letter-spacing:.01em}
+  .pixel-art{image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+
+  /* dotted background texture */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-2;
+    background-image:radial-gradient(var(--ink) 1px, transparent 1px);
+    background-size:26px 26px;
+    opacity:.05;pointer-events:none;
+  }
+
+  /* ---- NAV ---- */
+  nav{
+    position:sticky;top:0;z-index:50;
+    background:var(--cream);
+    border-bottom:3px solid var(--ink);
+  }
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:62px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:"Sora";font-weight:800;font-size:21px;letter-spacing:-.03em}
+  .brand .mark{
+    display:inline-grid;place-items:center;width:32px;height:32px;
+    background:var(--coral);border:2.5px solid var(--ink);
+    border-radius:8px;transform:rotate(-6deg);
+    box-shadow:2px 2px 0 var(--ink);
+  }
+  .brand .mark svg{width:20px;height:20px;display:block}
+  .nav-links{display:flex;align-items:center;gap:22px;font-size:14px;font-weight:700}
+  .nav-links a.lnk{text-decoration:none;padding-bottom:2px;border-bottom:2px solid transparent}
+  .nav-links a.lnk:hover{border-bottom-color:var(--coral)}
+  .nav-cta{
+    text-decoration:none;background:var(--ink);color:var(--cream);
+    padding:8px 16px;border:2.5px solid var(--ink);border-radius:9px;font-weight:700;
+    box-shadow:3px 3px 0 var(--coral);transition:transform .12s,box-shadow .12s;
+    display:inline-flex;align-items:center;gap:7px;
+  }
+  .nav-cta:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--coral)}
+  @media(max-width:680px){.nav-links a.lnk:not(.gh){display:none}}
+
+  /* ---- HERO ---- */
+  header{padding:54px 0 34px;position:relative;overflow:hidden}
+  /* pixel starfield in hero background */
+  .starfield{position:absolute;inset:0;z-index:-1;pointer-events:none}
+  .star{position:absolute;image-rendering:pixelated;animation:twinkle 2.6s steps(2) infinite}
+  @keyframes twinkle{0%,100%{opacity:1}50%{opacity:.32}}
+
+  .badge{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--yellow);border:2.5px solid var(--ink);border-radius:999px;
+    padding:6px 14px;font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    box-shadow:3px 3px 0 var(--ink);transform:rotate(-1.5deg);
+  }
+  h1{font-size:clamp(40px,8vw,76px);margin:22px 0 0}
+  h1 .hl{position:relative;color:var(--coral);white-space:nowrap}
+  h1 .hl svg{position:absolute;left:0;right:0;bottom:-12px;width:100%;height:14px}
+  .sub{
+    font-size:clamp(15px,2.4vw,19px);max-width:60ch;margin:26px 0 0;font-weight:400;
+  }
+  .sub b{font-weight:700;background:linear-gradient(transparent 62%,#F9BD2B70 62%)}
+
+  .cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px;align-items:center}
+  .btn{
+    text-decoration:none;display:inline-flex;align-items:center;gap:9px;
+    font-weight:700;font-size:15px;border:3px solid var(--ink);border-radius:11px;
+    padding:13px 22px;transition:transform .12s ease,box-shadow .12s ease;cursor:pointer;
+  }
+  .btn-primary{background:var(--coral);color:#fff;box-shadow:var(--shadow-sm)}
+  .btn-primary:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+  .btn-ghost{background:var(--paper);color:var(--ink);box-shadow:var(--shadow-sm)}
+  .btn-ghost:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+
+  /* hero grid */
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;position:relative}
+  @media(max-width:880px){.hero-grid{grid-template-columns:1fr;gap:34px}}
+
+  /* ---- LAUNCH STAGE (pixel ship + terminal) ---- */
+  .stage{position:relative}
+  .launch{
+    position:relative;height:188px;margin-bottom:-6px;
+  }
+  /* flight path squiggle arcing up to the live-URL star */
+  .flight{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+  .flight path{stroke-dasharray:5 8;stroke-linecap:round}
+
+  .ship{
+    position:absolute;left:14px;bottom:6px;width:104px;height:auto;
+    transform-origin:center bottom;
+    animation:hover 3.2s ease-in-out infinite;
+    filter:drop-shadow(4px 5px 0 rgba(14,14,12,.22));
+  }
+  @keyframes hover{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  /* exhaust plume flicker */
+  .plume{transform-origin:center top;animation:flame .28s steps(2) infinite}
+  @keyframes flame{0%{transform:scaleY(1)}100%{transform:scaleY(.7)}}
+
+  /* the destination "live URL" star/planet */
+  .destination{position:absolute;right:6px;top:2px;width:86px;height:auto}
+  .planet{animation:bob 4s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+  .urltag{
+    position:absolute;right:0;top:64px;
+    background:var(--paper);border:2.5px solid var(--ink);border-radius:9px;
+    padding:5px 10px;font-size:11.5px;font-weight:700;
+    box-shadow:3px 3px 0 var(--ink);transform:rotate(3deg);
+    display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  }
+  .urltag .pxdot{width:8px;height:8px;image-rendering:pixelated;background:var(--green);
+    border:1.5px solid var(--ink);animation:livepulse 1.4s steps(1) infinite}
+  @keyframes livepulse{50%{background:#0E0E0C}}
+
+  /* ---- TERMINAL ---- */
+  .term{
+    background:#15140F;color:#EDEDE6;border:3px solid var(--ink);border-radius:14px;
+    box-shadow:8px 8px 0 var(--ink);overflow:hidden;font-size:14px;
+    transform:rotate(.6deg);position:relative;z-index:2;
+  }
+  .term-bar{
+    display:flex;align-items:center;gap:8px;padding:11px 14px;
+    background:#211F18;border-bottom:2px solid #000;
+  }
+  .dot{width:13px;height:13px;border-radius:50%;border:2px solid #000}
+  .d1{background:#F54E00}.d2{background:#F9BD2B}.d3{background:#37C871}
+  .term-title{margin-left:8px;font-size:12px;color:#8d897c}
+  .term-body{padding:20px 18px;min-height:166px}
+  .ln{display:block;white-space:pre-wrap;word-break:break-word}
+  .prompt{color:var(--yellow)}
+  .cmd{color:#fff;font-weight:700}
+  .ok{color:#37C871;font-weight:700}
+  .url{color:#62A0FF;text-decoration:underline}
+  .muted{color:#7c786c}
+  .caret{display:inline-block;width:9px;height:17px;background:var(--coral);vertical-align:-3px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  .squig{display:block;margin:0 0 6px;color:var(--blue)}
+
+  /* ---- SECTION HEADS ---- */
+  .sec{padding:64px 0}
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:34px}
+  .kicker{
+    font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--coral);
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  .kicker::before{content:"";width:26px;height:3px;background:var(--coral)}
+  .sec h2{font-size:clamp(30px,5vw,46px);margin-top:10px}
+  .sec-note{font-size:14px;max-width:42ch}
+
+  /* divider stripe */
+  .stripe{
+    height:34px;background:
+      repeating-linear-gradient(45deg,var(--ink) 0 14px,transparent 14px 28px);
+    border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);
+    opacity:.92;
+  }
+  .stripe.coral{background:repeating-linear-gradient(45deg,var(--coral) 0 14px,transparent 14px 28px)}
+
+  /* ---- STEPS ---- */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:780px){.steps{grid-template-columns:1fr}}
+  .step{
+    background:var(--paper);border:var(--border);border-radius:14px;padding:24px 22px 26px;
+    box-shadow:var(--shadow);position:relative;
+  }
+  .step .num{
+    position:absolute;top:-18px;left:20px;width:42px;height:42px;display:grid;place-items:center;
+    background:var(--blue);color:#fff;border:3px solid var(--ink);border-radius:50%;
+    font-family:"Sora";font-weight:800;font-size:19px;box-shadow:3px 3px 0 var(--ink);
+  }
+  .step:nth-child(2) .num{background:var(--coral)}
+  .step:nth-child(3) .num{background:var(--yellow);color:var(--ink)}
+  .step h3{font-size:20px;margin:18px 0 8px}
+  .step p{font-size:14px;max-width:42ch}
+  .step code{background:var(--cream);border:2px solid var(--ink);border-radius:6px;padding:1px 6px;font-size:12.5px;font-weight:700}
+  /* tiny pixel ship glyph beside step 2 */
+  .step .spr{position:absolute;top:-12px;right:18px;width:34px;height:34px}
+
+  /* ---- FEATURES ---- */
+  .feat-wrap{background:var(--cream2)}
+  .feats{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+  @media(max-width:740px){.feats{grid-template-columns:1fr}}
+  .feat{
+    background:var(--paper);border:var(--border);border-radius:14px;padding:26px 24px;
+    box-shadow:var(--shadow-sm);transition:transform .14s ease,box-shadow .14s ease;position:relative;
+  }
+  .feat:hover{transform:translate(-3px,-3px);box-shadow:7px 7px 0 var(--ink)}
+  .feat .ic{
+    width:54px;height:54px;display:grid;place-items:center;
+    border:3px solid var(--ink);border-radius:12px;margin-bottom:16px;box-shadow:3px 3px 0 var(--ink);
+  }
+  .feat .ic svg{width:30px;height:30px}
+  .feat:nth-child(1) .ic{background:var(--coral)}
+  .feat:nth-child(2) .ic{background:var(--blue)}
+  .feat:nth-child(3) .ic{background:var(--yellow)}
+  .feat:nth-child(4) .ic{background:var(--green)}
+  .feat h3{font-size:21px;margin-bottom:8px}
+  .feat p{font-size:14.5px;max-width:48ch}
+  .feat .tag{
+    display:inline-flex;align-items:center;gap:7px;margin-top:14px;font-size:11.5px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.06em;background:var(--cream);border:2px solid var(--ink);border-radius:999px;padding:4px 11px;
+  }
+  /* make the feature grid varied: feature 1 spans wider feel via accent corner */
+  .feat.wide{grid-column:1 / -1}
+  @media(max-width:740px){.feat.wide{grid-column:auto}}
+  .feat .corner{
+    position:absolute;top:-12px;right:-10px;background:var(--ink);color:var(--cream);
+    font-family:"Pixelify Sans","Space Mono",monospace;font-weight:700;font-size:12px;
+    padding:4px 10px;border:2.5px solid var(--ink);border-radius:8px;transform:rotate(4deg);
+    box-shadow:2px 2px 0 var(--coral);
+  }
+  .feat.wide .feat-in{display:flex;gap:26px;align-items:center;flex-wrap:wrap}
+  .feat.wide .feat-in > div:first-child{flex:1 1 300px}
+  .feat .shipart{flex:0 0 auto}
+
+  /* ---- CTA STRIP ---- */
+  .bigcta{background:var(--ink);color:var(--cream);border-radius:18px;padding:46px 34px;text-align:center;
+    box-shadow:8px 8px 0 var(--coral);border:3px solid var(--ink);position:relative;overflow:hidden}
+  .bigcta h2{color:#fff;font-size:clamp(26px,4.6vw,40px)}
+  .bigcta p{margin:14px auto 26px;max-width:52ch;font-size:15px;color:#d4d1c7}
+  .bigcta .btn-primary{box-shadow:4px 4px 0 var(--cream)}
+  .bigcta .btn-primary:hover{box-shadow:6px 6px 0 var(--cream)}
+  .bigcta .btn-ghost{background:transparent;color:#fff;border-color:var(--cream);box-shadow:4px 4px 0 var(--cream)}
+  .bigcta .btn-ghost:hover{box-shadow:6px 6px 0 var(--cream)}
+  .bigcta .cta-star{position:absolute;image-rendering:pixelated;opacity:.9;animation:twinkle 2.6s steps(2) infinite}
+
+  /* copy btn */
+  .copyline{
+    display:inline-flex;align-items:center;gap:12px;margin-top:8px;
+    background:var(--paper);border:3px solid var(--ink);border-radius:11px;padding:10px 12px 10px 16px;
+    box-shadow:var(--shadow-sm);font-size:14px;font-weight:700;flex-wrap:wrap;color:var(--ink);
+    transform:rotate(-1deg);
+  }
+  .copyline .pl{color:var(--coral)}
+  .copybtn{
+    border:2.5px solid var(--ink);background:var(--yellow);border-radius:8px;padding:6px 12px;
+    font-family:"Pixelify Sans","Space Mono",monospace;font-weight:700;font-size:13px;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;
+    transition:transform .1s;color:var(--ink);
+  }
+  .copybtn:hover{transform:translateY(-1px)}
+  .copybtn.done{background:#37C871}
+
+  /* ---- FOOTER ---- */
+  footer{border-top:3px solid var(--ink);background:var(--cream);padding:40px 0 30px}
+  .foot{display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;align-items:flex-start}
+  .foot .brand{font-size:18px}
+  .foot p{font-size:13.5px;margin-top:12px;max-width:36ch}
+  .foot-links{display:flex;flex-wrap:wrap;gap:10px 22px;font-size:13.5px;font-weight:700}
+  .foot-links a{text-decoration:none;border-bottom:2px solid transparent}
+  .foot-links a:hover{border-bottom-color:var(--coral)}
+  .foot-tags{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .pill{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+    background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:4px 11px;
+    display:inline-flex;align-items:center;gap:6px}
+  .pill .pxdot{width:8px;height:8px;image-rendering:pixelated;border:1.5px solid var(--ink)}
+  .foot-bottom{margin-top:28px;padding-top:18px;border-top:2px dashed var(--ink);
+    font-size:12.5px;color:#56544c;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+
+  /* reveal — default state is ALWAYS fully visible (no JS, no class can hide it).
+     Only elements JS explicitly arms (those below the fold at load) get dimmed,
+     and they are reliably un-dimmed by both the observer and a load-time safety net. */
+  .rv{opacity:1;transform:none;transition:opacity .5s ease,transform .5s ease}
+  .rv.rv-armed{opacity:0;transform:translateY(18px)}
+  .rv.rv-armed.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){
+    .rv,.rv.rv-armed{opacity:1!important;transform:none!important;transition:none}
+    .caret,.star,.ship,.plume,.planet,.cta-star,.urltag .pxdot{animation:none}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a href="#top" class="brand" style="text-decoration:none">
+      <span class="mark" aria-hidden="true">
+        <!-- tiny pixel rocket wordmark -->
+        <svg viewBox="0 0 16 16" class="pixel-art">
+          <rect x="7" y="1" width="2" height="2" fill="#fff"/>
+          <rect x="6" y="3" width="4" height="6" fill="#fff"/>
+          <rect x="6" y="4" width="4" height="2" fill="#1D4AFF"/>
+          <rect x="4" y="7" width="2" height="3" fill="#fff"/>
+          <rect x="10" y="7" width="2" height="3" fill="#fff"/>
+          <rect x="6" y="11" width="1" height="2" fill="#F9BD2B"/>
+          <rect x="9" y="11" width="1" height="2" fill="#F9BD2B"/>
+          <rect x="7" y="12" width="2" height="3" fill="#F9BD2B"/>
+        </svg>
+      </span>getonup</a>
+    <div class="nav-links">
+      <a class="lnk" href="#how">How it works</a>
+      <a class="lnk" href="#features">Features</a>
+      <a class="lnk gh" href="https://github.com" rel="noopener">GitHub ★</a>
+      <a class="nav-cta" href="#get">Ship it
+        <svg width="14" height="14" viewBox="0 0 16 16" class="pixel-art" aria-hidden="true">
+          <rect x="2" y="7" width="9" height="2" fill="#EEEFE9"/>
+          <rect x="9" y="5" width="2" height="2" fill="#EEEFE9"/>
+          <rect x="11" y="7" width="2" height="2" fill="#EEEFE9"/>
+          <rect x="9" y="9" width="2" height="2" fill="#EEEFE9"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<header id="top">
+  <!-- pixel starfield -->
+  <div class="starfield" aria-hidden="true">
+    <span class="star" style="left:6%;top:18%;animation-delay:.1s">
+      <svg width="10" height="10" viewBox="0 0 5 5" class="pixel-art"><rect x="2" y="0" width="1" height="5" fill="#1D4AFF"/><rect x="0" y="2" width="5" height="1" fill="#1D4AFF"/></svg>
+    </span>
+    <span class="star" style="left:48%;top:8%;animation-delay:.9s">
+      <svg width="8" height="8" viewBox="0 0 5 5" class="pixel-art"><rect x="2" y="0" width="1" height="5" fill="#F9BD2B"/><rect x="0" y="2" width="5" height="1" fill="#F9BD2B"/></svg>
+    </span>
+    <span class="star" style="left:88%;top:46%;animation-delay:1.6s">
+      <svg width="9" height="9" viewBox="0 0 5 5" class="pixel-art"><rect x="2" y="0" width="1" height="5" fill="#F54E00"/><rect x="0" y="2" width="5" height="1" fill="#F54E00"/></svg>
+    </span>
+    <span class="star" style="left:30%;top:62%;animation-delay:.5s">
+      <svg width="7" height="7" viewBox="0 0 3 3" class="pixel-art"><rect x="1" y="1" width="1" height="1" fill="#1D4AFF"/></svg>
+    </span>
+    <span class="star" style="left:72%;top:80%;animation-delay:2.1s">
+      <svg width="8" height="8" viewBox="0 0 3 3" class="pixel-art"><rect x="1" y="1" width="1" height="1" fill="#37C871"/></svg>
+    </span>
+    <span class="star" style="left:16%;top:88%;animation-delay:1.2s">
+      <svg width="9" height="9" viewBox="0 0 5 5" class="pixel-art"><rect x="2" y="0" width="1" height="5" fill="#F9BD2B"/><rect x="0" y="2" width="5" height="1" fill="#F9BD2B"/></svg>
+    </span>
+  </div>
+
+  <div class="wrap hero-grid">
+    <div>
+      <span class="badge rv">★ MIT · self-hostable · scales to zero</span>
+      <h1 class="rv">
+        Your AI artifact,<br/>
+        <span class="hl">live in seconds.
+          <svg viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M2 9 C 60 2, 120 13, 180 6 S 280 3, 298 8" fill="none" stroke="#1D4AFF" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        </span>
+      </h1>
+      <p class="sub rv">
+        Hand getonup one <b>.html</b>, <b>.tsx</b>, or <b>.vue</b> and it loads your
+        artifact into orbit: auto-wrapped, uploaded, and live at a real shareable URL
+        in a single command. It runs on a single Cloudflare Worker plus an R2 bucket,
+        so there's nothing to babysit and it costs <b>about nothing when idle.</b>
+      </p>
+      <div class="cta-row rv">
+        <a class="btn btn-primary" href="#get">Ship it
+          <svg width="16" height="16" viewBox="0 0 16 16" class="pixel-art" aria-hidden="true">
+            <rect x="2" y="7" width="9" height="2" fill="#fff"/>
+            <rect x="9" y="5" width="2" height="2" fill="#fff"/>
+            <rect x="11" y="7" width="2" height="2" fill="#fff"/>
+            <rect x="9" y="9" width="2" height="2" fill="#fff"/>
+          </svg>
+        </a>
+        <a class="btn btn-ghost" href="https://github.com" rel="noopener">★ Star on GitHub</a>
+      </div>
+    </div>
+
+    <div class="stage rv">
+      <!-- LAUNCH composition: pixel ship rising, flight path arcing to a planet/star -->
+      <div class="launch">
+        <svg class="flight" viewBox="0 0 360 188" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M58 168 C 90 120, 150 150, 210 90 S 300 44, 320 36" fill="none" stroke="#1D4AFF" stroke-width="3"/>
+        </svg>
+
+        <!-- destination: pixel planet + live-URL star -->
+        <span class="destination" aria-hidden="true">
+          <svg class="planet pixel-art" width="86" height="74" viewBox="0 0 43 37">
+            <!-- planet body -->
+            <rect x="13" y="4" width="14" height="2" fill="#0E0E0C"/>
+            <rect x="9" y="6" width="22" height="2" fill="#0E0E0C"/>
+            <rect x="7" y="8" width="26" height="2" fill="#0E0E0C"/>
+            <rect x="9" y="6" width="20" height="2" fill="#1D4AFF"/>
+            <rect x="7" y="8" width="24" height="10" fill="#1D4AFF"/>
+            <rect x="13" y="4" width="14" height="2" fill="#4a72ff"/>
+            <rect x="9" y="6" width="8" height="2" fill="#4a72ff"/>
+            <rect x="7" y="18" width="26" height="2" fill="#0E0E0C"/>
+            <rect x="9" y="20" width="22" height="2" fill="#0E0E0C"/>
+            <rect x="13" y="22" width="14" height="2" fill="#0E0E0C"/>
+            <rect x="9" y="18" width="22" height="2" fill="#163aad"/>
+            <rect x="13" y="20" width="14" height="2" fill="#163aad"/>
+            <!-- planet ring -->
+            <rect x="2" y="13" width="5" height="2" fill="#F9BD2B"/>
+            <rect x="33" y="13" width="6" height="2" fill="#F9BD2B"/>
+            <rect x="0" y="15" width="9" height="2" fill="#F9BD2B"/>
+            <rect x="31" y="15" width="10" height="2" fill="#F9BD2B"/>
+            <!-- a little live star above -->
+            <rect x="36" y="2" width="1" height="5" fill="#37C871"/>
+            <rect x="34" y="4" width="5" height="1" fill="#37C871"/>
+          </svg>
+        </span>
+        <span class="urltag pix" aria-hidden="true"><span class="pxdot"></span>live URL</span>
+
+        <!-- the ship: chunky 16-bit rocket with a waving alien pilot -->
+        <svg class="ship pixel-art" width="104" height="150" viewBox="0 0 52 75" aria-hidden="true">
+          <!-- nose cone -->
+          <rect x="24" y="2" width="4" height="2" fill="#0E0E0C"/>
+          <rect x="22" y="4" width="8" height="2" fill="#0E0E0C"/>
+          <rect x="24" y="4" width="4" height="2" fill="#F54E00"/>
+          <rect x="20" y="6" width="12" height="2" fill="#0E0E0C"/>
+          <rect x="22" y="6" width="8" height="2" fill="#F54E00"/>
+          <!-- body shell -->
+          <rect x="18" y="8" width="16" height="36" fill="#0E0E0C"/>
+          <rect x="20" y="8" width="12" height="34" fill="#FBFAF4"/>
+          <!-- body coral band -->
+          <rect x="20" y="8" width="12" height="4" fill="#F54E00"/>
+          <rect x="20" y="34" width="12" height="6" fill="#F54E00"/>
+          <!-- porthole (alien pilot waving) -->
+          <rect x="22" y="15" width="8" height="8" fill="#0E0E0C"/>
+          <rect x="23" y="16" width="6" height="6" fill="#1D4AFF"/>
+          <!-- alien head -->
+          <rect x="24" y="17" width="4" height="3" fill="#37C871"/>
+          <rect x="24" y="16" width="1" height="1" fill="#37C871"/>
+          <rect x="27" y="16" width="1" height="1" fill="#37C871"/>
+          <rect x="25" y="18" width="1" height="1" fill="#0E0E0C"/>
+          <rect x="27" y="18" width="1" height="1" fill="#0E0E0C"/>
+          <!-- waving hand pixel outside porthole -->
+          <rect x="31" y="19" width="2" height="2" fill="#37C871"/>
+          <!-- panel rivets -->
+          <rect x="21" y="26" width="1" height="1" fill="#1D4AFF"/>
+          <rect x="30" y="26" width="1" height="1" fill="#1D4AFF"/>
+          <rect x="21" y="30" width="1" height="1" fill="#1D4AFF"/>
+          <rect x="30" y="30" width="1" height="1" fill="#1D4AFF"/>
+          <!-- fins -->
+          <rect x="14" y="34" width="4" height="10" fill="#0E0E0C"/>
+          <rect x="15" y="35" width="3" height="8" fill="#F9BD2B"/>
+          <rect x="34" y="34" width="4" height="10" fill="#0E0E0C"/>
+          <rect x="34" y="35" width="3" height="8" fill="#F9BD2B"/>
+          <!-- engine base -->
+          <rect x="20" y="42" width="12" height="2" fill="#0E0E0C"/>
+          <rect x="22" y="44" width="8" height="3" fill="#0E0E0C"/>
+          <rect x="23" y="44" width="6" height="2" fill="#1D4AFF"/>
+          <!-- exhaust plume (animated flicker) -->
+          <g class="plume">
+            <rect x="23" y="47" width="6" height="4" fill="#F9BD2B"/>
+            <rect x="24" y="51" width="4" height="4" fill="#F54E00"/>
+            <rect x="22" y="50" width="2" height="3" fill="#F9BD2B"/>
+            <rect x="28" y="50" width="2" height="3" fill="#F9BD2B"/>
+            <rect x="25" y="55" width="2" height="4" fill="#F54E00"/>
+            <rect x="23" y="57" width="1" height="2" fill="#F9BD2B"/>
+            <rect x="28" y="57" width="1" height="2" fill="#F9BD2B"/>
+            <rect x="25" y="59" width="2" height="3" fill="#F9BD2B"/>
+          </g>
+        </svg>
+      </div>
+
+      <p class="squig" aria-hidden="true">
+        <svg width="120" height="30" viewBox="0 0 120 34" fill="none">
+          <path d="M4 30 C 30 26, 26 6, 50 8 S 92 22, 112 6" stroke="#1D4AFF" stroke-width="3" stroke-linecap="round"/>
+          <path d="M112 6 l-9 1 m9-1 l-2 9" stroke="#1D4AFF" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </p>
+      <div class="term" role="img" aria-label="Terminal running: getonup deploy counter.tsx, returns a live URL">
+        <div class="term-bar">
+          <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
+          <span class="term-title">~/agent/artifacts — getonup</span>
+        </div>
+        <div class="term-body" id="tbody">
+          <span class="ln"><span class="prompt">$ </span><span class="cmd" id="typed">getonup deploy counter.tsx</span><span class="caret" id="caret"></span></span>
+          <span class="ln out" id="o1"><span class="muted">› wrapping React 18 + Tailwind…</span></span>
+          <span class="ln out" id="o2"><span class="muted">› boosting to R2…</span></span>
+          <span class="ln out" id="o3"><span class="ok">✓ live</span> → <span class="url">https://app.getonup.dev/s/ix3k9d2</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="stripe coral" aria-hidden="true"></div>
+
+<!-- HOW IT WORKS -->
+<section class="sec" id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <span class="kicker rv">Three steps to blast-off</span>
+        <h2 class="rv">From a file to a live link.</h2>
+      </div>
+      <p class="sec-note rv">Your agent writes a file, you run one command, and getonup ships it into orbit. No dashboard wrangling, no viewer login.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step rv">
+        <span class="num">1</span>
+        <h3>Your agent builds it</h3>
+        <p>The coding agent writes a <code>.html</code>, <code>.tsx</code>, or <code>.vue</code>. A single bare component is fine, with no boilerplate and no bundler config.</p>
+      </div>
+      <div class="step rv">
+        <span class="num">2</span>
+        <span class="spr" aria-hidden="true">
+          <svg width="34" height="34" viewBox="0 0 16 16" class="pixel-art">
+            <rect x="7" y="1" width="2" height="2" fill="#0E0E0C"/>
+            <rect x="6" y="3" width="4" height="6" fill="#0E0E0C"/>
+            <rect x="6" y="3" width="4" height="2" fill="#F54E00"/>
+            <rect x="4" y="7" width="2" height="3" fill="#0E0E0C"/>
+            <rect x="10" y="7" width="2" height="3" fill="#0E0E0C"/>
+            <rect x="6" y="10" width="4" height="1" fill="#F9BD2B"/>
+            <rect x="7" y="11" width="2" height="3" fill="#F54E00"/>
+          </svg>
+        </span>
+        <h3>Run <code>getonup deploy</code></h3>
+        <p>One command wraps the component into a self-contained page and boosts it straight to your bucket. That's the blast-off.</p>
+      </div>
+      <div class="step rv">
+        <span class="num">3</span>
+        <h3>It lands in orbit</h3>
+        <p>You get a clean URL on your own domain that scales to zero. Share it, screenshot it, or embed it, and it stays live without a server running.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<div class="feat-wrap">
+  <section class="sec" id="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <span class="kicker rv">What you get</span>
+          <h2 class="rv">A tiny stack with serious thrust.</h2>
+        </div>
+        <p class="sec-note rv">Free software, MIT licensed, with every piece running inside <i>your</i> Cloudflare account.</p>
+      </div>
+
+      <div class="feats">
+        <!-- wide hero feature with the ship art for variety -->
+        <div class="feat wide rv">
+          <span class="corner pix">~$0 idle</span>
+          <div class="feat-in">
+            <div>
+              <div class="ic" aria-hidden="true">
+                <svg viewBox="0 0 16 16" class="pixel-art">
+                  <rect x="4" y="6" width="8" height="2" fill="#fff"/>
+                  <rect x="3" y="8" width="10" height="4" fill="#fff"/>
+                  <rect x="5" y="5" width="2" height="1" fill="#fff"/>
+                  <rect x="9" y="4" width="3" height="2" fill="#fff"/>
+                </svg>
+              </div>
+              <h3>One Worker plus R2, scale-to-zero</h3>
+              <p>A single Cloudflare Worker serves your artifacts and one R2 bucket stores them. There's no database and no always-on box to keep warm, so it idles all the way down to roughly nothing and only spins up when someone opens a link.</p>
+              <span class="tag pix"><span class="pxdot" style="background:#F54E00;border:1.5px solid #0E0E0C;width:8px;height:8px;display:inline-block"></span>cloudflare worker + r2</span>
+            </div>
+            <div class="shipart" aria-hidden="true">
+              <svg width="96" height="120" viewBox="0 0 52 64" class="pixel-art">
+                <rect x="24" y="2" width="4" height="2" fill="#0E0E0C"/>
+                <rect x="22" y="4" width="8" height="2" fill="#0E0E0C"/>
+                <rect x="24" y="4" width="4" height="2" fill="#F54E00"/>
+                <rect x="18" y="6" width="16" height="34" fill="#0E0E0C"/>
+                <rect x="20" y="6" width="12" height="32" fill="#FBFAF4"/>
+                <rect x="20" y="6" width="12" height="3" fill="#F54E00"/>
+                <rect x="22" y="13" width="8" height="8" fill="#0E0E0C"/>
+                <rect x="23" y="14" width="6" height="6" fill="#1D4AFF"/>
+                <rect x="24" y="15" width="4" height="3" fill="#37C871"/>
+                <rect x="25" y="16" width="1" height="1" fill="#0E0E0C"/>
+                <rect x="27" y="16" width="1" height="1" fill="#0E0E0C"/>
+                <rect x="20" y="30" width="12" height="5" fill="#F54E00"/>
+                <rect x="14" y="30" width="4" height="9" fill="#0E0E0C"/>
+                <rect x="15" y="31" width="3" height="7" fill="#F9BD2B"/>
+                <rect x="34" y="30" width="4" height="9" fill="#0E0E0C"/>
+                <rect x="34" y="31" width="3" height="7" fill="#F9BD2B"/>
+                <rect x="22" y="40" width="8" height="3" fill="#0E0E0C"/>
+                <rect x="23" y="43" width="6" height="4" fill="#F9BD2B"/>
+                <rect x="24" y="47" width="4" height="4" fill="#F54E00"/>
+                <rect x="25" y="51" width="2" height="4" fill="#F9BD2B"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="feat rv">
+          <div class="ic" aria-hidden="true">
+            <svg viewBox="0 0 16 16" class="pixel-art">
+              <rect x="5" y="2" width="6" height="2" fill="#fff"/>
+              <rect x="3" y="4" width="10" height="6" fill="#fff"/>
+              <rect x="6" y="6" width="1" height="2" fill="#0E0E0C"/>
+              <rect x="9" y="6" width="1" height="2" fill="#0E0E0C"/>
+              <rect x="2" y="6" width="1" height="2" fill="#fff"/>
+              <rect x="13" y="6" width="1" height="2" fill="#fff"/>
+              <rect x="5" y="10" width="6" height="2" fill="#fff"/>
+              <rect x="6" y="12" width="1" height="2" fill="#fff"/>
+              <rect x="9" y="12" width="1" height="2" fill="#fff"/>
+            </svg>
+          </div>
+          <h3>Agent-native</h3>
+          <p>Drop a snippet in <code>AGENTS.md</code> and any coding agent can publish on its own. It's one CLI call any model already knows how to make, with no SDK and no auth dance.</p>
+          <span class="tag pix"><span class="pxdot" style="background:#1D4AFF;border:1.5px solid #0E0E0C;width:8px;height:8px;display:inline-block"></span>drop-in for agents</span>
+        </div>
+
+        <div class="feat rv">
+          <div class="ic" aria-hidden="true">
+            <svg viewBox="0 0 16 16" class="pixel-art">
+              <rect x="11" y="2" width="2" height="2" fill="#0E0E0C"/>
+              <rect x="9" y="4" width="2" height="2" fill="#0E0E0C"/>
+              <rect x="7" y="6" width="2" height="2" fill="#0E0E0C"/>
+              <rect x="5" y="8" width="2" height="2" fill="#0E0E0C"/>
+              <rect x="3" y="10" width="2" height="2" fill="#0E0E0C"/>
+              <rect x="13" y="1" width="1" height="1" fill="#0E0E0C"/>
+              <rect x="6" y="2" width="1" height="1" fill="#0E0E0C"/>
+              <rect x="2" y="6" width="1" height="1" fill="#0E0E0C"/>
+              <rect x="12" y="9" width="1" height="1" fill="#0E0E0C"/>
+            </svg>
+          </div>
+          <h3>Auto-wrap, no build step</h3>
+          <p>Hand it one bare <code>.tsx</code>, <code>.vue</code>, or <code>.html</code> and it becomes a runnable page. React 18 with Babel and Tailwind, or Vue 3, gets inlined into one self-contained file.</p>
+          <span class="tag pix"><span class="pxdot" style="background:#F9BD2B;border:1.5px solid #0E0E0C;width:8px;height:8px;display:inline-block"></span>react 18 · vue 3</span>
+        </div>
+
+        <div class="feat wide rv">
+          <div class="ic" aria-hidden="true">
+            <svg viewBox="0 0 16 16" class="pixel-art">
+              <rect x="6" y="2" width="4" height="2" fill="#0E0E0C"/>
+              <rect x="5" y="4" width="6" height="3" fill="#0E0E0C"/>
+              <rect x="6" y="4" width="4" height="2" fill="#0E0E0C"/>
+              <rect x="4" y="7" width="8" height="6" fill="#0E0E0C"/>
+              <rect x="7" y="9" width="2" height="3" fill="#fff"/>
+            </svg>
+          </div>
+          <h3>Yours to self-host, MIT licensed</h3>
+          <p>Your Cloudflare account, your token, your domain, your data. The whole thing is MIT licensed and self-hostable end to end, so you can fork it, audit it, and run it for as long as you like without asking anyone.</p>
+          <span class="tag pix"><span class="pxdot" style="background:#37C871;border:1.5px solid #0E0E0C;width:8px;height:8px;display:inline-block"></span>MIT · self-hosted</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="stripe" aria-hidden="true"></div>
+
+<!-- BIG CTA -->
+<section class="sec" id="get">
+  <div class="wrap">
+    <div class="bigcta rv">
+      <span class="cta-star" style="left:8%;top:22%">
+        <svg width="12" height="12" viewBox="0 0 5 5" class="pixel-art"><rect x="2" y="0" width="1" height="5" fill="#F9BD2B"/><rect x="0" y="2" width="5" height="1" fill="#F9BD2B"/></svg>
+      </span>
+      <span class="cta-star" style="right:10%;top:28%;animation-delay:1s">
+        <svg width="10" height="10" viewBox="0 0 5 5" class="pixel-art"><rect x="2" y="0" width="1" height="5" fill="#F54E00"/><rect x="0" y="2" width="5" height="1" fill="#F54E00"/></svg>
+      </span>
+      <span class="cta-star" style="left:18%;bottom:18%;animation-delay:1.6s">
+        <svg width="9" height="9" viewBox="0 0 3 3" class="pixel-art"><rect x="1" y="1" width="1" height="1" fill="#37C871"/></svg>
+      </span>
+      <h2>Ship your next artifact live.</h2>
+      <p>Clone the repo, point it at your Cloudflare account, and start launching real URLs in minutes.</p>
+      <div style="display:flex;justify-content:center;margin-bottom:24px">
+        <div class="copyline">
+          <span><span class="pl">$</span> getonup deploy counter.tsx</span>
+          <button class="copybtn" id="copy" aria-label="Copy command">Copy</button>
+        </div>
+      </div>
+      <div class="cta-row" style="justify-content:center;margin-top:0">
+        <a class="btn btn-primary" href="#">Ship it
+          <svg width="16" height="16" viewBox="0 0 16 16" class="pixel-art" aria-hidden="true">
+            <rect x="2" y="7" width="9" height="2" fill="#fff"/>
+            <rect x="9" y="5" width="2" height="2" fill="#fff"/>
+            <rect x="11" y="7" width="2" height="2" fill="#fff"/>
+            <rect x="9" y="9" width="2" height="2" fill="#fff"/>
+          </svg>
+        </a>
+        <a class="btn btn-ghost" href="https://github.com" rel="noopener">★ Star on GitHub</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a href="#top" class="brand" style="text-decoration:none">
+          <span class="mark" aria-hidden="true">
+            <svg viewBox="0 0 16 16" class="pixel-art">
+              <rect x="7" y="1" width="2" height="2" fill="#fff"/>
+              <rect x="6" y="3" width="4" height="6" fill="#fff"/>
+              <rect x="6" y="4" width="4" height="2" fill="#1D4AFF"/>
+              <rect x="4" y="7" width="2" height="3" fill="#fff"/>
+              <rect x="10" y="7" width="2" height="3" fill="#fff"/>
+              <rect x="7" y="12" width="2" height="3" fill="#F9BD2B"/>
+            </svg>
+          </span>getonup</a>
+        <p>The one-command way to ship any AI-generated web artifact to a live, shareable URL.</p>
+        <div class="foot-tags">
+          <span class="pill"><span class="pxdot" style="background:#37C871"></span>self-hosted</span>
+          <span class="pill"><span class="pxdot" style="background:#1D4AFF"></span>scale-to-zero</span>
+          <span class="pill"><span class="pxdot" style="background:#F54E00"></span>MIT</span>
+        </div>
+      </div>
+      <div class="foot-links">
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#get">Ship it</a>
+        <a href="https://github.com" rel="noopener">GitHub</a>
+        <a href="#">Docs</a>
+        <a href="#">AGENTS.md snippet</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 getonup — free software, MIT licensed.</span>
+      <span>Built by devs, for devs &amp; their agents. ★</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Mark JS-on (purely informational). Reveals NEVER hide content by default —
+  // only elements JS explicitly arms below get dimmed, and they are always un-dimmed.
+  document.documentElement.classList.add('js');
+
+  // Typewriter for hero terminal (enhances an already-visible command + output)
+  (function(){
+    var cmd = "getonup deploy counter.tsx";
+    var el = document.getElementById('typed');
+    var caret = document.getElementById('caret');
+    var outs = ['o1','o2','o3'].map(function(id){return document.getElementById(id);});
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(!el) return;
+    if(reduce){ return; } // leave the fully-rendered default in place
+    // re-arm: hide outputs, retype
+    outs.forEach(function(o){ if(o) o.style.display='none'; });
+    el.textContent = '';
+    var i=0;
+    function type(){
+      if(i<=cmd.length){ el.textContent = cmd.slice(0,i); i++; setTimeout(type, 55 + Math.random()*40); }
+      else { reveal(); }
+    }
+    function reveal(){
+      outs.forEach(function(o,k){
+        setTimeout(function(){
+          if(o) o.style.display='block';
+          if(k===outs.length-1 && caret) caret.style.display='none';
+        }, 450*(k+1));
+      });
+    }
+    setTimeout(type, 600);
+  })();
+
+  // Copy button
+  (function(){
+    var btn=document.getElementById('copy');
+    if(!btn) return;
+    btn.addEventListener('click', function(){
+      var text="getonup deploy counter.tsx";
+      var done=function(){
+        btn.textContent="Copied ✓"; btn.classList.add('done');
+        setTimeout(function(){btn.textContent="Copy";btn.classList.remove('done');},1600);
+      };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(done);
+      } else {
+        var t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();
+        try{document.execCommand('copy');}catch(e){} document.body.removeChild(t); done();
+      }
+    });
+  })();
+
+  // Scroll reveal — enhances an already-visible default; NEVER gates visibility.
+  (function(){
+    var els=document.querySelectorAll('.rv');
+    var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Reveal everything, unconditionally. Safe to call any number of times.
+    function revealAll(){
+      els.forEach(function(e){ e.classList.remove('rv-armed'); e.classList.add('in'); });
+    }
+
+    // No motion or no observer support -> show all content immediately, no dimming.
+    if(reduce || !('IntersectionObserver' in window)){ revealAll(); return; }
+
+    // Only arm (dim) elements that are CURRENTLY below the viewport at load.
+    // Anything already on-screen at load stays fully visible from the first paint.
+    var vh=window.innerHeight||document.documentElement.clientHeight;
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){ en.target.classList.remove('rv-armed'); en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    },{threshold:.12, rootMargin:"0px 0px -40px 0px"});
+
+    els.forEach(function(e){
+      var top=e.getBoundingClientRect().top;
+      if(top>vh){ e.classList.add('rv-armed'); io.observe(e); } // below the fold: animate in on scroll
+      else { e.classList.add('in'); } // already visible: leave it visible
+    });
+
+    // SAFETY NET: a full-page render with no scrolling must show every section.
+    // Reveal absolutely everything on load and again shortly after, regardless of scroll.
+    window.addEventListener('load', revealAll);
+    setTimeout(revealAll, 400);
+  })();
+</script>
+</body>
+</html>

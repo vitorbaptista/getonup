@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>getonup — live artifact hosting</title>
+<meta name="description" content="Turn any AI-generated web artifact into a live, shareable URL with one CLI command. One Cloudflare Worker + R2, scales to zero, MIT licensed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;
+    --ink:#2b2b2b;
+    --ink-soft:#555;
+    --ink-faint:#888;
+    --rule:#e6e6e6;
+    --rule-strong:#d8d8d8;
+    --term-bg:#111111;
+    --term-ink:#d6d6d6;
+    --term-muted:#7c7c7c;
+    --green:#2ecc71;
+    --maxw:640px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Inter",system-ui,-apple-system,sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  a{color:inherit}
+  ::selection{background:#111;color:#fff}
+  .wrap{
+    max-width:var(--maxw);
+    margin:0 auto;
+    padding:0 24px;
+  }
+  .mono{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
+
+  /* ---- top bar ---- */
+  .topbar{
+    border-bottom:1px solid var(--rule);
+  }
+  .topbar .wrap{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    height:54px;
+  }
+  .brandmini{
+    font-family:"JetBrains Mono",monospace;
+    font-size:15px;
+    letter-spacing:-0.01em;
+    color:var(--ink);
+    text-decoration:none;
+  }
+  .brandmini b{font-weight:800}
+  .topbar nav{
+    font-family:"JetBrains Mono",monospace;
+    font-size:13px;
+  }
+  .topbar nav a{
+    color:var(--ink-soft);
+    text-decoration:none;
+    border-bottom:1px solid transparent;
+    transition:color .15s,border-color .15s;
+  }
+  .topbar nav a:hover{color:#111;border-color:#111}
+
+  /* ---- hero ---- */
+  .hero{
+    padding:78px 0 8px;
+    text-align:center;
+  }
+  .wordmark{
+    font-family:"JetBrains Mono",monospace;
+    font-weight:400;
+    font-size:84px;
+    line-height:1;
+    letter-spacing:-0.04em;
+    margin:0;
+    color:#1a1a1a;
+  }
+  .wordmark b{font-weight:800}
+  .caret{
+    display:inline-block;
+    width:.07em;
+    height:.82em;
+    background:var(--ink);
+    margin-left:.06em;
+    vertical-align:baseline;
+    transform:translateY(.04em);
+    animation:blink 1.1s steps(1) infinite;
+  }
+  @keyframes blink{50%{opacity:0}}
+  .kicker{
+    font-family:"JetBrains Mono",monospace;
+    font-size:11.5px;
+    font-weight:500;
+    color:var(--ink-faint);
+    letter-spacing:.42em;
+    text-transform:uppercase;
+    margin:22px 0 0;
+    padding-left:.42em;
+  }
+  .subhead{
+    margin:30px auto 0;
+    max-width:520px;
+    font-size:18px;
+    line-height:1.55;
+    color:var(--ink-soft);
+  }
+  .subhead strong{color:#1f1f1f;font-weight:600}
+
+  /* ---- deploy pill ---- */
+  .pill-row{margin-top:34px;display:flex;justify-content:center}
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:12px;
+    background:#111;
+    color:#f4f4f4;
+    border:none;
+    border-radius:999px;
+    padding:14px 22px;
+    font-family:"JetBrains Mono",monospace;
+    font-size:14.5px;
+    cursor:pointer;
+    transition:transform .12s ease, background .15s;
+    box-shadow:0 1px 0 rgba(0,0,0,.04);
+  }
+  .pill:hover{background:#000;transform:translateY(-1px)}
+  .pill:active{transform:translateY(0)}
+  .pill .dollar{color:var(--green);font-weight:700}
+  .pill .copy-ico{
+    width:15px;height:15px;
+    opacity:.6;
+    flex:none;
+  }
+  .pill .copy-ico svg{display:block}
+  .copyhint{
+    margin-top:11px;
+    font-family:"JetBrains Mono",monospace;
+    font-size:11px;
+    color:var(--ink-faint);
+    letter-spacing:.04em;
+    min-height:14px;
+  }
+  .copyhint.ok{color:#1a9d52}
+
+  /* ---- terminal ---- */
+  .terminal{
+    margin:40px auto 0;
+    background:var(--term-bg);
+    border-radius:10px;
+    overflow:hidden;
+    text-align:left;
+    box-shadow:0 18px 40px -22px rgba(0,0,0,.5);
+  }
+  .term-bar{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    padding:11px 14px;
+    border-bottom:1px solid #222;
+  }
+  .term-bar i{width:11px;height:11px;border-radius:50%;background:#2f2f2f;display:block}
+  .term-bar i:nth-child(1){background:#3a3a3a}
+  .term-bar .title{
+    margin-left:8px;
+    font-family:"JetBrains Mono",monospace;
+    font-size:11px;
+    color:#5a5a5a;
+    letter-spacing:.06em;
+  }
+  .term-body{
+    padding:18px 18px 20px;
+    font-family:"JetBrains Mono",monospace;
+    font-size:13.5px;
+    line-height:1.85;
+    color:var(--term-ink);
+    overflow-x:auto;
+  }
+  .term-body .ln{white-space:pre;}
+  .term-body .p{color:var(--green);font-weight:700}
+  .term-body .cmd{color:#eaeaea}
+  .term-body .ok{color:var(--green)}
+  .term-body .mut{color:var(--term-muted)}
+  .term-body .url{color:#9fd9ff}
+  .term-body .arrow{color:#666}
+
+  /* ---- CTA buttons ---- */
+  .cta-row{
+    margin-top:34px;
+    display:flex;
+    gap:12px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  .btn{
+    font-family:"JetBrains Mono",monospace;
+    font-size:13.5px;
+    text-decoration:none;
+    padding:12px 20px;
+    border-radius:7px;
+    transition:transform .12s, background .15s, border-color .15s;
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+  }
+  .btn-primary{background:#111;color:#fff;border:1px solid #111}
+  .btn-primary:hover{background:#000;transform:translateY(-1px)}
+  .btn-ghost{background:#fff;color:#222;border:1px solid var(--rule-strong)}
+  .btn-ghost:hover{border-color:#111;color:#000;transform:translateY(-1px)}
+  .btn svg{width:15px;height:15px;flex:none}
+
+  /* ---- section scaffolding ---- */
+  section{padding:64px 0}
+  .rule{height:1px;background:var(--rule);border:0;margin:0}
+  .seclabel{
+    font-family:"JetBrains Mono",monospace;
+    font-size:11px;
+    letter-spacing:.32em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    margin:0 0 6px;
+  }
+  h2{
+    font-family:"JetBrains Mono",monospace;
+    font-size:24px;
+    font-weight:700;
+    letter-spacing:-0.02em;
+    margin:0 0 26px;
+    color:#1a1a1a;
+  }
+  h2 .q{color:var(--green)}
+  p{margin:0 0 16px}
+
+  /* ---- how it works ---- */
+  .steps{
+    list-style:none;
+    margin:0;padding:0;
+    counter-reset:step;
+  }
+  .steps li{
+    display:grid;
+    grid-template-columns:42px 1fr;
+    gap:18px;
+    padding:22px 0;
+    border-top:1px solid var(--rule);
+    align-items:start;
+  }
+  .steps li:first-child{border-top:0}
+  .stepnum{
+    font-family:"JetBrains Mono",monospace;
+    font-size:13px;
+    font-weight:700;
+    color:#fff;
+    background:#111;
+    width:42px;height:42px;
+    border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .step-h{
+    font-family:"JetBrains Mono",monospace;
+    font-weight:700;
+    font-size:15px;
+    color:#1a1a1a;
+    margin:6px 0 5px;
+  }
+  .step-b{color:var(--ink-soft);font-size:15px;line-height:1.55;margin:0}
+  .step-b code{
+    font-family:"JetBrains Mono",monospace;
+    font-size:12.5px;
+    background:#f3f3f3;
+    border:1px solid #ececec;
+    border-radius:4px;
+    padding:1px 6px;
+    color:#222;
+  }
+
+  /* ---- features ---- */
+  .features{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0;
+    border:1px solid var(--rule);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .feat{
+    padding:24px 22px;
+    border-right:1px solid var(--rule);
+    border-bottom:1px solid var(--rule);
+  }
+  .feat:nth-child(2n){border-right:0}
+  .feat:nth-child(3),.feat:nth-child(4){border-bottom:0}
+  .feat-h{
+    font-family:"JetBrains Mono",monospace;
+    font-weight:700;
+    font-size:15px;
+    color:#1a1a1a;
+    margin:0 0 8px;
+    display:flex;align-items:center;gap:9px;
+  }
+  .feat-h .dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--green);flex:none;
+    box-shadow:0 0 0 3px rgba(46,204,113,.15);
+  }
+  .feat-b{color:var(--ink-soft);font-size:14.5px;line-height:1.55;margin:0}
+  .feat-b code{
+    font-family:"JetBrains Mono",monospace;
+    font-size:12px;
+    background:#f3f3f3;
+    border-radius:4px;
+    padding:1px 5px;
+    color:#222;
+  }
+
+  /* ---- FAQ ---- */
+  .faq details{
+    border-top:1px solid var(--rule);
+    padding:4px 0;
+  }
+  .faq details:first-of-type{border-top:0}
+  .faq summary{
+    list-style:none;
+    cursor:pointer;
+    padding:16px 0;
+    font-family:"JetBrains Mono",monospace;
+    font-weight:500;
+    font-size:15px;
+    color:#1a1a1a;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+  }
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary .sign{
+    font-family:"JetBrains Mono",monospace;
+    color:var(--ink-faint);
+    font-weight:700;
+    transition:transform .2s;
+    flex:none;
+  }
+  .faq details[open] summary .sign{transform:rotate(45deg)}
+  .faq .ans{
+    padding:0 0 18px;
+    color:var(--ink-soft);
+    font-size:15px;
+    line-height:1.6;
+    max-width:560px;
+  }
+  .faq .ans code{
+    font-family:"JetBrains Mono",monospace;
+    font-size:12.5px;
+    background:#f3f3f3;
+    border:1px solid #ececec;
+    border-radius:4px;
+    padding:1px 6px;
+    color:#222;
+  }
+
+  /* ---- footer ---- */
+  footer{
+    border-top:1px solid var(--rule);
+    padding:34px 0 48px;
+  }
+  footer .wrap{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:14px;
+  }
+  .foot-brand{
+    font-family:"JetBrains Mono",monospace;
+    font-size:14px;
+    color:#1a1a1a;
+  }
+  .foot-brand b{font-weight:800}
+  .foot-meta{
+    font-family:"JetBrains Mono",monospace;
+    font-size:12px;
+    color:var(--ink-faint);
+    letter-spacing:.02em;
+  }
+  .foot-meta a{color:var(--ink-soft);text-decoration:none;border-bottom:1px solid var(--rule-strong)}
+  .foot-meta a:hover{color:#000;border-color:#000}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(12px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){
+    .reveal{opacity:1;transform:none;transition:none}
+    .caret{animation:none}
+  }
+
+  /* responsive */
+  @media (max-width:560px){
+    .wordmark{font-size:58px}
+    .kicker{letter-spacing:.3em;font-size:10.5px}
+    .subhead{font-size:16.5px}
+    .features{grid-template-columns:1fr}
+    .feat{border-right:0}
+    .feat:nth-child(3){border-bottom:1px solid var(--rule)}
+    .pill{font-size:12.5px;padding:13px 18px}
+    .term-body{font-size:12px}
+    section{padding:52px 0}
+    .hero{padding:54px 0 4px}
+  }
+</style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brandmini" href="#top">get<b>onup</b></a>
+      <nav>
+        <a href="#how">how</a>&nbsp;&nbsp;<a href="#features">features</a>&nbsp;&nbsp;<a href="#faq">faq</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap">
+        <h1 class="wordmark">get<b>onup</b><span class="caret" aria-hidden="true"></span></h1>
+        <p class="kicker">L I V E&nbsp;&nbsp;A R T I F A C T&nbsp;&nbsp;H O S T I N G</p>
+
+        <p class="subhead">
+          Turn any AI-generated web artifact into a <strong>live, shareable URL</strong>
+          with one command. Hand it an <code class="mono" style="font-size:.86em">.html</code>,
+          <code class="mono" style="font-size:.86em">.tsx</code>, or
+          <code class="mono" style="font-size:.86em">.vue</code> — get a link back in seconds.
+        </p>
+
+        <div class="pill-row">
+          <button class="pill" id="copyPill" type="button" aria-label="Copy deploy command">
+            <span class="dollar">$</span>
+            <span class="mono">npx getonup deploy app.tsx</span>
+            <span class="copy-ico" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+                <rect x="5.5" y="5.5" width="8" height="8" rx="1.4"/>
+                <path d="M3.2 10.3H2.6A1.1 1.1 0 0 1 1.5 9.2V2.6A1.1 1.1 0 0 1 2.6 1.5h6.6a1.1 1.1 0 0 1 1.1 1.1v.6"/>
+              </svg>
+            </span>
+          </button>
+        </div>
+        <p class="copyhint" id="copyHint" aria-live="polite">click to copy</p>
+
+        <!-- terminal flow -->
+        <div class="terminal" role="img" aria-label="Terminal showing getonup deploy producing a live URL">
+          <div class="term-bar">
+            <i></i><i></i><i></i>
+            <span class="title">~/artifacts — getonup</span>
+          </div>
+          <div class="term-body">
+<div class="ln"><span class="p">$</span> <span class="cmd">getonup deploy counter.tsx</span></div>
+<div class="ln"><span class="mut">› detected React component — auto-wrapping…</span></div>
+<div class="ln"><span class="mut">› bundling page · uploading to R2</span></div>
+<div class="ln"><span class="ok">✓</span> <span class="cmd">live</span> <span class="arrow">→</span> <span class="url">https://getonup.example.com/s/iwcmg3dt</span></div>
+<div class="ln"><span class="mut">  no login to view · scales to zero</span></div>
+          </div>
+        </div>
+
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#how">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M2 8h12M9 3l5 5-5 5"/>
+            </svg>
+            Self-host it
+          </a>
+          <a class="btn btn-ghost" href="https://github.com" rel="noopener">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 .2A8 8 0 0 0 5.5 15.8c.4.07.55-.17.55-.38l-.01-1.34c-2.22.48-2.69-1.07-2.69-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.71 1.23 1.87.87 2.33.67.07-.52.28-.87.5-1.07-1.77-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.22 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.52.56.83 1.28.83 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48l-.01 2.2c0 .21.15.46.55.38A8 8 0 0 0 8 .2Z"/></svg>
+            View on GitHub
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- HOW IT WORKS -->
+    <section id="how" class="reveal">
+      <div class="wrap">
+        <p class="seclabel">Three steps</p>
+        <h2>How it works</h2>
+        <ol class="steps">
+          <li>
+            <span class="stepnum">01</span>
+            <div>
+              <p class="step-h">Build an artifact</p>
+              <p class="step-b">Your agent writes a single file — an <code>.html</code> page, a React <code>.tsx</code>, or a Vue <code>.vue</code> component. No project, no config, no build pipeline required.</p>
+            </div>
+          </li>
+          <li>
+            <span class="stepnum">02</span>
+            <div>
+              <p class="step-h">Run one command</p>
+              <p class="step-b"><code>getonup deploy</code> auto-wraps the component into a self-contained page and uploads it straight to your R2 bucket. The whole round trip takes seconds.</p>
+            </div>
+          </li>
+          <li>
+            <span class="stepnum">03</span>
+            <div>
+              <p class="step-h">Share the link</p>
+              <p class="step-b">You get back a clean, permanent URL. No viewer login, nothing to keep running — the backend scales to zero when nobody's looking.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- FEATURES -->
+    <section id="features" class="reveal">
+      <div class="wrap">
+        <p class="seclabel">Why it stays simple</p>
+        <h2>What you get</h2>
+        <div class="features">
+          <div class="feat">
+            <p class="feat-h"><span class="dot"></span>One Worker + R2</p>
+            <p class="feat-b">No database, no always-on server. A single Cloudflare Worker fronts an R2 bucket — idle cost rounds to <strong>~$0</strong>.</p>
+          </div>
+          <div class="feat">
+            <p class="feat-h"><span class="dot"></span>Agent-native</p>
+            <p class="feat-b">Drop a snippet in <code>AGENTS.md</code> and any coding agent can publish its own work, no human in the loop.</p>
+          </div>
+          <div class="feat">
+            <p class="feat-h"><span class="dot"></span>Auto-wrap</p>
+            <p class="feat-b">Hand it one <code>.tsx</code> or <code>.vue</code> and it becomes a runnable page — React 18 + Babel + Tailwind, or Vue 3, fully self-contained.</p>
+          </div>
+          <div class="feat">
+            <p class="feat-h"><span class="dot"></span>Yours to host</p>
+            <p class="feat-b">Your Cloudflare account, your token, your data. Free and open source under the <strong>MIT</strong> license.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- FAQ -->
+    <section id="faq" class="reveal">
+      <div class="wrap">
+        <p class="seclabel">Questions</p>
+        <h2><span class="q">?</span> FAQ</h2>
+        <div class="faq">
+          <details open>
+            <summary>How does auto-wrap work?<span class="sign">+</span></summary>
+            <div class="ans">Pass a bare component and getonup detects the framework from the file. A <code>.tsx</code> is wrapped in a page that pulls React 18, Babel for in-browser transform, and Tailwind; a <code>.vue</code> becomes a Vue 3 page. Plain <code>.html</code> is uploaded as-is. The result is one self-contained file that runs anywhere — no bundler on your machine.</div>
+          </details>
+          <details>
+            <summary>Where do my Cloudflare token and secrets live?<span class="sign">+</span></summary>
+            <div class="ans">Entirely on your side. getonup deploys to <em>your</em> Worker and <em>your</em> R2 bucket using a token you create and store locally. Nothing routes through a third party — there's no getonup-operated cloud to trust. The CLI only talks to the endpoint you configured.</div>
+          </details>
+          <details>
+            <summary>What does self-hosting on Cloudflare involve?<span class="sign">+</span></summary>
+            <div class="ans">Deploy one Worker, create one R2 bucket, set a token. That's the whole stack — no database, no container, nothing to babysit. Because the Worker scales to zero, an idle instance costs essentially nothing, and traffic rides Cloudflare's free-tier limits for a long while.</div>
+          </details>
+          <details>
+            <summary>Can coding agents publish on their own?<span class="sign">+</span></summary>
+            <div class="ans">Yes — that's the point. Add the <code>getonup deploy</code> snippet to your <code>AGENTS.md</code> and any agent that reads it can ship a preview link the moment it finishes writing an artifact. The link comes back on stdout, ready to paste into a PR, a chat, or a review.</div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span class="foot-brand">get<b>onup</b></span>
+      <span class="foot-meta">
+        MIT · self-hosted · scale-to-zero · <a href="https://github.com" rel="noopener">github</a>
+      </span>
+    </div>
+  </footer>
+
+<script>
+(function(){
+  // copy command pill
+  var pill=document.getElementById('copyPill');
+  var hint=document.getElementById('copyHint');
+  var CMD='npx getonup deploy app.tsx';
+  if(pill){
+    pill.addEventListener('click',function(){
+      var done=function(){
+        hint.textContent='copied to clipboard ✓';
+        hint.classList.add('ok');
+        clearTimeout(pill._t);
+        pill._t=setTimeout(function(){
+          hint.textContent='click to copy';
+          hint.classList.remove('ok');
+        },1800);
+      };
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(CMD).then(done).catch(fallback);
+      }else{fallback();}
+      function fallback(){
+        var ta=document.createElement('textarea');
+        ta.value=CMD;ta.style.position='fixed';ta.style.opacity='0';
+        document.body.appendChild(ta);ta.select();
+        try{document.execCommand('copy');done();}catch(e){hint.textContent='press ⌘C / Ctrl+C';}
+        document.body.removeChild(ta);
+      }
+    });
+  }
+
+  // subtle reveal on scroll
+  var io;
+  if('IntersectionObserver' in window){
+    io=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}
+      });
+    },{threshold:0.12});
+    document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+  }else{
+    document.querySelectorAll('.reveal').forEach(function(el){el.classList.add('in');});
+  }
+})();
+</script>
+</body>
+</html>

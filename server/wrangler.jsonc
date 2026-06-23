@@ -20,12 +20,18 @@
     { "binding": "BUCKET", "bucket_name": "getonup" }
   ],
 
+  // Serve the Worker on a custom domain (zone vitorbaptista.com, this account).
+  // Cloudflare provisions and renews the edge certificate automatically.
+  "routes": [
+    { "pattern": "pages.vitorbaptista.com", "custom_domain": true }
+  ],
+
   // Non-secret config. GETONUP_DEPLOY_TOKEN is a *secret* (set via `wrangler secret put`),
   // not listed here. Optional overrides:
   "vars": {
     "MAX_BYTES": "20971520",
-    "MAX_FILES": "300"
-    // "GETONUP_PUBLIC_URL": "https://getonup.example.com"  // force the printed base URL
+    "MAX_FILES": "300",
+    "GETONUP_PUBLIC_URL": "https://pages.vitorbaptista.com"
   },
 
   "observability": { "enabled": true }
