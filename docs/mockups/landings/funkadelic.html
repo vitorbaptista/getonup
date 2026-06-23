@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>getonup — Your AI artifact, live in seconds.</title>
+<meta name="description" content="getonup turns any AI-generated web artifact into a live, shareable URL with one CLI command. Open-source, self-hostable, scales to zero. One Cloudflare Worker + R2." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Bungee&family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    /* DRENCHED FUNK PALETTE */
+    --oxblood:#2B0A14;     /* deep ground */
+    --aubergine:#3A0E2A;   /* secondary ground */
+    --hot:#FF4D00;         /* hot orange */
+    --gold:#FFC400;        /* gold */
+    --magenta:#FF1E8E;     /* magenta */
+    --lime:#B6FF1A;        /* acid lime */
+    --purple:#8A2BE2;      /* electric purple */
+    --cream:#FFF3D6;       /* warm cream text */
+    --ink:#1A0309;         /* near-black on bright */
+    --teal:#16C7C0;        /* turquoise accent */
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--oxblood);
+    color:var(--cream);
+    font-family:"Barlow",system-ui,sans-serif;
+    font-weight:500;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--lime);color:var(--ink)}
+
+  h1,h2,h3{font-family:"Shrikhand",serif;font-weight:400;letter-spacing:-.01em;line-height:.95;text-wrap:balance}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  .cond{font-family:"Barlow Condensed",sans-serif}
+
+  /* ============ HALFTONE + GROOVE BACKGROUND ============ */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-2;
+    background:
+      radial-gradient(circle at 18% 12%, rgba(138,43,226,.45), transparent 42%),
+      radial-gradient(circle at 86% 78%, rgba(255,30,142,.40), transparent 46%),
+      var(--oxblood);
+  }
+  body::after{
+    content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background-image:radial-gradient(rgba(255,196,0,.10) 1.3px, transparent 1.4px);
+    background-size:16px 16px;
+    opacity:.6;
+  }
+
+  /* ============ SUNBURST ============ */
+  .sunburst{
+    position:absolute;top:-340px;left:50%;width:1500px;height:1500px;
+    transform:translateX(-50%);z-index:-1;pointer-events:none;
+    background:conic-gradient(from 0deg,
+      var(--hot) 0deg 14deg, transparent 14deg 28deg,
+      var(--gold) 28deg 42deg, transparent 42deg 56deg,
+      var(--magenta) 56deg 70deg, transparent 70deg 84deg,
+      var(--hot) 84deg 98deg, transparent 98deg 112deg,
+      var(--gold) 112deg 126deg, transparent 126deg 140deg,
+      var(--magenta) 140deg 154deg, transparent 154deg 168deg,
+      var(--hot) 168deg 182deg, transparent 182deg 196deg,
+      var(--gold) 196deg 210deg, transparent 210deg 224deg,
+      var(--magenta) 224deg 238deg, transparent 238deg 252deg,
+      var(--hot) 252deg 266deg, transparent 266deg 280deg,
+      var(--gold) 280deg 294deg, transparent 294deg 308deg,
+      var(--magenta) 308deg 322deg, transparent 322deg 336deg,
+      var(--hot) 336deg 350deg, transparent 350deg 360deg);
+    -webkit-mask-image:radial-gradient(circle, #000 0 30%, rgba(0,0,0,.28) 46%, transparent 62%);
+            mask-image:radial-gradient(circle, #000 0 30%, rgba(0,0,0,.28) 46%, transparent 62%);
+    opacity:.5;
+    animation:spin 80s linear infinite;
+  }
+  @keyframes spin{to{transform:translateX(-50%) rotate(360deg)}}
+
+  /* ============ MARQUEE ============ */
+  .marquee{
+    background:var(--gold);color:var(--ink);
+    border-top:4px solid var(--ink);border-bottom:4px solid var(--ink);
+    overflow:hidden;white-space:nowrap;
+  }
+  .marquee-track{
+    display:inline-flex;gap:0;
+    will-change:transform;
+    animation:slide 26s linear infinite;
+  }
+  .marquee-track span{
+    font-family:"Bungee",sans-serif;font-size:clamp(15px,2.1vw,22px);
+    padding:11px 0;letter-spacing:.02em;
+    display:inline-flex;align-items:center;
+  }
+  .marquee-track span i{font-style:normal;color:var(--hot);padding:0 22px}
+  @keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .marquee.rev .marquee-track{animation-direction:reverse;animation-duration:30s}
+  .marquee.alt{background:var(--lime)}
+  .marquee.alt .marquee-track span i{color:var(--purple)}
+
+  /* ============ NAV ============ */
+  nav{position:sticky;top:0;z-index:60;background:var(--oxblood);border-bottom:4px solid var(--gold)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:70px;gap:18px}
+  .brand{font-family:"Bungee",sans-serif;font-size:24px;letter-spacing:-.02em;color:var(--gold);display:flex;align-items:center;gap:11px}
+  .brand .disc{
+    width:30px;height:30px;border-radius:50%;flex:none;
+    background:
+      radial-gradient(circle, var(--ink) 0 18%, transparent 19%),
+      repeating-radial-gradient(circle, var(--magenta) 0 2px, var(--hot) 2px 5px);
+    box-shadow:0 0 0 2px var(--ink);
+    animation:spin 6s linear infinite;
+  }
+  .nav-links{display:flex;align-items:center;gap:26px;font-family:"Barlow Condensed";font-weight:600;font-size:18px;text-transform:uppercase;letter-spacing:.04em}
+  .nav-links a{position:relative}
+  .nav-links a::after{content:"";position:absolute;left:0;right:100%;bottom:-5px;height:3px;background:var(--lime);transition:right .25s ease-out}
+  .nav-links a:hover::after{right:0}
+  .nav-links .only-wide{display:inline}
+  .btn{
+    font-family:"Barlow Condensed";font-weight:700;font-size:17px;text-transform:uppercase;letter-spacing:.05em;
+    display:inline-flex;align-items:center;gap:9px;
+    padding:11px 20px;border:3px solid var(--ink);cursor:pointer;
+    transition:transform .18s ease-out, box-shadow .18s ease-out;
+  }
+  .btn-gh{background:var(--lime);color:var(--ink);box-shadow:4px 4px 0 var(--ink)}
+  .btn-gh:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+
+  /* ============ HERO ============ */
+  .hero{position:relative;padding:70px 0 30px;text-align:center;overflow:hidden}
+  .hero-kicker{
+    display:inline-flex;align-items:center;gap:12px;
+    font-family:"Bungee";font-size:clamp(13px,1.6vw,16px);
+    color:var(--ink);background:var(--lime);
+    padding:8px 18px;border:3px solid var(--ink);
+    transform:rotate(-2deg);box-shadow:4px 4px 0 var(--ink);
+    margin-bottom:30px;
+  }
+  h1.hero-h1{
+    font-size:clamp(2.9rem,8.5vw,5.6rem);
+    color:var(--gold);
+    max-width:13ch;margin:0 auto;
+    text-shadow:5px 5px 0 var(--hot), 9px 9px 0 var(--ink);
+  }
+  h1.hero-h1 .live{color:var(--lime);text-shadow:5px 5px 0 var(--magenta),9px 9px 0 var(--ink);display:inline-block}
+  .subhead{
+    font-family:"Barlow Condensed";font-weight:500;
+    font-size:clamp(1.15rem,2.4vw,1.6rem);
+    color:var(--cream);max-width:34ch;margin:26px auto 0;
+    letter-spacing:.01em;
+  }
+  .subhead b{color:var(--gold);font-weight:700}
+
+  /* rising UP arrows */
+  .ups{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+  .ups .up{position:absolute;font-family:"Bungee";font-size:34px;color:var(--magenta);opacity:.0;animation:rise 5.5s ease-out infinite}
+  .ups .up:nth-child(1){left:8%;bottom:-40px;animation-delay:.0s;color:var(--gold)}
+  .ups .up:nth-child(2){left:24%;bottom:-40px;animation-delay:1.4s;color:var(--lime);font-size:26px}
+  .ups .up:nth-child(3){left:78%;bottom:-40px;animation-delay:.7s;color:var(--hot)}
+  .ups .up:nth-child(4){left:90%;bottom:-40px;animation-delay:2.1s;color:var(--teal);font-size:28px}
+  .ups .up:nth-child(5){left:62%;bottom:-40px;animation-delay:3s;color:var(--magenta);font-size:24px}
+  @keyframes rise{
+    0%{opacity:0;transform:translateY(0) rotate(-8deg)}
+    14%{opacity:.85}
+    80%{opacity:.5}
+    100%{opacity:0;transform:translateY(-330px) rotate(8deg)}
+  }
+
+  /* ============ TERMINAL ============ */
+  .term{
+    max-width:640px;margin:42px auto 0;text-align:left;position:relative;z-index:2;
+    background:#12060B;border:4px solid var(--gold);
+    box-shadow:10px 10px 0 var(--ink);
+  }
+  .term-bar{
+    display:flex;align-items:center;gap:9px;
+    background:var(--magenta);padding:11px 16px;border-bottom:4px solid var(--gold);
+  }
+  .term-bar i{width:14px;height:14px;border-radius:50%;background:var(--ink);display:block;border:2px solid #12060B}
+  .term-bar i:nth-child(1){background:var(--hot)}
+  .term-bar i:nth-child(2){background:var(--gold)}
+  .term-bar i:nth-child(3){background:var(--lime)}
+  .term-bar span{margin-left:auto;font-family:"Barlow Condensed";font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:13px;color:var(--ink)}
+  .term-body{padding:20px 20px 22px;font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-size:15px;line-height:1.85}
+  .term-body .pr{color:var(--lime);font-weight:700}
+  .term-body .cmd{color:var(--cream)}
+  .term-body .mut{color:#C98BAE}
+  .term-body .ok{color:var(--gold)}
+  .term-body .url{color:var(--teal);text-decoration:underline;text-underline-offset:3px}
+  .term-body .cur{display:inline-block;width:9px;height:18px;background:var(--lime);vertical-align:-3px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  /* ============ SECTION HEADINGS ============ */
+  section{position:relative;padding:74px 0}
+  .sec-title{
+    font-size:clamp(2.1rem,5.5vw,3.7rem);
+    text-align:center;margin-bottom:14px;
+  }
+  .sec-lead{font-family:"Barlow Condensed";font-weight:500;font-size:clamp(1.1rem,2vw,1.4rem);text-align:center;max-width:46ch;margin:0 auto 50px;color:#F3D9C9}
+
+  /* wavy divider */
+  .wave{display:block;width:100%;height:40px}
+
+  /* ============ HOW IT WORKS ============ */
+  .band-purple{background:var(--purple);color:var(--cream)}
+  .band-purple .sec-lead{color:#EBD9FF}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:26px}
+  .step{
+    background:var(--oxblood);border:4px solid var(--ink);
+    padding:30px 26px 32px;position:relative;
+    box-shadow:8px 8px 0 var(--ink);
+    transition:transform .2s ease-out, box-shadow .2s ease-out;
+  }
+  .step:hover{transform:translate(-3px,-3px);box-shadow:11px 11px 0 var(--ink)}
+  .step .num{
+    font-family:"Bungee";font-size:30px;color:var(--ink);
+    width:62px;height:62px;display:grid;place-items:center;border-radius:50%;
+    margin-bottom:20px;border:3px solid var(--ink);
+  }
+  .step:nth-child(1) .num{background:var(--hot)}
+  .step:nth-child(2) .num{background:var(--gold)}
+  .step:nth-child(3) .num{background:var(--lime)}
+  .step h3{font-size:1.5rem;color:var(--gold);margin-bottom:11px}
+  .step p{font-family:"Barlow";color:#F4DCCB;font-size:1.02rem;max-width:32ch}
+  .step code{font-family:ui-monospace,monospace;background:var(--ink);color:var(--lime);padding:2px 7px;font-size:.92em;white-space:nowrap}
+
+  /* ============ WHAT YOU GET ============ */
+  .gets{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+  .get{
+    padding:32px 28px;border:4px solid var(--ink);
+    box-shadow:8px 8px 0 var(--ink);position:relative;overflow:hidden;
+    transition:transform .2s ease-out;
+  }
+  .get:hover{transform:rotate(-1deg) scale(1.015)}
+  .get .ico{font-family:"Bungee";font-size:24px;margin-bottom:16px;display:inline-block}
+  .get h3{font-size:1.45rem;margin-bottom:10px;line-height:1.05}
+  .get p{font-family:"Barlow";font-size:1.02rem;max-width:34ch;line-height:1.5}
+  .g1{background:var(--hot);color:var(--ink)}
+  .g1 .ico,.g2 .ico,.g3 .ico,.g4 .ico{color:var(--ink)}
+  .g2{background:var(--gold);color:var(--ink)}
+  .g3{background:var(--lime);color:var(--ink)}
+  .g4{background:var(--teal);color:var(--ink)}
+  .get h3{color:var(--ink)}
+
+  /* ============ CTA ============ */
+  .cta{text-align:center;background:var(--magenta);color:var(--cream);overflow:hidden}
+  .cta h2{font-size:clamp(2.4rem,7vw,5rem);color:var(--gold);text-shadow:4px 4px 0 var(--ink);margin-bottom:14px}
+  .cta p{font-family:"Barlow Condensed";font-size:clamp(1.1rem,2.2vw,1.5rem);margin-bottom:38px;color:#FFE9D2}
+  .cta-row{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+  .btn-lg{font-size:21px;padding:17px 34px}
+  .btn-start{background:var(--lime);color:var(--ink);box-shadow:6px 6px 0 var(--ink)}
+  .btn-star{background:var(--gold);color:var(--ink);box-shadow:6px 6px 0 var(--ink)}
+  .btn-lg:hover{transform:translate(-3px,-3px)}
+  .btn-start:hover{box-shadow:9px 9px 0 var(--ink)}
+  .btn-star:hover{box-shadow:9px 9px 0 var(--ink)}
+
+  /* ============ FOOTER ============ */
+  footer{background:var(--ink);color:var(--cream);padding:46px 0 54px;text-align:center;border-top:5px solid var(--gold)}
+  .foot-brand{font-family:"Bungee";font-size:28px;color:var(--gold);margin-bottom:18px}
+  .foot-tags{display:flex;gap:0;justify-content:center;flex-wrap:wrap;font-family:"Barlow Condensed";font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:16px;color:#F3D9C9}
+  .foot-tags span{padding:0 16px;position:relative}
+  .foot-tags span+span::before{content:"✶";position:absolute;left:-4px;color:var(--magenta)}
+  .foot-note{margin-top:22px;font-family:"Barlow";font-size:.92rem;color:#B98EA0}
+
+  /* ============ LOAD CHOREOGRAPHY (enhances visible default) ============ */
+  .stagger{opacity:1;transform:none}
+  @media (prefers-reduced-motion: no-preference){
+    .stagger{opacity:0;transform:translateY(22px);animation:reveal .7s ease-out forwards}
+    .d1{animation-delay:.05s}.d2{animation-delay:.18s}.d3{animation-delay:.31s}
+    .d4{animation-delay:.44s}.d5{animation-delay:.57s}
+  }
+  @keyframes reveal{to{opacity:1;transform:none}}
+
+  /* reduced motion: kill all the funk machinery */
+  @media (prefers-reduced-motion: reduce){
+    .sunburst,.marquee-track,.brand .disc,.ups .up,.term-body .cur{animation:none !important}
+    .ups .up{opacity:.4}
+    .marquee-track{transform:none}
+  }
+
+  /* responsive */
+  @media (max-width:680px){
+    .nav-links .only-wide{display:none}
+    .nav-links{gap:16px;font-size:16px}
+    h1.hero-h1{text-shadow:3px 3px 0 var(--hot),6px 6px 0 var(--ink)}
+    h1.hero-h1 .live{text-shadow:3px 3px 0 var(--magenta),6px 6px 0 var(--ink)}
+    .term{box-shadow:6px 6px 0 var(--ink)}
+    .term-body{font-size:13px}
+  }
+  @media (max-width:430px){
+    .brand{font-size:20px}
+    .nav-links a:not(.btn){display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== TOP MARQUEE ===== -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <span>GET ON UP<i>✶</i>SHIP IT LOUD<i>✶</i>LIVE IN SECONDS<i>✶</i>GET ON UP<i>✶</i>SCALE TO ZERO<i>✶</i></span>
+    <span>GET ON UP<i>✶</i>SHIP IT LOUD<i>✶</i>LIVE IN SECONDS<i>✶</i>GET ON UP<i>✶</i>SCALE TO ZERO<i>✶</i></span>
+  </div>
+</div>
+
+<!-- ===== NAV ===== -->
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="#top"><span class="disc"></span>getonup</a>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#docs" class="only-wide">Docs</a>
+      <a href="#faq">FAQ</a>
+      <a class="btn btn-gh" href="https://github.com">★ GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<header class="hero" id="top">
+  <div class="sunburst" aria-hidden="true"></div>
+  <div class="ups" aria-hidden="true">
+    <span class="up">UP↑</span><span class="up">UP↑</span><span class="up">UP↑</span>
+    <span class="up">UP↑</span><span class="up">UP↑</span>
+  </div>
+  <div class="wrap">
+    <div class="hero-kicker stagger d1">★ THE DEPLOY HAS A GROOVE ★</div>
+    <h1 class="hero-h1 stagger d2">Your AI artifact, <span class="live">live</span> in seconds.</h1>
+    <p class="subhead stagger d3">One command. <b>Self-hosted.</b> Scale-to-zero. Your agent makes it — getonup makes it <b>live</b>.</p>
+
+    <div class="term stagger d4" role="img" aria-label="Terminal: getonup deploy counter.tsx wraps React plus Tailwind and returns a live URL">
+      <div class="term-bar"><i></i><i></i><i></i><span>getonup — zsh</span></div>
+      <div class="term-body">
+        <div><span class="pr">$</span> <span class="cmd">getonup deploy counter.tsx</span></div>
+        <div><span class="mut">&nbsp;&nbsp;uploading… wrapped React + Tailwind</span></div>
+        <div><span class="ok">✓ live →</span> <span class="url">https://app.getonup.dev/s/ix3k9d2</span> <span class="cur"></span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== MARQUEE 2 ===== -->
+<div class="marquee alt rev" aria-hidden="true">
+  <div class="marquee-track">
+    <span>ONE WORKER + R2<i>✶</i>MIT LICENSE<i>✶</i>AGENT-NATIVE<i>✶</i>NO BUILD STEP<i>✶</i>$0 IDLE<i>✶</i></span>
+    <span>ONE WORKER + R2<i>✶</i>MIT LICENSE<i>✶</i>AGENT-NATIVE<i>✶</i>NO BUILD STEP<i>✶</i>$0 IDLE<i>✶</i></span>
+  </div>
+</div>
+
+<!-- ===== HOW IT WORKS ===== -->
+<section class="band-purple" id="how">
+  <div class="wrap">
+    <h2 class="sec-title">Three moves. <br>One groove.</h2>
+    <p class="sec-lead">From a file on your machine to a link you can text a friend — no dashboard, no waiting, no build pipeline.</p>
+    <div class="steps">
+      <div class="step stagger d1">
+        <div class="num">1</div>
+        <h3>Your agent builds it</h3>
+        <p>A coding agent spits out an HTML file, a React/Vue component, a whole static folder. The artifact is ready.</p>
+      </div>
+      <div class="step stagger d2">
+        <div class="num">2</div>
+        <h3>Run the command</h3>
+        <p>One line: <code>getonup deploy &lt;file&gt;</code>. It uploads, auto-wraps, and provisions in seconds.</p>
+      </div>
+      <div class="step stagger d3">
+        <div class="num">3</div>
+        <h3>Share the live link</h3>
+        <p>You get back a real, public URL. Send it, embed it, demo it. It just works — and idles to zero.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== MARQUEE 3 ===== -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <span>GET ON UP<i>✶</i>YOUR ARTIFACT, LIVE<i>✶</i>SELF-HOSTED FUNK<i>✶</i>GET ON UP<i>✶</i>SHARE THE GROOVE<i>✶</i></span>
+    <span>GET ON UP<i>✶</i>YOUR ARTIFACT, LIVE<i>✶</i>SELF-HOSTED FUNK<i>✶</i>GET ON UP<i>✶</i>SHARE THE GROOVE<i>✶</i></span>
+  </div>
+</div>
+
+<!-- ===== WHAT YOU GET ===== -->
+<section id="docs">
+  <div class="wrap">
+    <h2 class="sec-title">What you get</h2>
+    <p class="sec-lead">Tiny footprint, big sound. Everything below runs on infrastructure you own and control.</p>
+    <div class="gets">
+      <div class="get g1 stagger d1">
+        <div class="ico">◎ R2</div>
+        <h3>One Worker + R2</h3>
+        <p>The whole backend is a single Cloudflare Worker over R2 storage. Scales to zero, costs ~$0 when nobody's looking.</p>
+      </div>
+      <div class="get g2 stagger d2">
+        <div class="ico">⌁ API</div>
+        <h3>Agent-native</h3>
+        <p>Built for coding agents to call directly. They publish their own work and hand you a link — no human in the loop.</p>
+      </div>
+      <div class="get g3 stagger d3">
+        <div class="ico">⟳ WRAP</div>
+        <h3>Auto-wrap, no build</h3>
+        <p>Bare React, Vue, or TypeScript components get wrapped into runnable pages. No bundler, no config, no build step.</p>
+      </div>
+      <div class="get g4 stagger d4">
+        <div class="ico">⚑ MIT</div>
+        <h3>Yours to self-host</h3>
+        <p>Open-source under MIT. Deploy it on your own Cloudflare account and own the entire stack, end to end.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section class="cta" id="faq">
+  <div class="wrap">
+    <h2>Get on up.</h2>
+    <p>One command stands between your artifact and a live, shareable URL.</p>
+    <div class="cta-row">
+      <a class="btn btn-lg btn-start" href="#docs">Get started ↑</a>
+      <a class="btn btn-lg btn-star" href="https://github.com">★ Star on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="wrap">
+    <div class="foot-brand">getonup</div>
+    <div class="foot-tags">
+      <span>MIT</span><span>self-hosted</span><span>scale-to-zero</span><span>get on up ✶</span>
+    </div>
+    <p class="foot-note">Your AI artifact, live in seconds. Built to ship loud.</p>
+  </div>
+</footer>
+
+</body>
+</html>

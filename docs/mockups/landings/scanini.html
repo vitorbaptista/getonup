@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>getonup — Your AI artifact, live in seconds</title>
+<meta name="description" content="getonup turns any AI-generated web artifact into a live, shareable URL with one CLI command. One Cloudflare Worker + R2. Scales to zero. MIT." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Boldonse&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#F4EFE2;
+    --paper-dark:#ECE6D6;
+    --ink:#15171A;
+    --red:#E8472B;
+    --cream:#F4EFE2;
+    --shadow:rgba(21,23,26,.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Geist',system-ui,-apple-system,sans-serif;
+    font-weight:400;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .serif{font-family:'Boldonse','Georgia',serif;font-weight:400}
+  a{color:inherit;text-decoration:none}
+
+  /* announcement bar */
+  .announce{
+    background:var(--red);
+    color:#fff;
+    text-align:center;
+    font-size:13px;
+    font-weight:500;
+    letter-spacing:.02em;
+    padding:8px 16px;
+    position:sticky;
+    top:0;
+    z-index:50;
+  }
+  .announce span{opacity:.95}
+  .announce b{font-weight:700}
+
+  /* nav */
+  nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:20px clamp(18px,5vw,64px);
+    max-width:1280px;
+    margin:0 auto;
+  }
+  .brand{
+    font-family:'Boldonse',serif;
+    font-size:20px;
+    letter-spacing:.01em;
+    display:flex;
+    align-items:center;
+    gap:9px;
+  }
+  .brand .dot{
+    width:13px;height:13px;border-radius:50%;
+    background:var(--red);display:inline-block;
+    box-shadow:0 0 0 4px rgba(232,71,43,.18);
+  }
+  .nav-links{display:flex;align-items:center;gap:8px}
+  .nav-links a.txt{
+    font-size:14px;font-weight:500;padding:8px 12px;opacity:.78;
+  }
+  .nav-links a.txt:hover{opacity:1}
+
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;
+    border-radius:999px;
+    font-weight:600;font-size:14px;
+    padding:11px 22px;
+    cursor:pointer;border:1.6px solid transparent;
+    transition:transform .15s ease, background .15s ease, color .15s ease;
+    white-space:nowrap;
+  }
+  .pill-dark{background:var(--ink);color:var(--cream)}
+  .pill-dark:hover{transform:translateY(-2px)}
+  .pill-out{background:transparent;color:var(--ink);border-color:var(--ink)}
+  .pill-out:hover{background:var(--ink);color:var(--cream);transform:translateY(-2px)}
+
+  /* hero */
+  .hero{
+    position:relative;
+    max-width:1280px;margin:0 auto;
+    padding:clamp(28px,6vw,70px) clamp(18px,5vw,64px) clamp(40px,7vw,90px);
+  }
+  .hero-eyebrow{
+    display:inline-flex;align-items:center;gap:9px;
+    font-size:12.5px;font-weight:600;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--red);
+    margin-bottom:26px;
+  }
+  .hero-eyebrow::before{
+    content:"";width:26px;height:1.6px;background:var(--red);display:inline-block;
+  }
+  h1.display{
+    font-family:'Boldonse',serif;
+    font-size:clamp(40px,8.2vw,84px);
+    line-height:1.0;
+    letter-spacing:-.005em;
+    max-width:15ch;
+  }
+  h1.display .red{color:var(--red);font-style:italic}
+  .subhead{
+    font-size:clamp(16px,2vw,20px);
+    line-height:1.55;
+    max-width:50ch;
+    margin-top:30px;
+    color:#33363b;
+    font-weight:400;
+  }
+  .hero-cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:34px}
+
+  /* terminal */
+  .terminal{
+    margin-top:42px;
+    background:var(--ink);
+    border-radius:16px;
+    max-width:680px;
+    box-shadow:0 24px 50px -18px var(--shadow);
+    overflow:hidden;
+    border:1px solid rgba(0,0,0,.2);
+  }
+  .term-bar{
+    display:flex;align-items:center;gap:8px;
+    padding:13px 16px;
+    background:#1d2025;
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .term-bar .tdot{width:11px;height:11px;border-radius:50%}
+  .td1{background:#ff5f57}.td2{background:#febc2e}.td3{background:#28c840}
+  .term-bar .tlabel{
+    margin-left:8px;font-size:12px;color:#8b9099;font-family:ui-monospace,'SF Mono',Menlo,monospace;
+  }
+  .term-body{
+    padding:22px 22px 26px;
+    font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    font-size:clamp(13px,1.7vw,15.5px);
+    line-height:1.9;
+    color:#e7e3d7;
+  }
+  .term-body .prompt{color:#7d8590}
+  .term-body .cmd{color:#fff}
+  .term-body .flag{color:#ffb86c}
+  .term-body .ok{color:#7ee787}
+  .term-body .arrow{color:#7d8590}
+  .term-body .url{color:#79c0ff;text-decoration:underline;text-underline-offset:3px}
+  .caret{
+    display:inline-block;width:9px;height:1.05em;
+    background:#7ee787;vertical-align:-2px;margin-left:3px;
+    animation:blink 1.05s steps(1) infinite;
+  }
+  @keyframes blink{50%{opacity:0}}
+  .term-copy{
+    margin-top:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  }
+  .copybtn{
+    background:rgba(255,255,255,.07);color:#e7e3d7;
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:999px;font-size:12.5px;font-weight:600;
+    padding:7px 16px;cursor:pointer;font-family:'Geist',sans-serif;
+    transition:background .15s ease;
+  }
+  .copybtn:hover{background:rgba(255,255,255,.14)}
+  .copybtn.copied{background:var(--red);border-color:var(--red);color:#fff}
+
+  /* stickers */
+  .sticker{
+    position:absolute;
+    background:var(--paper-dark);
+    border:1.5px solid var(--ink);
+    border-radius:13px;
+    padding:9px 15px;
+    font-size:13px;font-weight:600;
+    box-shadow:5px 6px 0 -1px rgba(21,23,26,.16);
+    display:flex;align-items:center;gap:7px;
+    z-index:5;
+  }
+  .sticker.s-emoji{font-size:26px;padding:7px 11px;background:#fff}
+  .sk1{top:8%;right:6%;transform:rotate(7deg);background:var(--red);color:#fff;border-color:var(--ink)}
+  .sk2{top:30%;right:12%;transform:rotate(-8deg)}
+  .sk3{bottom:20%;right:8%;transform:rotate(5deg)}
+  @media (max-width:920px){.sticker{display:none}}
+
+  /* stats */
+  .stats{
+    background:var(--ink);
+    color:var(--cream);
+  }
+  .stats-inner{
+    max-width:1280px;margin:0 auto;
+    padding:clamp(40px,6vw,72px) clamp(18px,5vw,64px);
+    display:grid;grid-template-columns:repeat(3,1fr);
+    gap:28px;
+  }
+  .stat .fig{
+    font-family:'Boldonse',serif;
+    font-size:clamp(44px,7vw,80px);
+    line-height:1;
+    color:var(--red);
+  }
+  .stat .lab{
+    margin-top:14px;font-size:14px;font-weight:500;
+    color:#cdc8ba;letter-spacing:.01em;
+  }
+  @media (max-width:680px){
+    .stats-inner{grid-template-columns:1fr;gap:34px;text-align:left}
+  }
+
+  /* marquee */
+  .marquee{
+    background:var(--ink);
+    border-top:1px solid rgba(255,255,255,.08);
+    border-bottom:3px solid var(--red);
+    overflow:hidden;
+    padding:16px 0;
+    white-space:nowrap;
+  }
+  .marquee-track{
+    display:inline-flex;align-items:center;
+    will-change:transform;
+    animation:scroll 26s linear infinite;
+  }
+  .marquee-track span{
+    font-family:'Boldonse',serif;
+    font-size:clamp(16px,2.4vw,24px);
+    color:var(--cream);
+    padding:0 26px;
+    display:inline-flex;align-items:center;gap:26px;
+  }
+  .marquee-track span::after{content:"·";color:var(--red)}
+  @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  /* sections */
+  section.band{padding:clamp(56px,8vw,110px) clamp(18px,5vw,64px)}
+  .wrap{max-width:1280px;margin:0 auto}
+  .section-head{margin-bottom:clamp(38px,5vw,60px);max-width:720px}
+  .kicker{
+    font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--red);margin-bottom:18px;display:block;
+  }
+  h2.sh{
+    font-family:'Boldonse',serif;
+    font-size:clamp(30px,5vw,54px);
+    line-height:1.04;letter-spacing:-.01em;
+  }
+  h2.sh .red{color:var(--red);font-style:italic}
+  .section-head p{margin-top:20px;font-size:17px;color:#3a3d42;max-width:54ch}
+
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .step{
+    background:var(--paper);
+    border:1.5px solid var(--ink);
+    border-radius:18px;
+    padding:30px 28px 34px;
+    position:relative;
+    box-shadow:6px 7px 0 -1px rgba(21,23,26,.1);
+  }
+  .step .num{
+    font-family:'Boldonse',serif;
+    font-size:13px;
+    width:40px;height:40px;border-radius:50%;
+    background:var(--ink);color:var(--cream);
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:22px;
+  }
+  .step h3{
+    font-family:'Boldonse',serif;font-size:19px;line-height:1.15;margin-bottom:12px;
+  }
+  .step p{font-size:15px;color:#3a3d42;line-height:1.6}
+  .step code{
+    font-family:ui-monospace,Menlo,monospace;
+    background:var(--ink);color:#7ee787;
+    padding:2px 7px;border-radius:6px;font-size:13px;
+  }
+  @media (max-width:820px){.steps{grid-template-columns:1fr}}
+
+  /* features */
+  .feat-band{background:var(--paper-dark)}
+  .features{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+  .feature{
+    background:var(--paper);
+    border:1.5px solid var(--ink);
+    border-radius:18px;
+    padding:32px 30px;
+    transition:transform .18s ease;
+  }
+  .feature:hover{transform:translateY(-4px)}
+  .feature .ficon{
+    width:52px;height:52px;border-radius:13px;
+    background:var(--ink);color:var(--cream);
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:22px;
+  }
+  .feature:nth-child(2) .ficon,.feature:nth-child(3) .ficon{background:var(--red)}
+  .feature .ficon svg{width:26px;height:26px}
+  .feature h3{font-family:'Boldonse',serif;font-size:21px;margin-bottom:12px;line-height:1.1}
+  .feature p{font-size:15.5px;color:#3a3d42;line-height:1.62}
+  .feature p b{color:var(--ink);font-weight:600}
+  @media (max-width:760px){.features{grid-template-columns:1fr}}
+
+  /* CTA strip */
+  .cta-band{background:var(--ink);color:var(--cream);text-align:center}
+  .cta-band h2{
+    font-family:'Boldonse',serif;
+    font-size:clamp(28px,5vw,52px);line-height:1.05;max-width:18ch;margin:0 auto;
+  }
+  .cta-band h2 .red{color:var(--red);font-style:italic}
+  .cta-band .pill-dark{background:var(--cream);color:var(--ink)}
+  .cta-band .pill-out{color:var(--cream);border-color:var(--cream)}
+  .cta-band .pill-out:hover{background:var(--cream);color:var(--ink)}
+  .cta-band .hero-cta{justify-content:center;margin-top:36px}
+
+  /* giant wordmark */
+  .wordmark{
+    text-align:center;
+    padding:clamp(30px,6vw,70px) 10px 0;
+    overflow:hidden;
+    background:var(--ink);
+  }
+  .wordmark span{
+    font-family:'Boldonse',serif;
+    font-size:clamp(58px,18vw,260px);
+    line-height:.9;
+    color:transparent;
+    -webkit-text-stroke:1.5px rgba(244,239,226,.5);
+    letter-spacing:.01em;
+    display:block;
+  }
+
+  /* footer */
+  footer{
+    background:var(--ink);color:#cdc8ba;
+    padding:clamp(40px,6vw,64px) clamp(18px,5vw,64px) 50px;
+  }
+  .foot-inner{
+    max-width:1280px;margin:0 auto;
+    display:flex;flex-wrap:wrap;gap:24px;
+    align-items:center;justify-content:space-between;
+    border-top:1px solid rgba(255,255,255,.1);
+    padding-top:34px;
+  }
+  .foot-brand{
+    font-family:'Boldonse',serif;font-size:18px;color:var(--cream);
+    display:flex;align-items:center;gap:9px;
+  }
+  .foot-brand .dot{width:11px;height:11px;border-radius:50%;background:var(--red)}
+  .foot-meta{font-size:14px;font-weight:500;color:#9a958a;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .foot-meta .tag{
+    border:1px solid rgba(255,255,255,.16);border-radius:999px;
+    padding:5px 13px;font-size:12.5px;color:#cdc8ba;
+  }
+  .foot-links{display:flex;gap:20px;font-size:14px;font-weight:500}
+  .foot-links a{color:#cdc8ba}
+  .foot-links a:hover{color:var(--red)}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+
+  @media (prefers-reduced-motion:reduce){
+    .marquee-track{animation:none}
+    .caret{animation:none}
+    .reveal{opacity:1;transform:none;transition:none}
+  }
+</style>
+</head>
+<body>
+
+  <div class="announce">
+    <span><b>New:</b> Drop a snippet in <b>AGENTS.md</b> and any coding agent can publish — <b>getonup deploy</b></span>
+  </div>
+
+  <nav>
+    <div class="brand"><span class="dot"></span>getonup</div>
+    <div class="nav-links">
+      <a class="txt" href="#how">How it works</a>
+      <a class="txt" href="#features">Features</a>
+      <a class="pill pill-out" href="#" aria-label="View on GitHub">GitHub</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="sticker s-emoji sk1" aria-hidden="true">✦</div>
+    <div class="sticker sk2" aria-hidden="true">⚡ scales to zero</div>
+    <div class="sticker sk3" aria-hidden="true">🙂 one command</div>
+
+    <span class="hero-eyebrow">Open source · self-hostable</span>
+    <h1 class="display">Your AI artifact, <span class="red">live in seconds.</span></h1>
+    <p class="subhead">
+      getonup turns any AI-generated web artifact — an HTML file, a React or Vue
+      component, or a built static folder — into a live, shareable URL with one
+      CLI command. One Cloudflare Worker, one R2 bucket, zero servers to babysit.
+    </p>
+
+    <div class="hero-cta">
+      <a class="pill pill-dark" href="#how">Self-host it →</a>
+      <a class="pill pill-out" href="#">View on GitHub</a>
+    </div>
+
+    <div class="terminal" role="img" aria-label="Terminal running getonup deploy counter.tsx, returning a live URL">
+      <div class="term-bar">
+        <span class="tdot td1"></span><span class="tdot td2"></span><span class="tdot td3"></span>
+        <span class="tlabel">~/project — getonup</span>
+      </div>
+      <div class="term-body">
+        <div><span class="prompt">$</span> <span class="cmd">getonup deploy</span> <span class="flag">counter.tsx</span></div>
+        <div class="ok">✓ auto-wrapped React 18 + Tailwind</div>
+        <div class="ok">✓ uploaded to R2 · 14&nbsp;KB</div>
+        <div class="ok">✓ live <span class="arrow">→</span> <span class="url">https://getonup.example.com/s/iwcmg3dt</span><span class="caret" id="caret"></span></div>
+        <div class="term-copy">
+          <button class="copybtn" id="copybtn" data-cmd="getonup deploy counter.tsx">Copy command</button>
+          <span style="font-size:12px;color:#7d8590">no viewer login · public link</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- stats -->
+  <section class="stats" aria-label="getonup at a glance">
+    <div class="stats-inner">
+      <div class="stat reveal"><div class="fig">1</div><div class="lab">Worker + bucket — the whole backend</div></div>
+      <div class="stat reveal"><div class="fig">$0</div><div class="lab">When idle — it truly scales to zero</div></div>
+      <div class="stat reveal"><div class="fig">∞</div><div class="lab">Deploys — your account, your token, your limits</div></div>
+    </div>
+  </section>
+
+  <!-- marquee -->
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+      <span>Paste a file</span><span>Get a URL</span><span>Scales to zero</span><span>One command</span><span>Agent-native</span><span>MIT</span>
+      <span>Paste a file</span><span>Get a URL</span><span>Scales to zero</span><span>One command</span><span>Agent-native</span><span>MIT</span>
+    </div>
+  </div>
+
+  <!-- how it works -->
+  <section class="band" id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">How it works</span>
+        <h2 class="sh">Three steps from file to <span class="red">live link.</span></h2>
+        <p>No dashboard, no build pipeline, no waiting on a server to spin up. Hand getonup one file and it does the rest.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="num">01</div>
+          <h3>Build an artifact</h3>
+          <p>Your agent writes a <code>.html</code>, <code>.tsx</code>, or <code>.vue</code> — a counter, a chart, a landing page, whatever it just dreamt up.</p>
+        </div>
+        <div class="step reveal">
+          <div class="num">02</div>
+          <h3>Run one command</h3>
+          <p><code>getonup deploy</code> auto-wraps single components into a self-contained page and uploads it to your R2 bucket in seconds.</p>
+        </div>
+        <div class="step reveal">
+          <div class="num">03</div>
+          <h3>Share the link</h3>
+          <p>You get a clean, public URL. No viewer login, no cold-start tax — and it scales straight back to zero when nobody's looking.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- features -->
+  <section class="band feat-band" id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">What you get</span>
+        <h2 class="sh">Tiny footprint. <span class="red">Big reach.</span></h2>
+        <p>getonup is deliberately small — one Worker, one bucket, no database — so it stays cheap, fast, and entirely yours.</p>
+      </div>
+      <div class="features">
+        <div class="feature reveal">
+          <div class="ficon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M5 8h14l1 12H4z"/><path d="M9 12v4M15 12v4"/></svg>
+          </div>
+          <h3>One Worker + R2</h3>
+          <p><b>No database, no always-on server.</b> A single Cloudflare Worker serves every artifact straight from R2. Idle cost rounds to <b>~$0</b>.</p>
+        </div>
+        <div class="feature reveal">
+          <div class="ficon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="m6 9 6-6 6 6"/><circle cx="12" cy="18" r="2"/></svg>
+          </div>
+          <h3>Agent-native</h3>
+          <p>Drop one snippet in <b>AGENTS.md</b> and any coding agent can publish on its own. getonup was built to be called by a machine, not clicked by a human.</p>
+        </div>
+        <div class="feature reveal">
+          <div class="ficon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18"/><path d="M3 12h18"/><path d="M3 17h12"/><path d="m18 15 3 2-3 2"/></svg>
+          </div>
+          <h3>Auto-wrap</h3>
+          <p>Hand it one <b>.tsx</b>, <b>.vue</b>, or <b>.html</b> and it becomes a runnable page — React 18 + Babel + Tailwind, or Vue 3, bundled self-contained.</p>
+        </div>
+        <div class="feature reveal">
+          <div class="ficon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <h3>Yours to host</h3>
+          <p>Runs on <b>your Cloudflare account</b> with <b>your token</b>. No middleman, no lock-in, no surprise bill — and it's <b>MIT</b> licensed, all the way down.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="band cta-band">
+    <div class="wrap">
+      <h2>Spin it up on your account in <span class="red">minutes.</span></h2>
+      <div class="hero-cta">
+        <a class="pill pill-dark" href="#">Self-host it →</a>
+        <a class="pill pill-out" href="#">View on GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- giant wordmark -->
+  <div class="wordmark" aria-hidden="true"><span>GETONUP</span></div>
+
+  <!-- footer -->
+  <footer>
+    <div class="foot-inner">
+      <div class="foot-brand"><span class="dot"></span>getonup</div>
+      <div class="foot-meta">
+        <span class="tag">MIT licensed</span>
+        <span class="tag">self-hosted · scale-to-zero</span>
+      </div>
+      <div class="foot-links">
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // copy button
+    (function(){
+      var btn = document.getElementById('copybtn');
+      if(!btn) return;
+      btn.addEventListener('click', function(){
+        var cmd = btn.getAttribute('data-cmd');
+        var done = function(){
+          var prev = btn.textContent;
+          btn.textContent = '✓ Copied';
+          btn.classList.add('copied');
+          setTimeout(function(){ btn.textContent = prev; btn.classList.remove('copied'); }, 1600);
+        };
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(cmd).then(done).catch(done);
+        } else {
+          var ta=document.createElement('textarea');ta.value=cmd;document.body.appendChild(ta);
+          ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);done();
+        }
+      });
+    })();
+
+    // scroll reveal
+    (function(){
+      var els = document.querySelectorAll('.reveal');
+      if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in');});return;}
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(en){
+          if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+        });
+      },{threshold:.14});
+      els.forEach(function(e){io.observe(e);});
+    })();
+  </script>
+</body>
+</html>
