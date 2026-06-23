@@ -6,6 +6,12 @@ All notable changes to getonup are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- `getonup deploy` now fails clearly when an API call receives a Cloudflare Access / Zero Trust
+  login interstitial instead of JSON, including Access pages that return a 2xx status. The error
+  points to `GETONUP_ACCESS_CLIENT_ID` / `GETONUP_ACCESS_CLIENT_SECRET` instead of letting a bogus
+  response masquerade as a deploy result.
+
 ### Added
 - **Multiple server profiles.** `config.json` can now hold several named profiles with a default:
   `{ "default": "main", "profiles": { "main": {…}, "other": {…} } }`. Create them with

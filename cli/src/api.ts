@@ -37,6 +37,21 @@ function base(url: string): string {
   return url.replace(/\/+$/, "");
 }
 
+function isCloudflareAccessHtml(text: string, responseUrl: string): boolean {
+  const lower = `${responseUrl}\n${text.slice(0, 5000)}`.toLowerCase();
+  return lower.includes("/cdn-cgi/access/") || lower.includes("cloudflare access") || lower.includes("cf-access");
+}
+
+function nonJsonError(url: string, path: string, res: Response, text: string): string {
+  if (isCloudflareAccessHtml(text, res.url)) {
+    return `Cloudflare Access blocked ${base(url)}${path}. Set GETONUP_ACCESS_CLIENT_ID and GETONUP_ACCESS_CLIENT_SECRET, or run \`getonup login --access-client-id <id> --access-client-secret <secret>\`.`;
+  }
+
+  const trimmed = text.trimStart();
+  if (!trimmed || trimmed.startsWith("<")) return `HTTP ${res.status}`;
+  return text.slice(0, 300);
+}
+
 async function call(
   url: string,
   token: string | undefined,
@@ -61,12 +76,19 @@ async function call(
 
   const text = await res.text();
   let data: any;
+  let parsedJson = false;
   try {
     data = text ? JSON.parse(text) : {};
+    parsedJson = true;
   } catch {
     // Non-JSON body (e.g. an HTML error page) — keep the message short, don't dump the page.
-    const t = text.trimStart();
-    data = { error: t && !t.startsWith("<") ? text.slice(0, 300) : `HTTP ${res.status}` };
+    data = { error: nonJsonError(url, path, res, text) };
+  }
+  if (res.ok && !parsedJson) {
+    const err: ApiError = new Error(data.error);
+    err.status = res.status;
+    err.data = data;
+    throw err;
   }
   if (!res.ok) {
     const err: ApiError = new Error(data?.error || `HTTP ${res.status}`);

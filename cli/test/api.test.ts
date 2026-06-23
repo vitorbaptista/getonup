@@ -39,6 +39,38 @@ test("a non-JSON HTML error body collapses to a status, not the dumped page", as
   }
 });
 
+test("a Cloudflare Access HTML interstitial fails even when it returns 200", async () => {
+  const restore = stubFetch(
+    200,
+    '<!doctype html><title>Cloudflare Access</title><a href="/cdn-cgi/access/login/example">login</a>',
+    "text/html",
+  );
+  try {
+    await assert.rejects(deploy("https://x.example", "tok", { files: [] }), (e: ApiError) => {
+      assert.equal(e.status, 200);
+      assert.match(e.message, /Cloudflare Access blocked https:\/\/x\.example\/api\/deploy/);
+      assert.match(e.message, /GETONUP_ACCESS_CLIENT_ID/);
+      assert.match(e.message, /GETONUP_ACCESS_CLIENT_SECRET/);
+      return true;
+    });
+  } finally {
+    restore();
+  }
+});
+
+test("a 2xx non-JSON response fails instead of masquerading as a deploy result", async () => {
+  const restore = stubFetch(200, "<html><body>not the API</body></html>", "text/html");
+  try {
+    await assert.rejects(deploy("https://x.example", "tok", { files: [] }), (e: ApiError) => {
+      assert.equal(e.status, 200);
+      assert.equal(e.message, "HTTP 200");
+      return true;
+    });
+  } finally {
+    restore();
+  }
+});
+
 test("a non-JSON plain-text error is surfaced but truncated to <=300 chars", async () => {
   const restore = stubFetch(400, "boom ".repeat(100));
   try {
