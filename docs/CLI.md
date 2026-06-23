@@ -7,6 +7,9 @@ Configuration is read from `~/.config/getonup/config.json` (written by `getonup 
 `GETONUP_URL` / `GETONUP_TOKEN` environment variables, which take precedence (handy for CI and
 agents). `deploy` and `serve` print the live URL as the last line of stdout.
 
+Deploying to **more than one server?** Give each a named [profile](#profiles) and switch between
+them with `--profile <name>` (or `GETONUP_PROFILE`).
+
 If your instance sits behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/)
 (Zero Trust), also set `GETONUP_ACCESS_CLIENT_ID` / `GETONUP_ACCESS_CLIENT_SECRET` (a service
 token); the CLI sends them as `CF-Access-Client-Id` / `CF-Access-Client-Secret` so it gets past
@@ -15,7 +18,7 @@ See [Deploy behind Cloudflare Access](./SELF-HOSTING.md#deploy-behind-cloudflare
 
 ## Commands
 
-### `getonup login --url <server> --token <token>`
+### `getonup login --url <server> --token <token>`  ·  `[--profile <name>] [--default]`
 Save the server URL + deploy token to `~/.config/getonup/config.json`. Sanity-checks that the
 server is reachable and warns if its deploy API is disabled. For instances behind Cloudflare Access,
 add `--access-client-id <id> --access-client-secret <secret>` to store a service token too.
@@ -23,6 +26,10 @@ add `--access-client-id <id> --access-client-secret <secret>` to store a service
 (re-running with just `--url`/`--token` clears a previously stored Access token, the same way it
 would clear `--token`). To rotate one value without touching the rest, edit `config.json` or use the
 `GETONUP_*` env vars instead.
+
+`--profile <name>` writes to a named profile instead of the implicit `default` one (see
+[Profiles](#profiles)). The first profile you log into becomes the default automatically; pass
+`--default` to re-point the default at the profile you're logging into.
 
 ### `getonup deploy <file|dir|->`  ·  aliases: `up`, `push`
 Publish an artifact to a live URL.
@@ -76,7 +83,11 @@ Delete a published artifact by its id (the `<id>` in `/s/<id>`).
 Open a published artifact in your browser.
 
 ### `getonup whoami`  ·  alias: `config`
-Show the configured server and whether a token is set.
+Show the active profile, its server, and whether a token is set. Add `--profile <name>` to inspect
+a specific one.
+
+### `getonup profiles`
+List every configured profile, one per line, with a `*` next to the default.
 
 ### `getonup mcp`
 Run getonup as an [MCP](https://modelcontextprotocol.io) server over stdio, exposing
@@ -97,6 +108,36 @@ Cursor, …). Configure it with:
 
 ### `getonup version`  ·  `getonup help`
 Print the version / usage. `--version`, `-v`, `--help`, and `-h` work too.
+
+## Profiles
+
+To deploy to **multiple servers**, store each as a named profile. `config.json` then looks like:
+
+```json
+{
+  "default": "main",
+  "profiles": {
+    "main":  { "url": "https://main.example",  "token": "…" },
+    "client": { "url": "https://client.example", "token": "…" }
+  }
+}
+```
+
+```bash
+getonup login --url https://main.example   --token … --profile main     # first → becomes default
+getonup login --url https://client.example --token … --profile client
+getonup deploy report.html                       # → main (the default)
+getonup deploy report.html --profile client      # → client, just this once
+getonup login --url https://client.example --token … --profile client --default   # make client the default
+getonup profiles                                 # see them all, * marks the default
+```
+
+Pick a profile per command with `--profile <name>` (on `deploy`, `list`, `rm`, `open`, `whoami`) or
+the `GETONUP_PROFILE` env var; `--profile` wins over the env var, which wins over the stored default.
+The `GETONUP_URL` / `GETONUP_TOKEN` / `GETONUP_ACCESS_*` env vars still override the resolved profile
+field-by-field, so CI can keep injecting a token while the rest comes from a profile. A pre-profiles
+flat `config.json` keeps working untouched — it's read as a single profile named `default`, and is
+rewritten into the format above the next time you `login`. To delete a profile, edit `config.json`.
 
 ## Auto-wrap quick reference
 
