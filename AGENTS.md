@@ -93,7 +93,8 @@ getonup deploy <file-or-dir> --json
 ```
 
 - `<file>` can be `.html`, `.jsx`/`.tsx`, `.vue`, `.js`, or a **directory** (a built static
-  site — it must contain `index.html`).
+  site). A directory serves its root `index.html`; with none, the sole root-level HTML file is
+  used, or pass `--index-file <file>` (any HTML file inside the folder) to pick one.
 - **Single components are auto-wrapped** (React 18 + Babel + Tailwind, or Vue 3). You do NOT
   need to add an HTML shell, a build step, or boilerplate. Just export your React component as
   the default export and use Tailwind classes freely.

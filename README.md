@@ -83,7 +83,7 @@ getonup deploy index.html              # a full HTML file → served as-is
 getonup deploy counter.tsx --open      # a React component → auto-wrapped & opened in your browser
 getonup deploy card.vue                # a Vue SFC → auto-wrapped
 cat art.html | getonup deploy -        # pipe from stdin
-getonup deploy ./dist                  # a built static site (folder with index.html)
+getonup deploy ./dist                  # a built static site (uses index.html, else the only top-level HTML file)
 getonup deploy app.tsx --id my-app     # redeploy to a stable URL (/s/my-app), overwriting in place
 
 getonup list                           # everything you've published
@@ -103,7 +103,7 @@ for just the URL. Full command + flag reference: **[docs/CLI.md](docs/CLI.md)**.
 | `.jsx` / `.tsx` | React 18 + Babel + esm.sh import map + Tailwind; mounts your default export |
 | `.vue` | Vue 3 + `vue3-sfc-loader` |
 | `.js` / `.ts` | a module shell, transpiled, with an esm.sh import map for bare imports |
-| a directory | uploads the folder as a static site (must contain `index.html`) |
+| a directory | uploads the folder as a static site (serves `index.html`, else the only top-level HTML file, or `--index-file <file>`) |
 
 `import`s for npm packages (`lucide-react`, `recharts`, …) resolve at runtime via
 [esm.sh](https://esm.sh) — no bundler. `--no-wrap` hosts raw source, `--type` overrides detection,

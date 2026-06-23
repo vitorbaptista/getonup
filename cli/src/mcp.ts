@@ -12,6 +12,7 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, relative, sep, extname, basename } from "node:path";
 import { loadConfig, resolveAccess } from "./config.js";
+import { resolveIndex, promoteIndex } from "./files.js";
 import * as api from "./api.js";
 import { detectType, wrapToHtml, type ArtifactType } from "./wrap.js";
 import { describeHtml } from "./describe.js";
@@ -61,6 +62,7 @@ interface CollectArgs {
   type?: string;
   name?: string;
   no_wrap?: boolean;
+  index_file?: string;
 }
 
 async function collect(a: CollectArgs): Promise<{ files: api.DeployFile[]; type: string; title: string | null }> {
@@ -70,7 +72,9 @@ async function collect(a: CollectArgs): Promise<{ files: api.DeployFile[]; type:
     if (s.isDirectory()) {
       const files: api.DeployFile[] = [];
       await walkDir(a.path, a.path, files);
-      if (!files.some((f) => f.path === "index.html")) throw new Error("a folder must contain index.html at its root");
+      const entry = resolveIndex(files.map((f) => f.path), a.index_file);
+      if (!entry) throw new Error("a folder must contain index.html at its root");
+      promoteIndex(files, entry);
       return { files, type: "static", title: a.name || basename(a.path) };
     }
     const content = await readFile(a.path, "utf8");
@@ -98,10 +102,11 @@ const TOOLS = [
       type: "object",
       properties: {
         content: { type: "string", description: "Artifact source code (HTML / .jsx/.tsx / .vue / .js). Use this OR path." },
-        path: { type: "string", description: "Path to a file or a built static folder (must contain index.html). Use this OR content." },
+        path: { type: "string", description: "Path to a file or a built static folder (serves index.html, or the sole HTML file, or the one named by `index_file`). Use this OR content." },
         type: { type: "string", enum: ["html", "react", "vue", "js", "static"], description: "Override auto-detection." },
         name: { type: "string", description: "A human title for the deploy." },
         no_wrap: { type: "boolean", description: "Host the source verbatim instead of auto-wrapping." },
+        index_file: { type: "string", description: "For a folder, which HTML file (inside the folder; a subdirectory path is allowed) to serve as the homepage — disambiguates when several exist, and overrides an existing index.html. Ignored for files and content." },
       },
     },
   },

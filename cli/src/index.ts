@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { loadConfig, saveProfile, listProfiles, activeProfileName, resolveAccess, type Profile } from "./config.js";
 import * as api from "./api.js";
 import { parseArgs, type Args } from "./args.js";
-import { walkDir } from "./files.js";
+import { walkDir, resolveIndex, promoteIndex } from "./files.js";
 import { detectType, wrapToHtml, type ArtifactType } from "./wrap.js";
 import { describeHtml } from "./describe.js";
 import { serve } from "./serve.js";
@@ -101,7 +101,9 @@ async function cmdDeploy(args: Args): Promise<void> {
   const access = resolveAccess(cfg);
 
   const target = args._[0];
-  if (!target) err("usage: getonup deploy <file|dir|->  [--name <title>] [--id <slug>] [--type html|react|vue|js|markdown|static] [--no-wrap] [--open] [--json]");
+  if (!target) err("usage: getonup deploy <file|dir|->  [--name <title>] [--id <slug>] [--index-file <file>] [--type html|react|vue|js|markdown|static] [--no-wrap] [--open] [--json]");
+  // For a folder, pick which HTML becomes the served index (bare `--index-file` -> true, ignored).
+  const indexFile = typeof args.flags["index-file"] === "string" ? (args.flags["index-file"] as string) : undefined;
 
   const json = !!args.flags.json;
   const quiet = !!args.flags.quiet;
@@ -135,9 +137,14 @@ async function cmdDeploy(args: Args): Promise<void> {
       type = "static";
       await walkDir(target, target, files);
       if (files.length === 0) err(`directory is empty: ${target}`);
-      if (!files.some((f) => f.path === "index.html")) {
-        err(`a static folder must contain an index.html at its root (${target})`);
+      let entry: string | null = null;
+      try {
+        entry = resolveIndex(files.map((f) => f.path), indexFile);
+      } catch (e) {
+        err((e as Error).message);
       }
+      if (!entry) err(`a static folder must contain an index.html at its root (${target})`);
+      promoteIndex(files, entry);
       if (!title) title = basename(target);
     } else {
       const content = await readFile(target, "utf8");
@@ -195,10 +202,11 @@ async function cmdServe(args: Args): Promise<void> {
     tailwind: args.flags["no-tailwind"] === true ? false : true,
     watch: args.flags.watch === true || args.flags.w === true,
     quiet: !!args.flags.quiet,
+    indexFile: typeof args.flags["index-file"] === "string" ? (args.flags["index-file"] as string) : undefined,
   };
   const target = args._[0];
   if (target === "-") return serve(null, opts, await readStdin());
-  if (!target) err("usage: getonup serve <file|dir|-> [--port N] [--open] [--watch] [--type html|react|vue|js|markdown|static] [--no-wrap]");
+  if (!target) err("usage: getonup serve <file|dir|-> [--port N] [--open] [--watch] [--index-file <file>] [--type html|react|vue|js|markdown|static] [--no-wrap]");
   try {
     await stat(target);
   } catch {
@@ -282,9 +290,9 @@ function help(): void {
 ${c.bold("Usage")}
   getonup login --url <server> --token <token>   [--profile <name>] [--default]
                                 [--access-client-id <id>] [--access-client-secret <secret>]   ${c.dim("# behind Cloudflare Access")}
-  getonup deploy <file|dir|->   [--name <title>] [--id <slug>] [--type html|react|vue|js|markdown|static]
+  getonup deploy <file|dir|->   [--name <title>] [--id <slug>] [--index-file <file>] [--type html|react|vue|js|markdown|static]
                                 [--no-wrap] [--no-tailwind] [--open] [--json] [--quiet] [--profile <name>]
-  getonup serve <file|dir|->    [--port N] [--host H] [--open] [--watch] [--no-wrap]   ${c.dim("# local preview, no deploy")}
+  getonup serve <file|dir|->    [--port N] [--host H] [--open] [--watch] [--index-file <file>] [--no-wrap]   ${c.dim("# local preview, no deploy")}
   getonup list                  [--profile <name>]
   getonup open <id|url>         [--profile <name>]
   getonup rm <id>               [--profile <name>]
@@ -297,7 +305,8 @@ ${c.bold("Examples")}
   getonup deploy counter.tsx --open
   getonup deploy app.tsx --id my-app   ${c.dim("# redeploy to the same /s/my-app URL")}
   cat art.html | getonup deploy - --name demo
-  getonup deploy ./dist            ${c.dim("# a built static site (needs index.html)")}
+  getonup deploy ./dist            ${c.dim("# a built static site (uses index.html, else the only HTML file)")}
+  getonup deploy ./site --index-file home.html   ${c.dim("# pick the homepage when a folder has several HTML files")}
   getonup serve counter.tsx --open --watch   ${c.dim("# instant local preview, live reload, no deploy")}
 
 Config lives in ~/.config/getonup/config.json, or env GETONUP_URL / GETONUP_TOKEN.

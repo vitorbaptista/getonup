@@ -35,13 +35,14 @@ would clear `--token`). To rotate one value without touching the rest, edit `con
 Publish an artifact to a live URL.
 
 - `<file>` — `.html`, `.jsx`/`.tsx`, `.vue`, `.js`/`.ts`, `.md`/`.markdown`. Single components are auto-wrapped.
-- `<dir>` — a built static site (must contain `index.html` at its root).
+- `<dir>` — a built static site. Serves the root `index.html`; if there's none, the sole root-level HTML file is used, or `--index-file <file>` picks one when several exist.
 - `-` — read the artifact from stdin (pair with `--type`).
 
 | Flag | Effect |
 |---|---|
 | `--name <title>` | a human title for the deploy |
 | `--id <slug>` (alias `--slug`) | redeploy to a **stable URL** `/s/<slug>`, overwriting whatever is there. 2–64 chars, `a–z 0–9 -`, starts alphanumeric. Without it, each deploy mints a fresh id. |
+| `--index-file <file>` | for a folder, which HTML file (inside the folder; a subdirectory path is allowed) to serve as the homepage — disambiguates when several exist, and overrides an existing `index.html` (e.g. `--index-file home.html`) |
 | `--type html\|react\|vue\|js\|markdown\|static` | override type detection |
 | `--no-wrap` | host the source verbatim (skip auto-wrap) |
 | `--no-tailwind` | don't inject the Tailwind CDN |
@@ -64,6 +65,7 @@ Wrap + host an artifact on `localhost` — no token, no deploy, nothing leaves y
 | `--port <n>` | port (default `4321`; auto-increments if taken) |
 | `--host <h>` | bind address (default `localhost`; use `0.0.0.0` to reach it from your LAN) |
 | `--watch` | live-reload on file changes |
+| `--index-file <file>` | for a folder, which HTML to serve as the homepage (same rule as `deploy`) |
 | `--open` | open the URL in your browser |
 | `--no-wrap` / `--no-tailwind` | host raw source / skip the Tailwind CDN |
 
@@ -149,7 +151,7 @@ rewritten into the format above the next time you `login`. To delete a profile, 
 | `.vue` | Vue 3 via `vue3-sfc-loader` |
 | `.js` / `.ts` | a module shell, transpiled in-browser, with an esm.sh import map for bare imports |
 | `.md` / `.markdown` | rendered to a styled static HTML page (GFM, light/dark); leading YAML frontmatter stripped |
-| a directory | uploaded as a static site (entry: `index.html`) |
+| a directory | uploaded as a static site (entry: `index.html`, else the only HTML file, or `--index-file <file>`) |
 
 Bare `import`s of npm packages resolve at runtime via [esm.sh](https://esm.sh) — no bundler, no
 build step. Use `--type` to override detection and `--no-wrap` to host source as-is.
