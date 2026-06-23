@@ -15,6 +15,15 @@ All notable changes to getonup are recorded here. The format follows
   silently targeting another server. A pre-existing flat `config.json` keeps working unchanged (read
   as a single `default` profile) and is rewritten into the profile format on the next `login`.
   `GETONUP_URL` / `GETONUP_TOKEN` / `GETONUP_ACCESS_*` still override the resolved profile per field.
+- Deploying a folder no longer requires a root `index.html`. The entry is resolved as: a root
+  `index.html`, else the sole top-level HTML file, else `--index-file <file>` to choose among
+  several (an explicit `--index-file` is authoritative and also overrides an existing
+  `index.html`). `--index-file` may name any HTML file inside the folder (a subdirectory path is
+  allowed) and must be one the folder actually contains — a path that escapes the folder, an
+  absolute path, or a missing file is rejected. A folder with no top-level HTML keeps the previous
+  "must contain index.html" behavior. The chosen file's bytes are copied to `index.html` (the
+  original file is kept). `getonup serve` and the `deploy_artifact` MCP tool follow the same rule
+  (`serve --index-file`, MCP `index_file`).
 
 ## [0.5.1] — 2026-06-20
 

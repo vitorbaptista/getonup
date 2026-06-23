@@ -11,6 +11,7 @@ import { watch } from "node:fs";
 import { join, relative, sep, extname, basename } from "node:path";
 import { spawn } from "node:child_process";
 import { detectType, wrapToHtml, type ArtifactType } from "./wrap.js";
+import { resolveIndex } from "./files.js";
 
 const TYPE_BY_EXT: Record<string, string> = {
   html: "text/html; charset=utf-8", htm: "text/html; charset=utf-8",
@@ -34,6 +35,7 @@ export interface ServeOptions {
   tailwind?: boolean;
   watch?: boolean;
   quiet?: boolean;
+  indexFile?: string;
 }
 
 type FileMap = Map<string, { body: Buffer; type: string }>;
@@ -61,7 +63,11 @@ async function build(target: string | null, opts: ServeOptions, stdin?: string):
   const s = await stat(target!);
   if (s.isDirectory()) {
     await walk(target!, target!, map);
-    if (!map.has("index.html")) throw new Error(`directory has no index.html at its root: ${target}`);
+    const entry = resolveIndex([...map.keys()], opts.indexFile);
+    if (!entry) throw new Error(`directory has no index.html at its root: ${target}`);
+    if (entry !== "index.html") {
+      map.set("index.html", { body: map.get(entry)!.body, type: "text/html; charset=utf-8" });
+    }
   } else {
     const content = await readFile(target!, "utf8");
     const type = opts.type || detectType(target!, content);
