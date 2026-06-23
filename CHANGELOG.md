@@ -6,6 +6,8 @@ All notable changes to getonup are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-06-23
+
 ### Fixed
 - `getonup deploy` now fails clearly when an API call receives a Cloudflare Access / Zero Trust
   login interstitial instead of JSON, including Access pages that return a 2xx status. The error
@@ -104,7 +106,11 @@ All notable changes to getonup are recorded here. The format follows
 Initial release: the `getonup` CLI (`deploy`/`serve`/`list`/`rm`/`open`/`mcp`, auto-wrap for
 HTML/React/Vue/JS) and the single Cloudflare Worker + R2 server.
 
-[Unreleased]: https://github.com/vitorbaptista/getonup/compare/v0.3.0...HEAD
-[0.3.0]: https://github.com/vitorbaptista/getonup/releases/tag/v0.3.0
-[0.2.0]: https://github.com/vitorbaptista/getonup/releases/tag/v0.2.0
+[Unreleased]: https://github.com/vitorbaptista/getonup/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/vitorbaptista/getonup/compare/v0.5.1...v0.6.0
+[0.5.1]: https://github.com/vitorbaptista/getonup/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/vitorbaptista/getonup/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/vitorbaptista/getonup/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/vitorbaptista/getonup/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/vitorbaptista/getonup/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/vitorbaptista/getonup/releases/tag/v0.1.0
