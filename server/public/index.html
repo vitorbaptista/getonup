@@ -142,7 +142,7 @@
 
         // Title → live artifact when we have a valid id; otherwise plain text.
         const titleEl = id ? el("a", "t", label) : el("span", "t", label);
-        if (id) titleEl.href = "/s/" + id;
+        if (id) titleEl.href = "/s/" + id + "/";
         if (!title && !id) titleEl.classList.add("untitled");
         li.append(titleEl);
 
