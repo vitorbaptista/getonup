@@ -130,6 +130,13 @@ getonup open <id>       # open it in a browser
 
 The deployed site is **public** and needs no login to view. Hand the `url` to the user.
 
+### Multiple servers (profiles)
+
+If the user deploys to more than one server, each is a named **profile**. `getonup profiles` lists
+them (`*` marks the default). Target one for a single command with `getonup deploy <file> --profile
+<name>` (or set `GETONUP_PROFILE`); with no `--profile`, deploys go to the default. The user creates
+profiles with `getonup login --profile <name> …`.
+
 ### Or use the MCP server
 
 Instead of the CLI, run `getonup mcp` and register it as an MCP server (stdio). It exposes

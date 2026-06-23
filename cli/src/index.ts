@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 import { spawn } from "node:child_process";
-import { loadConfig, saveConfig, resolveAccess, type Config } from "./config.js";
+import { loadConfig, saveProfile, listProfiles, activeProfileName, resolveAccess, type Profile } from "./config.js";
 import * as api from "./api.js";
 import { parseArgs, type Args } from "./args.js";
 import { walkDir } from "./files.js";
@@ -30,6 +30,13 @@ async function readStdin(): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+/** The `--profile <name>` value, or undefined when absent. A bare `--profile` with no name
+ *  parses to boolean true — reject it loudly rather than silently fall back to the default. */
+function profileFlag(args: Args): string | undefined {
+  if (args.flags.profile === true) err("--profile needs a name, e.g. --profile main");
+  return typeof args.flags.profile === "string" ? args.flags.profile : undefined;
+}
+
 function openInBrowser(url: string): void {
   const cmd =
     process.platform === "darwin" ? "open" : process.platform === "win32" ? "cmd" : "xdg-open";
@@ -48,23 +55,26 @@ async function cmdLogin(args: Args): Promise<void> {
   const token = (args.flags.token as string) || args._[1];
   if (!url)
     err(
-      "usage: getonup login --url <server-url> --token <deploy-token> [--access-client-id <id>] [--access-client-secret <secret>]",
+      "usage: getonup login --url <server-url> --token <deploy-token> [--profile <name>] [--default] [--access-client-id <id>] [--access-client-secret <secret>]",
     );
+  // Which profile to write. Without --profile (or GETONUP_PROFILE) it's "default".
+  const name = profileFlag(args) || process.env.GETONUP_PROFILE || "default";
+  const makeDefault = args.flags.default === true;
   // Optional Cloudflare Access service-token (for instances behind Access), from flags or env.
   const accessClientId =
     (args.flags["access-client-id"] as string) || process.env.GETONUP_ACCESS_CLIENT_ID || undefined;
   const accessClientSecret =
     (args.flags["access-client-secret"] as string) || process.env.GETONUP_ACCESS_CLIENT_SECRET || undefined;
-  const cfg: Config = {
+  const profile: Profile = {
     url: String(url).replace(/\/+$/, ""),
     token: token ? String(token) : undefined,
     accessClientId,
     accessClientSecret,
   };
-  const access = resolveAccess(cfg); // throws on a half-configured pair, before we hit the network
+  const access = resolveAccess(profile); // throws on a half-configured pair, before we hit the network
   // Sanity-check the server (with the Access token, in case the API is behind Access).
   try {
-    const h = await api.health(cfg.url!, access);
+    const h = await api.health(profile.url!, access);
     if (!h?.ok) throw new Error("unexpected response");
     if (!h.deployEnabled) {
       process.stderr.write(
@@ -72,14 +82,20 @@ async function cmdLogin(args: Args): Promise<void> {
       );
     }
   } catch (e) {
-    err(`could not reach a getonup server at ${cfg.url}: ${(e as Error).message}`);
+    err(`could not reach a getonup server at ${profile.url}: ${(e as Error).message}`);
   }
-  const p = await saveConfig(cfg);
-  process.stdout.write(c.green("✓") + ` logged in to ${c.cyan(cfg.url!)}\n` + c.dim(`  saved to ${p}\n`));
+  const p = await saveProfile(name, profile, { makeDefault });
+  const isDefault = (await listProfiles()).default === name;
+  process.stdout.write(
+    c.green("✓") +
+      ` logged in to ${c.cyan(profile.url!)} ${c.dim(`(profile: ${name}${isDefault ? ", default" : ""})`)}\n` +
+      c.dim(`  saved to ${p}\n`),
+  );
 }
 
 async function cmdDeploy(args: Args): Promise<void> {
-  const cfg = await loadConfig();
+  const selector = profileFlag(args);
+  const cfg = await loadConfig(selector);
   const { url, token } = cfg;
   if (!url) err("not configured. Run: getonup login --url <server> --token <token>  (or set GETONUP_URL/GETONUP_TOKEN)");
   const access = resolveAccess(cfg);
@@ -138,8 +154,9 @@ async function cmdDeploy(args: Args): Promise<void> {
 
   if (!quiet && !json) {
     const bytes = files.reduce((n, f) => n + Buffer.byteLength(f.content), 0);
+    const name = await activeProfileName(selector);
     process.stderr.write(
-      c.dim(`deploying ${files.length} file(s), ${type}, ~${(bytes / 1024).toFixed(1)} KB → ${url}\n`),
+      c.dim(`deploying ${files.length} file(s), ${type}, ~${(bytes / 1024).toFixed(1)} KB → ${url}${name ? ` (${name})` : ""}\n`),
     );
   }
 
@@ -190,8 +207,8 @@ async function cmdServe(args: Args): Promise<void> {
   return serve(target, opts);
 }
 
-async function cmdList(): Promise<void> {
-  const cfg = await loadConfig();
+async function cmdList(args: Args): Promise<void> {
+  const cfg = await loadConfig(profileFlag(args));
   const { url, token } = cfg;
   if (!url) err("not configured. Run: getonup login …");
   const { deploys } = await api.list(url, token, resolveAccess(cfg));
@@ -209,7 +226,7 @@ async function cmdList(): Promise<void> {
 }
 
 async function cmdRm(args: Args): Promise<void> {
-  const cfg = await loadConfig();
+  const cfg = await loadConfig(profileFlag(args));
   const { url, token } = cfg;
   if (!url) err("not configured. Run: getonup login …");
   const id = args._[0];
@@ -223,7 +240,7 @@ async function cmdRm(args: Args): Promise<void> {
 }
 
 async function cmdOpen(args: Args): Promise<void> {
-  const { url } = await loadConfig();
+  const { url } = await loadConfig(profileFlag(args));
   const idOrUrl = args._[0];
   if (!idOrUrl) err("usage: getonup open <id|url>");
   const isUrl = /^https?:\/\//.test(idOrUrl);
@@ -233,28 +250,46 @@ async function cmdOpen(args: Args): Promise<void> {
   process.stdout.write(full + "\n");
 }
 
-async function cmdWhoami(): Promise<void> {
-  const { url, token, accessClientId, accessClientSecret } = await loadConfig();
-  process.stdout.write(`server: ${url || c.dim("(not set)")}\n`);
-  process.stdout.write(`token:  ${token ? c.dim("configured") : c.dim("(not set)")}\n`);
+async function cmdWhoami(args: Args): Promise<void> {
+  const selector = profileFlag(args);
+  const name = await activeProfileName(selector);
+  const { url, token, accessClientId, accessClientSecret } = await loadConfig(selector);
+  process.stdout.write(`profile: ${name || c.dim("(not set)")}\n`);
+  process.stdout.write(`server:  ${url || c.dim("(not set)")}\n`);
+  process.stdout.write(`token:   ${token ? c.dim("configured") : c.dim("(not set)")}\n`);
   if (accessClientId || accessClientSecret) {
-    process.stdout.write(`access: ${accessClientId && accessClientSecret ? c.dim("service token configured") : c.red("incomplete (set both id and secret)")}\n`);
+    process.stdout.write(`access:  ${accessClientId && accessClientSecret ? c.dim("service token configured") : c.red("incomplete (set both id and secret)")}\n`);
   }
+}
+
+async function cmdProfiles(): Promise<void> {
+  const { profiles, default: def } = await listProfiles();
+  const names = Object.keys(profiles);
+  if (!names.length) {
+    process.stdout.write(c.dim("no profiles yet. Run: getonup login --url <server> --token <token> [--profile <name>]\n"));
+    return;
+  }
+  for (const name of names) {
+    const marker = name === def ? c.green("*") : " ";
+    process.stdout.write(`${marker} ${c.cyan(name.padEnd(14))} ${profiles[name].url || c.dim("(no url)")}\n`);
+  }
+  process.stdout.write(c.dim("\n* default — used when --profile / GETONUP_PROFILE are unset\n"));
 }
 
 function help(): void {
   process.stdout.write(`${c.bold("getonup")} — your AI artifact, live in seconds.
 
 ${c.bold("Usage")}
-  getonup login --url <server> --token <token>
+  getonup login --url <server> --token <token>   [--profile <name>] [--default]
                                 [--access-client-id <id>] [--access-client-secret <secret>]   ${c.dim("# behind Cloudflare Access")}
   getonup deploy <file|dir|->   [--name <title>] [--id <slug>] [--type html|react|vue|js|markdown|static]
-                                [--no-wrap] [--no-tailwind] [--open] [--json] [--quiet]
+                                [--no-wrap] [--no-tailwind] [--open] [--json] [--quiet] [--profile <name>]
   getonup serve <file|dir|->    [--port N] [--host H] [--open] [--watch] [--no-wrap]   ${c.dim("# local preview, no deploy")}
-  getonup list
-  getonup open <id|url>
-  getonup rm <id>
-  getonup whoami
+  getonup list                  [--profile <name>]
+  getonup open <id|url>         [--profile <name>]
+  getonup rm <id>               [--profile <name>]
+  getonup whoami                [--profile <name>]
+  getonup profiles                  ${c.dim("# list configured servers, * marks the default")}
   getonup mcp                       ${c.dim("# run as an MCP server (stdio) for agents")}
 
 ${c.bold("Examples")}
@@ -266,6 +301,8 @@ ${c.bold("Examples")}
   getonup serve counter.tsx --open --watch   ${c.dim("# instant local preview, live reload, no deploy")}
 
 Config lives in ~/.config/getonup/config.json, or env GETONUP_URL / GETONUP_TOKEN.
+Multiple servers? Give each a named profile (getonup login --profile <name>), pick one per command
+with --profile <name> or GETONUP_PROFILE, and see them all with getonup profiles.
 Behind Cloudflare Access? Add a service token: GETONUP_ACCESS_CLIENT_ID / GETONUP_ACCESS_CLIENT_SECRET
 (or pass --access-client-id / --access-client-secret to login).
 `);
@@ -281,10 +318,11 @@ async function main(): Promise<void> {
     case "deploy": case "up": case "push": return cmdDeploy(args);
     case "serve": case "preview": return cmdServe(args);
     case "mcp": return runMcp();
-    case "list": case "ls": return cmdList();
+    case "list": case "ls": return cmdList(args);
     case "rm": case "delete": case "remove": return cmdRm(args);
     case "open": return cmdOpen(args);
-    case "whoami": case "config": return cmdWhoami();
+    case "whoami": case "config": return cmdWhoami(args);
+    case "profiles": case "profile": return cmdProfiles();
     case "version": case "--version": case "-v": process.stdout.write(`getonup ${VERSION}\n`); return;
     case undefined: case "help": case "--help": case "-h": help(); return;
     default:

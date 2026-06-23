@@ -144,8 +144,9 @@ over stdio to any MCP-aware agent:
 ## The `getonup` command
 
 `getonup` is the CLI. Config lives in `~/.config/getonup/config.json`, or pass `GETONUP_URL` /
-`GETONUP_TOKEN` env vars (handy for CI and agents). From the repo without installing:
-`npm run getonup -- <args>`.
+`GETONUP_TOKEN` env vars (handy for CI and agents). Deploying to more than one server? Give each a
+named [profile](docs/CLI.md#profiles) and switch with `--profile <name>` (or `GETONUP_PROFILE`). From
+the repo without installing: `npm run getonup -- <args>`.
 
 ---
 

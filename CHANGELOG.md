@@ -6,6 +6,16 @@ All notable changes to getonup are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Multiple server profiles.** `config.json` can now hold several named profiles with a default:
+  `{ "default": "main", "profiles": { "main": {…}, "other": {…} } }`. Create them with
+  `getonup login --profile <name>` (the first becomes the default; `--default` re-points it), pick
+  one per command with `--profile <name>` or the `GETONUP_PROFILE` env var, and list them with the
+  new `getonup profiles` command. A typo'd `--profile`/`GETONUP_PROFILE` fails loudly rather than
+  silently targeting another server. A pre-existing flat `config.json` keeps working unchanged (read
+  as a single `default` profile) and is rewritten into the profile format on the next `login`.
+  `GETONUP_URL` / `GETONUP_TOKEN` / `GETONUP_ACCESS_*` still override the resolved profile per field.
+
 ## [0.5.1] — 2026-06-20
 
 ### Fixed
