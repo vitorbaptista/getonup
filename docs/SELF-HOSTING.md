@@ -51,7 +51,7 @@ vars. Now `getonup deploy <file>` publishes to your instance. See the [CLI refer
 | `GETONUP_DEPLOY_TOKEN` | Worker **secret** | — (required) | the token the CLI publishes with |
 | `MAX_BYTES` | `server/wrangler.jsonc` `vars` | `20971520` | max total bytes per deploy |
 | `MAX_FILES` | `server/wrangler.jsonc` `vars` | `300` | max files per deploy |
-| `GETONUP_PUBLIC_URL` | `server/wrangler.jsonc` `vars` | request origin | force the base URL in printed links |
+| `GETONUP_PUBLIC_URL` | `server/wrangler.jsonc` `vars` (commented) | request origin | force the base URL in printed links |
 | `GETONUP_URL` / `GETONUP_TOKEN` | CLI env | from `~/.config/getonup` | server + token for the CLI |
 
 ## Security model
@@ -79,8 +79,8 @@ getonup serves untrusted, AI-generated code. The design keeps that safe:
 - **Put the deploy API behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/)**
   (Zero Trust) for an extra, edge-enforced auth layer with zero app code — see
   [Deploy behind Cloudflare Access](#deploy-behind-cloudflare-access-zero-trust) below.
-- **Per-deploy subdomain isolation:** map a wildcard (`*.getonup.example.com`) and serve
-  `<id>.getonup.example.com` so each artifact gets its own origin. (Path-based is the simple
+- **Per-deploy subdomain isolation:** map a wildcard (`*.pages.example.com`) and serve
+  `<id>.pages.example.com` so each artifact gets its own origin. (Path-based is the simple
   default; subdomains are the upgrade.)
 - **Rate-limit `/api/*`** with a Cloudflare WAF rule — **required for any public instance** — to
   bound abuse and spend (the default Worker does no application-level throttling).
@@ -102,11 +102,11 @@ This stacks on top of the deploy token: Access decides *who can reach the API at
 
 > **Scope Access to `/api/*`, not the whole host.** Published artifacts (`/s/<id>`) are meant to be
 > public with no login. If you protect the bare hostname, every viewer hits the Access login wall.
-> Create the Access application for the **path** `getonup.example.com/api` so only the deploy/manage
+> Create the Access application for the **path** `pages.example.com/api` so only the deploy/manage
 > API is gated and `/s/*` stays open.
 
 1. In the Zero Trust dashboard, **Access → Applications** → add a **Self-hosted** app for
-   `getonup.example.com/api` (and disable the default `workers.dev` route so only the
+   `pages.example.com/api` (and disable the default `workers.dev` route so only the
    Access-protected custom domain is reachable).
 2. **Access → Service credentials → Service Tokens → Create.** Copy the **Client ID** and
    **Client Secret** (the secret is shown once).
@@ -120,7 +120,7 @@ This stacks on top of the deploy token: Access decides *who can reach the API at
    getonup deploy index.html        # now sails through Access
 
    # …or save them alongside the server + token:
-   getonup login --url https://getonup.example.com --token <deploy-token> \
+   getonup login --url https://pages.example.com --token <deploy-token> \
      --access-client-id <client-id> --access-client-secret <client-secret>
    ```
 
@@ -150,8 +150,8 @@ Access evaluates the **most specific path** per request, so two apps on one host
 
 | Access application | Path | Policy | Effect |
 |---|---|---|---|
-| `getonup-artifacts` | `getonup.example.com/s` | **Bypass** · *Everyone* | `/s/<id>` public, no login |
-| `getonup-index` | `getonup.example.com` (whole host) | **Allow** · *emails @you.com* **+** **Service Auth** · *your token* | `/`, `/index.html`, `/api/*` (incl. `/api/index`) gated |
+| `getonup-artifacts` | `pages.example.com/s` | **Bypass** · *Everyone* | `/s/<id>` public, no login |
+| `getonup-index` | `pages.example.com` (whole host) | **Allow** · *emails @example.com* **+** **Service Auth** · *your token* | `/`, `/index.html`, `/api/*` (incl. `/api/index`) gated |
 
 `/s/*` matches the more specific app (Bypass) and stays open; everything else falls to the host app
 and needs identity. The **Service Auth** policy lets the CLI through that same gate with its
@@ -160,10 +160,10 @@ service-token headers (see the section above) — without it, `getonup deploy` h
 **Dashboard steps** (Zero Trust → Access):
 
 1. **Service Tokens → Create** a token for the CLI; copy the Client ID + Secret (shown once).
-2. **Applications → Add → Self-hosted**, domain `getonup.example.com` **path** `s`. One policy:
+2. **Applications → Add → Self-hosted**, domain `pages.example.com` **path** `s`. One policy:
    action **Bypass**, include **Everyone**. *(Artifacts public.)*
-3. **Applications → Add → Self-hosted**, domain `getonup.example.com` (no path). Two policies:
-   **Allow** including *Emails ending in* `@you.com` (humans), and **Service Auth** including the
+3. **Applications → Add → Self-hosted**, domain `pages.example.com` (no path). Two policies:
+   **Allow** including *Emails ending in* `@example.com` (humans), and **Service Auth** including the
    **service token** from step 1 (the CLI).
 4. **Disable the `workers.dev` route** (`"workers_dev": false` in `wrangler.jsonc`, then redeploy) so
    the gate can't be sidestepped at `getonup.<sub>.workers.dev`. Confirm:
@@ -173,7 +173,7 @@ service-token headers (see the section above) — without it, `getonup deploy` h
 
 **Prefer SSO over email codes?** Add an identity provider (**Settings → Authentication**) — Google,
 GitHub, OIDC/SAML — then on the `getonup-index` app set its **allowed identity providers** to just
-that one and enable **auto-redirect** to skip the login chooser. The `@you.com` email rule still
+that one and enable **auto-redirect** to skip the login chooser. The `@example.com` email rule still
 applies to the identity the provider returns. For Google, add the redirect URI
 `https://<your-team>.cloudflareaccess.com/cdn-cgi/access/callback` to the OAuth client.
 
@@ -194,12 +194,12 @@ curl -s "${auth[@]}" "$API/service_tokens" -d '{"name":"getonup-cli"}'
 
 # 2) reusable policies — capture each returned id
 curl -s "${auth[@]}" "$API/policies" -d '{"name":"public-artifacts","decision":"bypass","include":[{"everyone":{}}]}'
-curl -s "${auth[@]}" "$API/policies" -d '{"name":"index-humans","decision":"allow","include":[{"email_domain":{"domain":"you.com"}}]}'
+curl -s "${auth[@]}" "$API/policies" -d '{"name":"index-humans","decision":"allow","include":[{"email_domain":{"domain":"example.com"}}]}'
 curl -s "${auth[@]}" "$API/policies" -d '{"name":"cli-service-auth","decision":"non_identity","include":[{"service_token":{"token_id":"<service-token-id>"}}]}'
 
 # 3) two apps — most-specific path wins
-curl -s "${auth[@]}" "$API/apps" -d '{"name":"getonup-artifacts","type":"self_hosted","domain":"getonup.example.com/s","policies":[{"id":"<bypass-id>","precedence":1}]}'
-curl -s "${auth[@]}" "$API/apps" -d '{"name":"getonup-index","type":"self_hosted","domain":"getonup.example.com","policies":[{"id":"<allow-id>","precedence":1},{"id":"<service-auth-id>","precedence":2}]}'
+curl -s "${auth[@]}" "$API/apps" -d '{"name":"getonup-artifacts","type":"self_hosted","domain":"pages.example.com/s","policies":[{"id":"<bypass-id>","precedence":1}]}'
+curl -s "${auth[@]}" "$API/apps" -d '{"name":"getonup-index","type":"self_hosted","domain":"pages.example.com","policies":[{"id":"<allow-id>","precedence":1},{"id":"<service-auth-id>","precedence":2}]}'
 ```
 
 Verify: `GET /s/<id>` → `200`; `GET /` and `GET /api/index` → `302` to the Access login.

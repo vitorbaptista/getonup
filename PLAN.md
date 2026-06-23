@@ -5,9 +5,9 @@
 > agent) run locally; a self-hosted **Cloudflare Worker + R2** backend that **scales to zero**
 > (~$0 idle). Free software (MIT). You bring a deploy token; viewers need nothing.
 >
-> `getonup deploy index.html` → `https://your-getonup.example/s/ab12cd34` ✨
+> `getonup deploy index.html` → `https://pages.example.com/s/ab12cd34` ✨
 
-_Reference product: https://oneclicklive.app (paste AI code → instant live site, auto-wraps
+_Reference product: OneClickLive (paste AI code → instant live site, auto-wraps
 React/Vue with Babel+Tailwind, Cloudflare edge sandbox, browser-only, closed-source, paid).
 getonup does the same magic but **open-source, self-hostable, scale-to-zero, and CLI/agent-
 driven** so any agent gains a "publish this live" superpower._
@@ -22,7 +22,7 @@ scale-to-zero → **static-only MVP**, dynamic deferred.
 ## 1. What it does (user / agent flow)
 
 1. **Install once:** `npm i -g getonup` (or `npx getonup …`, or a single binary via
-   `curl … | sh`). Configure: `getonup login --url https://your-getonup.example --token <T>`.
+   `curl … | sh`). Configure: `getonup login --url https://pages.example.com --token <T>`.
 2. **An agent (or you) builds an artifact** — a `.html`, a single `.jsx/.tsx`, a `.vue`, a
    `.js`, or a built static folder.
 3. **Publish:** `getonup deploy artifact.tsx` → the CLI auto-detects the type, **auto-wraps**

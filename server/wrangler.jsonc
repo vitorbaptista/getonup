@@ -20,18 +20,21 @@
     { "binding": "BUCKET", "bucket_name": "getonup" }
   ],
 
-  // Serve the Worker on a custom domain (zone vitorbaptista.com, this account).
-  // Cloudflare provisions and renews the edge certificate automatically.
-  "routes": [
-    { "pattern": "pages.vitorbaptista.com", "custom_domain": true }
-  ],
+  // By default the Worker is served on your account's `getonup.<your-subdomain>.workers.dev`
+  // URL — no DNS setup needed. To serve it on your own domain instead, uncomment the block
+  // below and point it at a zone in this account (Cloudflare provisions + renews the cert):
+  // "routes": [
+  //   { "pattern": "pages.example.com", "custom_domain": true }
+  // ],
 
   // Non-secret config. GETONUP_DEPLOY_TOKEN is a *secret* (set via `wrangler secret put`),
   // not listed here. Optional overrides:
   "vars": {
     "MAX_BYTES": "20971520",
-    "MAX_FILES": "300",
-    "GETONUP_PUBLIC_URL": "https://pages.vitorbaptista.com"
+    "MAX_FILES": "300"
+    // GETONUP_PUBLIC_URL: base URL printed in deploy links. Leave unset to derive it from the
+    // request origin (correct for both workers.dev and a custom domain). Set it only to force a
+    // specific base, e.g.  "GETONUP_PUBLIC_URL": "https://pages.example.com"
   },
 
   "observability": { "enabled": true }

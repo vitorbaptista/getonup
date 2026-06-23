@@ -100,7 +100,7 @@ Cursor, …). Configure it with:
     "getonup": {
       "command": "getonup",
       "args": ["mcp"],
-      "env": { "GETONUP_URL": "https://your-getonup.example", "GETONUP_TOKEN": "your-token" }
+      "env": { "GETONUP_URL": "https://pages.example.com", "GETONUP_TOKEN": "your-token" }
     }
   }
 }

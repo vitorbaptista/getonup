@@ -9,7 +9,7 @@ folder — into a **live, shareable URL** with one command. Open-source, self-ho
 
 ```bash
 getonup deploy counter.tsx
-✓ live → https://getonup.example.com/s/iwcmg3dt
+✓ live → https://pages.example.com/s/iwcmg3dt
 ```
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-22d3ee)](./LICENSE)
@@ -42,7 +42,7 @@ The CLI is published on npm. To publish to an existing getonup server:
 
 ```bash
 npm i -g getonup                  # or run it ad-hoc with: npx getonup <args>
-getonup login --url https://your-getonup.example --token <token>
+getonup login --url https://pages.example.com --token <token>
 getonup deploy counter.tsx
 ```
 
@@ -136,7 +136,7 @@ over stdio to any MCP-aware agent:
 
 ```json
 { "mcpServers": { "getonup": { "command": "getonup", "args": ["mcp"],
-  "env": { "GETONUP_URL": "https://your-getonup.example", "GETONUP_TOKEN": "your-token" } } } }
+  "env": { "GETONUP_URL": "https://pages.example.com", "GETONUP_TOKEN": "your-token" } } } }
 ```
 
 ---
