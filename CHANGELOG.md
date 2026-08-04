@@ -6,6 +6,8 @@ All notable changes to getonup are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-08-04
+
 ### Added
 - The homepage footer shows the running server's version, served from `/api/index`. The project
   version now comes from `cli/package.json` alone — the server no longer hardcodes its own.
@@ -131,7 +133,8 @@ All notable changes to getonup are recorded here. The format follows
 Initial release: the `getonup` CLI (`deploy`/`serve`/`list`/`rm`/`open`/`mcp`, auto-wrap for
 HTML/React/Vue/JS) and the single Cloudflare Worker + R2 server.
 
-[Unreleased]: https://github.com/vitorbaptista/getonup/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/vitorbaptista/getonup/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/vitorbaptista/getonup/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/vitorbaptista/getonup/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/vitorbaptista/getonup/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/vitorbaptista/getonup/compare/v0.5.0...v0.5.1
