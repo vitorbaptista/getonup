@@ -388,6 +388,32 @@ test("mixing legacy top-level keys with profiles is rejected as ambiguous", asyn
   });
 });
 
+test("a v0.7.0 config, with the user inside a profile, still loads", async () => {
+  // v0.8.0 moved `user` next to `default` and stopped reading the old position (CHANGELOG),
+  // but the file is still a config we recognise — validation must not turn that into a lockout.
+  await withTmp(async (dir) => {
+    await writeFile(
+      join(dir, "config.json"),
+      JSON.stringify({
+        default: "default",
+        profiles: { default: { url: "https://x.example", token: "t", user: "Alice" } },
+      }),
+    );
+    await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
+      const cfg = await loadConfig();
+      assert.equal(cfg.url, "https://x.example");
+      assert.equal(cfg.token, "t");
+      assert.equal(cfg.user, undefined); // still not read from the old position, as documented
+      // a stale `user` must be a string like any other — a broken one is still a broken config
+      await writeFile(
+        join(dir, "config.json"),
+        JSON.stringify({ profiles: { default: { url: "https://x.example", user: 42 } } }),
+      );
+      await assert.rejects(() => loadConfig(), /profiles\.default\.user: expected a string, got a number/);
+    });
+  });
+});
+
 test("a config that cannot be read at all fails loudly (not just a missing one)", async () => {
   await withTmp(async (dir) => {
     await mkdir(join(dir, "config.json")); // a directory where the file should be → EISDIR
