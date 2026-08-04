@@ -6,6 +6,21 @@ All notable changes to getonup are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- **`config.json` is validated, and a file that doesn't match is an error.** Unparseable JSON, a
+  non-object root, wrong field types, a non-object profile entry, and misspelled keys (`profile`
+  for `profiles`, `tokne` for `token`) used to be swallowed — the CLI reported "not configured"
+  with no hint that the file was at fault, and a typo'd credential was silently dropped. The
+  error names the path, lists every problem at once, and says how to recover. A **v0.7.0 config
+  with `user` inside a profile is now rejected** rather than loaded with the name ignored; run
+  `getonup login --user <name>` once. Running with no config file at all, on `GETONUP_*` env
+  vars alone, is unaffected, as is the pre-profiles flat `config.json`.
+
+### Fixed
+- `getonup login --profile __proto__` reported success while saving nothing, and `--profile
+  constructor` (or `toString`/`valueOf`) resolved to an empty profile instead of reporting an
+  unknown profile.
+
 ## [0.8.0] — 2026-08-04
 
 ### Added

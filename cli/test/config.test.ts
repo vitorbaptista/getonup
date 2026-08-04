@@ -388,9 +388,10 @@ test("mixing legacy top-level keys with profiles is rejected as ambiguous", asyn
   });
 });
 
-test("a v0.7.0 config, with the user inside a profile, still loads", async () => {
-  // v0.8.0 moved `user` next to `default` and stopped reading the old position (CHANGELOG),
-  // but the file is still a config we recognise — validation must not turn that into a lockout.
+test("a v0.7.0 config, with the user inside a profile, is rejected", async () => {
+  // v0.8.0 moved `user` next to `default` and stopped reading the old position, so a profile
+  // holding one is a stale file. Say so instead of loading it with the name silently dropped —
+  // the error points at `login`, which is what the v0.8.0 CHANGELOG already tells you to run.
   await withTmp(async (dir) => {
     await writeFile(
       join(dir, "config.json"),
@@ -400,16 +401,8 @@ test("a v0.7.0 config, with the user inside a profile, still loads", async () =>
       }),
     );
     await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
-      const cfg = await loadConfig();
-      assert.equal(cfg.url, "https://x.example");
-      assert.equal(cfg.token, "t");
-      assert.equal(cfg.user, undefined); // still not read from the old position, as documented
-      // a stale `user` must be a string like any other — a broken one is still a broken config
-      await writeFile(
-        join(dir, "config.json"),
-        JSON.stringify({ profiles: { default: { url: "https://x.example", user: 42 } } }),
-      );
-      await assert.rejects(() => loadConfig(), /profiles\.default\.user: expected a string, got a number/);
+      await assert.rejects(() => loadConfig(), /profiles\.default\.user: unknown key/);
+      await assert.rejects(() => loadConfig(), /delete it and run `getonup login` again/);
     });
   });
 });
