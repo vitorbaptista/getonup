@@ -3,27 +3,28 @@ import { join } from "node:path";
 import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
 import type { Access } from "./api.js";
 
-/** One server's CLI configuration. */
+/** One server's CLI configuration. The deployment `user` is not here — it's global,
+ *  shared by every profile (see `ConfigFile`). */
 export interface Profile {
   url?: string;
   token?: string;
-  user?: string;
   // Optional Cloudflare Access service-token, for instances put behind Access (Zero Trust).
   accessClientId?: string;
   accessClientSecret?: string;
 }
 
-// A resolved, ready-to-use config is just one profile. Kept as `Config` so callers that
-// destructure `{ url, token, … }` stay unchanged through the move to multiple profiles.
-export type Config = Profile;
+/** A resolved, ready-to-use config: one profile plus the global user. */
+export type Config = Profile & { user?: string };
 
-/** The on-disk shape: a set of named profiles plus the name of the default one. */
+/** The on-disk shape: a set of named profiles, the name of the default one, and the
+ *  self-reported deployment user, which is a property of the person, not of a server. */
 export interface ConfigFile {
   default?: string;
+  user?: string;
   profiles: Record<string, Profile>;
 }
 
-const PROFILE_KEYS = ["url", "token", "user", "accessClientId", "accessClientSecret"] as const;
+const PROFILE_KEYS = ["url", "token", "accessClientId", "accessClientSecret"] as const;
 
 function configDir(): string {
   if (process.env.GETONUP_CONFIG_DIR) return process.env.GETONUP_CONFIG_DIR;
@@ -58,6 +59,7 @@ export async function readConfigFile(): Promise<ConfigFile> {
     return {
       // An empty-string default is "unset", not a profile named "".
       default: typeof obj.default === "string" && obj.default ? obj.default : undefined,
+      user: typeof obj.user === "string" && obj.user ? obj.user : undefined,
       profiles,
     };
   }
@@ -103,11 +105,11 @@ export async function activeProfileName(selector?: string): Promise<string | und
 
 /** GETONUP_* env vars overlay the profile, per field, taking precedence (handy for CI and
  *  agents) — exactly as before profiles existed. */
-function overlayEnv(p: Profile): Config {
+function overlayEnv(p: Profile, user?: string): Config {
   return {
     url: process.env.GETONUP_URL || p.url,
     token: process.env.GETONUP_TOKEN || p.token,
-    user: process.env.GETONUP_USER || p.user,
+    user: process.env.GETONUP_USER || user,
     accessClientId: process.env.GETONUP_ACCESS_CLIENT_ID || p.accessClientId,
     accessClientSecret: process.env.GETONUP_ACCESS_CLIENT_SECRET || p.accessClientSecret,
   };
@@ -118,7 +120,7 @@ function overlayEnv(p: Profile): Config {
 export async function loadConfig(selector?: string): Promise<Config> {
   const file = await readConfigFile();
   const name = resolveName(file, selector);
-  return overlayEnv(name ? file.profiles[name] : {});
+  return overlayEnv(name ? file.profiles[name] : {}, file.user);
 }
 
 /** Turn config into a Cloudflare Access service-token, or undefined if not configured.
@@ -135,20 +137,26 @@ export function resolveAccess(cfg: Config): Access | undefined {
 }
 
 /** Create or replace a named profile. The first profile ever saved becomes the default;
- *  pass `{ makeDefault: true }` to re-point the default at this one. Returns the file path. */
+ *  pass `{ makeDefault: true }` to re-point the default at this one. `opts.user` sets the
+ *  global deployment user, shared by every profile. Returns the file path. */
 export async function saveProfile(
   name: string,
   profile: Profile,
-  opts: { makeDefault?: boolean } = {},
+  opts: { makeDefault?: boolean; user?: string } = {},
 ): Promise<string> {
   const file = await readConfigFile();
   file.profiles[name] = profile;
   if (opts.makeDefault || !file.default) file.default = name;
+  if (opts.user) file.user = opts.user;
   return writeConfigFile(file);
 }
 
-/** All configured profiles and which one is the default. */
-export async function listProfiles(): Promise<{ profiles: Record<string, Profile>; default?: string }> {
-  const { profiles, default: def } = await readConfigFile();
-  return { profiles, default: def };
+/** All configured profiles, which one is the default, and the global deployment user. */
+export async function listProfiles(): Promise<{
+  profiles: Record<string, Profile>;
+  default?: string;
+  user?: string;
+}> {
+  const { profiles, default: def, user } = await readConfigFile();
+  return { profiles, default: def, user };
 }

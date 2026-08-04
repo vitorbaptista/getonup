@@ -194,6 +194,7 @@ test("saveProfile: first profile becomes default, later ones don't, makeDefault 
       await saveProfile("main", { url: "https://main.example", token: "t1" });
       assert.deepEqual(await listProfiles(), {
         default: "main",
+        user: undefined,
         profiles: { main: { url: "https://main.example", token: "t1" } },
       });
       await saveProfile("other", { url: "https://other.example" });
@@ -209,13 +210,12 @@ test("saveProfile: first profile becomes default, later ones don't, makeDefault 
 
 test("saveProfile migrates a legacy flat config, keeping the old config as the 'default' profile", async () => {
   await withTmp(async (dir) => {
-    await writeFile(join(dir, "config.json"), JSON.stringify({ url: "https://legacy.example", token: "legacy-tok", user: "Legacy User" }));
+    await writeFile(join(dir, "config.json"), JSON.stringify({ url: "https://legacy.example", token: "legacy-tok" }));
     await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
       await saveProfile("prod", { url: "https://prod.example", token: "prod-tok" });
       const { profiles, default: def } = await listProfiles();
       assert.equal(def, "default"); // migration set default="default"; prod isn't the first profile
       assert.equal(profiles.default.url, "https://legacy.example");
-      assert.equal(profiles.default.user, "Legacy User");
       assert.equal(profiles.prod.url, "https://prod.example");
       assert.equal((await loadConfig()).url, "https://legacy.example"); // legacy creds still active
       assert.equal((await loadConfig("prod")).url, "https://prod.example");
@@ -278,21 +278,19 @@ test("a profile literally named 'default' round-trips alongside the default poin
   });
 });
 
-test("user resolves with profile selection and GETONUP_USER precedence", async () => {
+test("the global user applies to every profile, with GETONUP_USER taking precedence", async () => {
   await withTmp(async (dir) => {
     await writeFile(
       join(dir, "config.json"),
       JSON.stringify({
         default: "main",
-        profiles: {
-          main: { url: "https://main.example", user: "Main User" },
-          other: { url: "https://other.example", user: "Other User" },
-        },
+        user: "Global User",
+        profiles: { main: { url: "https://main.example" }, other: { url: "https://other.example" } },
       }),
     );
     await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
-      assert.equal((await loadConfig()).user, "Main User");
-      assert.equal((await loadConfig("other")).user, "Other User");
+      assert.equal((await loadConfig()).user, "Global User");
+      assert.equal((await loadConfig("other")).user, "Global User");
     });
     await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV, GETONUP_USER: "Environment User" }, async () => {
       assert.equal((await loadConfig("other")).user, "Environment User");
@@ -300,13 +298,17 @@ test("user resolves with profile selection and GETONUP_USER precedence", async (
   });
 });
 
-test("saveProfile persists a user with the selected profile", async () => {
+test("saveProfile persists the user globally, not under the profile", async () => {
   await withTmp(async (dir) => {
     await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
-      await saveProfile("main", { url: "https://main.example", token: "tok", user: "Vitor" });
+      await saveProfile("main", { url: "https://main.example", token: "tok" }, { user: "Vitor" });
       const onDisk = JSON.parse(await readFile(join(dir, "config.json"), "utf8"));
-      assert.equal(onDisk.profiles.main.user, "Vitor");
+      assert.equal(onDisk.user, "Vitor");
+      assert.equal(onDisk.profiles.main.user, undefined);
       assert.equal((await loadConfig()).user, "Vitor");
+      // a second profile inherits it
+      await saveProfile("other", { url: "https://other.example" });
+      assert.equal((await loadConfig("other")).user, "Vitor");
     });
   });
 });

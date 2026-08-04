@@ -57,8 +57,12 @@ async function cmdLogin(args: Args): Promise<void> {
     err(
       "usage: getonup login --url <server-url> --token <deploy-token> --user <name> [--profile <name>] [--default] [--access-client-id <id>] [--access-client-secret <secret>]",
     );
-  const user =
-    (typeof args.flags.user === "string" ? args.flags.user : process.env.GETONUP_USER || "").trim();
+  // The user is global (one person, every profile), so a second `login` can reuse the saved one.
+  const user = (
+    typeof args.flags.user === "string"
+      ? args.flags.user
+      : process.env.GETONUP_USER || (await listProfiles()).user || ""
+  ).trim();
   if (!user) err("a user name is required. Pass --user <name> or set GETONUP_USER.");
   if ([...user].length > 100) err("--user must be at most 100 characters");
   // Which profile to write. Without --profile (or GETONUP_PROFILE) it's "default".
@@ -72,7 +76,6 @@ async function cmdLogin(args: Args): Promise<void> {
   const profile: Profile = {
     url: String(url).replace(/\/+$/, ""),
     token: token ? String(token) : undefined,
-    user,
     accessClientId,
     accessClientSecret,
   };
@@ -89,7 +92,7 @@ async function cmdLogin(args: Args): Promise<void> {
   } catch (e) {
     err(`could not reach a getonup server at ${profile.url}: ${(e as Error).message}`);
   }
-  const p = await saveProfile(name, profile, { makeDefault });
+  const p = await saveProfile(name, profile, { makeDefault, user });
   const isDefault = (await listProfiles()).default === name;
   process.stdout.write(
     c.green("✓") +
@@ -321,7 +324,8 @@ ${c.bold("Examples")}
 
 Config lives in ~/.config/getonup/config.json, or env GETONUP_URL / GETONUP_TOKEN / GETONUP_USER.
 Multiple servers? Give each a named profile (getonup login --profile <name>), pick one per command
-with --profile <name> or GETONUP_PROFILE, and see them all with getonup profiles.
+with --profile <name> or GETONUP_PROFILE, and see them all with getonup profiles. The --user name is
+global — stored once and used by every profile.
 Behind Cloudflare Access? Add a service token: GETONUP_ACCESS_CLIENT_ID / GETONUP_ACCESS_CLIENT_SECRET
 (or pass --access-client-id / --access-client-secret to login).
 `);

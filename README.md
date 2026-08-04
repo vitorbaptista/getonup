@@ -146,7 +146,8 @@ over stdio to any MCP-aware agent:
 
 `getonup` is the CLI. Config lives in `~/.config/getonup/config.json`, or pass `GETONUP_URL` /
 `GETONUP_TOKEN` / `GETONUP_USER` env vars (handy for CI and agents). Every new deploy records the
-resolved user name as public, self-reported attribution. Deploying to more than one server? Give each a
+resolved user name as public, self-reported attribution; it's stored once, globally, and used by every
+profile. Deploying to more than one server? Give each a
 named [profile](docs/CLI.md#profiles) and switch with `--profile <name>` (or `GETONUP_PROFILE`). From
 the repo without installing: `npm run getonup -- <args>`.
 
