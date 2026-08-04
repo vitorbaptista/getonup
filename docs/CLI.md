@@ -4,8 +4,9 @@ getonup's CLI. The command is **`getonup`**. Install it with `npm i -g getonup` 
 ad-hoc with `npx getonup <args>`). From a clone without installing, use `npm run getonup -- <args>`.
 
 Configuration is read from `~/.config/getonup/config.json` (written by `getonup login`) or the
-`GETONUP_URL` / `GETONUP_TOKEN` environment variables, which take precedence (handy for CI and
-agents). `deploy` and `serve` print the live URL as the last line of stdout.
+`GETONUP_URL` / `GETONUP_TOKEN` / `GETONUP_USER` environment variables, which take precedence
+(handy for CI and agents). A user name is required for deployment and is shown publicly as
+self-reported attribution. `deploy` and `serve` print the live URL as the last line of stdout.
 
 Deploying to **more than one server?** Give each a named [profile](#profiles) and switch between
 them with `--profile <name>` (or `GETONUP_PROFILE`).
@@ -18,13 +19,14 @@ See [Deploy behind Cloudflare Access](./SELF-HOSTING.md#deploy-behind-cloudflare
 
 ## Commands
 
-### `getonup login --url <server> --token <token>`  ·  `[--profile <name>] [--default]`
-Save the server URL + deploy token to `~/.config/getonup/config.json`. Sanity-checks that the
+### `getonup login --url <server> --token <token> --user <name>`  ·  `[--profile <name>] [--default]`
+Save the server URL, deploy token, and self-reported deployer name to
+`~/.config/getonup/config.json`. Sanity-checks that the
 server is reachable and warns if its deploy API is disabled. For instances behind Cloudflare Access,
 add `--access-client-id <id> --access-client-secret <secret>` to store a service token too.
 `login` writes exactly what you pass — it's declarative, so re-run it with every flag you want kept
-(re-running with just `--url`/`--token` clears a previously stored Access token, the same way it
-would clear `--token`). To rotate one value without touching the rest, edit `config.json` or use the
+(re-running without Access flags clears a previously stored Access token). To rotate one value
+without touching the rest, edit `config.json` or use the
 `GETONUP_*` env vars instead.
 
 `--profile <name>` writes to a named profile instead of the implicit `default` one (see
@@ -85,7 +87,7 @@ Delete a published artifact by its id (the `<id>` in `/s/<id>`).
 Open a published artifact in your browser.
 
 ### `getonup whoami`  ·  alias: `config`
-Show the active profile, its server, and whether a token is set. Add `--profile <name>` to inspect
+Show the active profile, its server, resolved user, and whether a token is set. Add `--profile <name>` to inspect
 a specific one.
 
 ### `getonup profiles`
@@ -102,7 +104,7 @@ Cursor, …). Configure it with:
     "getonup": {
       "command": "getonup",
       "args": ["mcp"],
-      "env": { "GETONUP_URL": "https://pages.example.com", "GETONUP_TOKEN": "your-token" }
+      "env": { "GETONUP_URL": "https://pages.example.com", "GETONUP_TOKEN": "your-token", "GETONUP_USER": "Your Name" }
     }
   }
 }
@@ -119,27 +121,29 @@ To deploy to **multiple servers**, store each as a named profile. `config.json` 
 {
   "default": "main",
   "profiles": {
-    "main":  { "url": "https://main.example",  "token": "…" },
-    "client": { "url": "https://client.example", "token": "…" }
+    "main":  { "url": "https://main.example",  "token": "…", "user": "Vitor" },
+    "client": { "url": "https://client.example", "token": "…", "user": "Vitor" }
   }
 }
 ```
 
 ```bash
-getonup login --url https://main.example   --token … --profile main     # first → becomes default
-getonup login --url https://client.example --token … --profile client
+getonup login --url https://main.example   --token … --user "Vitor" --profile main     # first → becomes default
+getonup login --url https://client.example --token … --user "Vitor" --profile client
 getonup deploy report.html                       # → main (the default)
 getonup deploy report.html --profile client      # → client, just this once
-getonup login --url https://client.example --token … --profile client --default   # make client the default
+getonup login --url https://client.example --token … --user "Vitor" --profile client --default   # make client the default
 getonup profiles                                 # see them all, * marks the default
 ```
 
 Pick a profile per command with `--profile <name>` (on `deploy`, `list`, `rm`, `open`, `whoami`) or
 the `GETONUP_PROFILE` env var; `--profile` wins over the env var, which wins over the stored default.
-The `GETONUP_URL` / `GETONUP_TOKEN` / `GETONUP_ACCESS_*` env vars still override the resolved profile
+The `GETONUP_URL` / `GETONUP_TOKEN` / `GETONUP_USER` / `GETONUP_ACCESS_*` env vars still override the resolved profile
 field-by-field, so CI can keep injecting a token while the rest comes from a profile. A pre-profiles
 flat `config.json` keeps working untouched — it's read as a single profile named `default`, and is
-rewritten into the format above the next time you `login`. To delete a profile, edit `config.json`.
+rewritten into the format above the next time you `login`. Historical profiles without `user` still
+load, but deployment requires `GETONUP_USER` or re-running the full `login` command with `--user`.
+To delete a profile, edit `config.json`.
 
 ## Auto-wrap quick reference
 

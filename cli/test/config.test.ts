@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig, resolveAccess, saveProfile, listProfiles, activeProfileName } from "../src/config.js";
 
-// loadConfig reads GETONUP_CONFIG_DIR/config.json, with GETONUP_URL/GETONUP_TOKEN overriding it.
+// loadConfig reads GETONUP_CONFIG_DIR/config.json, with GETONUP_* values overriding it.
 async function withEnv(env: Record<string, string | undefined>, fn: () => Promise<void>): Promise<void> {
   const saved: Record<string, string | undefined> = {};
   for (const k of Object.keys(env)) {
@@ -27,7 +27,7 @@ test("loadConfig reads the file when no env vars are set", async () => {
   const dir = await mkdtemp(join(tmpdir(), "getonup-cfg-"));
   try {
     await writeFile(join(dir, "config.json"), JSON.stringify({ url: "https://file.example", token: "filetok" }));
-    await withEnv({ GETONUP_CONFIG_DIR: dir, GETONUP_URL: undefined, GETONUP_TOKEN: undefined }, async () => {
+    await withEnv({ GETONUP_CONFIG_DIR: dir, GETONUP_URL: undefined, GETONUP_TOKEN: undefined, GETONUP_USER: undefined }, async () => {
       const cfg = await loadConfig();
       assert.equal(cfg.url, "https://file.example");
       assert.equal(cfg.token, "filetok");
@@ -40,11 +40,12 @@ test("loadConfig reads the file when no env vars are set", async () => {
 test("env vars take precedence over the config file", async () => {
   const dir = await mkdtemp(join(tmpdir(), "getonup-cfg-"));
   try {
-    await writeFile(join(dir, "config.json"), JSON.stringify({ url: "https://file.example", token: "filetok" }));
-    await withEnv({ GETONUP_CONFIG_DIR: dir, GETONUP_URL: "https://env.example", GETONUP_TOKEN: "envtok" }, async () => {
+    await writeFile(join(dir, "config.json"), JSON.stringify({ url: "https://file.example", token: "filetok", user: "File User" }));
+    await withEnv({ GETONUP_CONFIG_DIR: dir, GETONUP_URL: "https://env.example", GETONUP_TOKEN: "envtok", GETONUP_USER: "Env User" }, async () => {
       const cfg = await loadConfig();
       assert.equal(cfg.url, "https://env.example");
       assert.equal(cfg.token, "envtok");
+      assert.equal(cfg.user, "Env User");
     });
   } finally {
     await rm(dir, { recursive: true, force: true });
@@ -58,7 +59,7 @@ test("Access service-token: env overrides file, like url/token", async () => {
       join(dir, "config.json"),
       JSON.stringify({ url: "u", accessClientId: "file-id", accessClientSecret: "file-sec" }),
     );
-    await withEnv({ GETONUP_CONFIG_DIR: dir, GETONUP_URL: undefined, GETONUP_TOKEN: undefined, GETONUP_ACCESS_CLIENT_ID: undefined, GETONUP_ACCESS_CLIENT_SECRET: undefined }, async () => {
+    await withEnv({ GETONUP_CONFIG_DIR: dir, GETONUP_URL: undefined, GETONUP_TOKEN: undefined, GETONUP_USER: undefined, GETONUP_ACCESS_CLIENT_ID: undefined, GETONUP_ACCESS_CLIENT_SECRET: undefined }, async () => {
       const cfg = await loadConfig();
       assert.deepEqual(resolveAccess(cfg), { clientId: "file-id", clientSecret: "file-sec" });
     });
@@ -81,7 +82,7 @@ test("malformed config JSON falls back cleanly instead of throwing", async () =>
   const dir = await mkdtemp(join(tmpdir(), "getonup-cfg-"));
   try {
     await writeFile(join(dir, "config.json"), "{ not valid json");
-    await withEnv({ GETONUP_CONFIG_DIR: dir, GETONUP_URL: undefined, GETONUP_TOKEN: undefined }, async () => {
+    await withEnv({ GETONUP_CONFIG_DIR: dir, GETONUP_URL: undefined, GETONUP_TOKEN: undefined, GETONUP_USER: undefined }, async () => {
       const cfg = await loadConfig();
       assert.equal(cfg.url, undefined);
       assert.equal(cfg.token, undefined);
@@ -97,6 +98,7 @@ test("malformed config JSON falls back cleanly instead of throwing", async () =>
 const CLEAN_ENV = {
   GETONUP_URL: undefined,
   GETONUP_TOKEN: undefined,
+  GETONUP_USER: undefined,
   GETONUP_ACCESS_CLIENT_ID: undefined,
   GETONUP_ACCESS_CLIENT_SECRET: undefined,
   GETONUP_PROFILE: undefined,
@@ -205,14 +207,15 @@ test("saveProfile: first profile becomes default, later ones don't, makeDefault 
   });
 });
 
-test("saveProfile migrates a legacy flat config, keeping the old creds as the 'default' profile", async () => {
+test("saveProfile migrates a legacy flat config, keeping the old config as the 'default' profile", async () => {
   await withTmp(async (dir) => {
-    await writeFile(join(dir, "config.json"), JSON.stringify({ url: "https://legacy.example", token: "legacy-tok" }));
+    await writeFile(join(dir, "config.json"), JSON.stringify({ url: "https://legacy.example", token: "legacy-tok", user: "Legacy User" }));
     await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
       await saveProfile("prod", { url: "https://prod.example", token: "prod-tok" });
       const { profiles, default: def } = await listProfiles();
       assert.equal(def, "default"); // migration set default="default"; prod isn't the first profile
       assert.equal(profiles.default.url, "https://legacy.example");
+      assert.equal(profiles.default.user, "Legacy User");
       assert.equal(profiles.prod.url, "https://prod.example");
       assert.equal((await loadConfig()).url, "https://legacy.example"); // legacy creds still active
       assert.equal((await loadConfig("prod")).url, "https://prod.example");
@@ -271,6 +274,39 @@ test("a profile literally named 'default' round-trips alongside the default poin
       const onDisk = JSON.parse(await readFile(join(dir, "config.json"), "utf8"));
       assert.deepEqual(onDisk, { default: "default", profiles: { default: { url: "https://d.example", token: "dt" } } });
       assert.equal((await loadConfig()).url, "https://d.example");
+    });
+  });
+});
+
+test("user resolves with profile selection and GETONUP_USER precedence", async () => {
+  await withTmp(async (dir) => {
+    await writeFile(
+      join(dir, "config.json"),
+      JSON.stringify({
+        default: "main",
+        profiles: {
+          main: { url: "https://main.example", user: "Main User" },
+          other: { url: "https://other.example", user: "Other User" },
+        },
+      }),
+    );
+    await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
+      assert.equal((await loadConfig()).user, "Main User");
+      assert.equal((await loadConfig("other")).user, "Other User");
+    });
+    await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV, GETONUP_USER: "Environment User" }, async () => {
+      assert.equal((await loadConfig("other")).user, "Environment User");
+    });
+  });
+});
+
+test("saveProfile persists a user with the selected profile", async () => {
+  await withTmp(async (dir) => {
+    await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
+      await saveProfile("main", { url: "https://main.example", token: "tok", user: "Vitor" });
+      const onDisk = JSON.parse(await readFile(join(dir, "config.json"), "utf8"));
+      assert.equal(onDisk.profiles.main.user, "Vitor");
+      assert.equal((await loadConfig()).user, "Vitor");
     });
   });
 });

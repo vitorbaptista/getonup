@@ -39,4 +39,4 @@ case ":$PATH:" in
      echo "        export PATH=\"$PREFIX:\$PATH\"" ;;
 esac
 echo
-echo "Next: getonup login --url <your-server> --token <your-token>"
+echo "Next: getonup login --url <your-server> --token <your-token> --user <your-name>"

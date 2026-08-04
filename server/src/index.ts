@@ -191,11 +191,20 @@ async function handleDeploy(req: Request, env: Env): Promise<Response> {
   // chunked requests carry no content-length and skip this — the per-file loop below is the hard cap.
   if (declared && declared > maxBytes * 2) return json({ error: "payload too large" }, 413);
 
-  let body: { id?: string; title?: string; description?: string; type?: string; files?: UploadFile[] };
+  let body: { id?: string; deployed_by?: unknown; title?: string; description?: string; type?: string; files?: UploadFile[] };
   try {
     body = (await req.json()) as typeof body;
   } catch {
     return json({ error: "invalid JSON body" }, 400);
+  }
+
+  const deployedBy = typeof body?.deployed_by === "string" ? body.deployed_by.trim() : "";
+  let deployedByLength = 0;
+  for (const _ of deployedBy) {
+    if (++deployedByLength > 100) break;
+  }
+  if (typeof body?.deployed_by !== "string" || !deployedBy || deployedByLength > 100) {
+    return json({ error: "deployed_by must be a non-blank string of at most 100 characters" }, 400);
   }
 
   const files = body?.files;
@@ -240,6 +249,7 @@ async function handleDeploy(req: Request, env: Env): Promise<Response> {
   const id = overwrite ? body.id! : genId();
   const meta = {
     id,
+    deployed_by: deployedBy,
     title: (String(body.title ?? "").trim().slice(0, 200)) || null,
     // An auto-generated one-line summary the CLI derives from the artifact (see cli/src/describe.ts).
     // Surfaced on the public index; absent for older deploys, which the page falls back to synthesizing.
@@ -386,6 +396,7 @@ async function handleList(req: Request, env: Env): Promise<Response> {
 async function handleIndex(env: Env): Promise<Response> {
   const deploys = (await readMetas(env)).map((m) => ({
     id: m?.id ?? null,
+    ...(typeof m?.deployed_by === "string" ? { deployed_by: m.deployed_by } : {}),
     title: m?.title ?? null,
     description: m?.description ?? null,
     type: m?.type ?? "static",

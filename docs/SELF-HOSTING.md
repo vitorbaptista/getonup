@@ -38,11 +38,13 @@ That's the whole backend: one Worker, one bucket, one secret. It costs nothing a
 npm run build --workspace cli
 npm link --workspace cli            # installs `getonup`
 
-getonup login --url https://getonup.<your-subdomain>.workers.dev --token <your-token>
+getonup login --url https://getonup.<your-subdomain>.workers.dev --token <your-token> --user "Your Name"
 ```
 
-Config is saved to `~/.config/getonup/config.json`, or pass `GETONUP_URL` / `GETONUP_TOKEN` as env
-vars. Now `getonup deploy <file>` publishes to your instance. See the [CLI reference](./CLI.md).
+Config is saved to `~/.config/getonup/config.json`, or pass `GETONUP_URL` / `GETONUP_TOKEN` /
+`GETONUP_USER` as env vars. Every deploy requires this self-reported user name and exposes it in
+the instance's listings. Now `getonup deploy <file>` publishes to your instance. See the
+[CLI reference](./CLI.md).
 
 ## Configuration
 
@@ -52,7 +54,7 @@ vars. Now `getonup deploy <file>` publishes to your instance. See the [CLI refer
 | `MAX_BYTES` | `server/wrangler.jsonc` `vars` | `20971520` | max total bytes per deploy |
 | `MAX_FILES` | `server/wrangler.jsonc` `vars` | `300` | max files per deploy |
 | `GETONUP_PUBLIC_URL` | `server/wrangler.jsonc` `vars` (commented) | request origin | force the base URL in printed links |
-| `GETONUP_URL` / `GETONUP_TOKEN` | CLI env | from `~/.config/getonup` | server + token for the CLI |
+| `GETONUP_URL` / `GETONUP_TOKEN` / `GETONUP_USER` | CLI env | from `~/.config/getonup` | server, token, and required self-reported deployer name for the CLI/MCP server |
 
 ## Security model
 
@@ -67,6 +69,8 @@ getonup serves untrusted, AI-generated code. The design keeps that safe:
 - **The deploy token is the trust boundary.** Anyone holding `GETONUP_DEPLOY_TOKEN` can deploy any
   content and choose its served `Content-Type`, so `nosniff` protects viewers from MIME-sniffing,
   not against what the token-holder serves. Treat the token like a deploy key.
+- **Deployer attribution is self-reported, not authentication.** The shared bearer token remains
+  the trust boundary; `GETONUP_USER` is informational, stored in R2 metadata, and shown publicly.
 - **No built-in rate limiting.** The default Worker does not throttle `/api/*` or failed auth. For
   any publicly reachable instance the Cloudflare WAF rate-limit rule under [Hardening](#hardening)
   is **required, not optional** — the 256-bit token makes online brute-force infeasible, but
@@ -117,10 +121,11 @@ This stacks on top of the deploy token: Access decides *who can reach the API at
    ```bash
    export GETONUP_ACCESS_CLIENT_ID=<client-id>
    export GETONUP_ACCESS_CLIENT_SECRET=<client-secret>
+   export GETONUP_USER="Your Name"
    getonup deploy index.html        # now sails through Access
 
    # …or save them alongside the server + token:
-   getonup login --url https://pages.example.com --token <deploy-token> \
+   getonup login --url https://pages.example.com --token <deploy-token> --user "Your Name" \
      --access-client-id <client-id> --access-client-secret <client-secret>
    ```
 

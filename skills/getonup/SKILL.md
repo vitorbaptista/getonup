@@ -10,9 +10,10 @@ the user's own self-hosted Cloudflare Worker.
 
 ## Steps
 
-1. **Check config.** Run `getonup whoami`. If it shows no server, ask the user to run
-   `getonup login --url <server> --token <token>` (or set `GETONUP_URL` / `GETONUP_TOKEN`),
-   then continue.
+1. **Check config.** Run `getonup whoami`. If it shows no server or user, ask the user to run
+   `getonup login --url <server> --token <token> --user <name>` (or set `GETONUP_URL` /
+   `GETONUP_TOKEN` / `GETONUP_USER`), then continue. The name is self-reported and appears
+   publicly beside deployments.
 2. **Have a file.** Write the artifact to disk if needed — `page.html`, `app.tsx`, `card.vue`,
    `script.js`, or a built `./dist` directory (a folder must contain `index.html`).
 3. **Deploy:**

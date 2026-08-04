@@ -55,8 +55,12 @@ async function cmdLogin(args: Args): Promise<void> {
   const token = (args.flags.token as string) || args._[1];
   if (!url)
     err(
-      "usage: getonup login --url <server-url> --token <deploy-token> [--profile <name>] [--default] [--access-client-id <id>] [--access-client-secret <secret>]",
+      "usage: getonup login --url <server-url> --token <deploy-token> --user <name> [--profile <name>] [--default] [--access-client-id <id>] [--access-client-secret <secret>]",
     );
+  const user =
+    (typeof args.flags.user === "string" ? args.flags.user : process.env.GETONUP_USER || "").trim();
+  if (!user) err("a user name is required. Pass --user <name> or set GETONUP_USER.");
+  if ([...user].length > 100) err("--user must be at most 100 characters");
   // Which profile to write. Without --profile (or GETONUP_PROFILE) it's "default".
   const name = profileFlag(args) || process.env.GETONUP_PROFILE || "default";
   const makeDefault = args.flags.default === true;
@@ -68,6 +72,7 @@ async function cmdLogin(args: Args): Promise<void> {
   const profile: Profile = {
     url: String(url).replace(/\/+$/, ""),
     token: token ? String(token) : undefined,
+    user,
     accessClientId,
     accessClientSecret,
   };
@@ -96,8 +101,11 @@ async function cmdLogin(args: Args): Promise<void> {
 async function cmdDeploy(args: Args): Promise<void> {
   const selector = profileFlag(args);
   const cfg = await loadConfig(selector);
-  const { url, token } = cfg;
-  if (!url) err("not configured. Run: getonup login --url <server> --token <token>  (or set GETONUP_URL/GETONUP_TOKEN)");
+  const { url, token, user } = cfg;
+  if (!url) err("not configured. Run: getonup login --url <server> --token <token> --user <name>  (or set GETONUP_URL/GETONUP_TOKEN/GETONUP_USER)");
+  if (!user?.trim()) {
+    err("deployment user not configured. Run: getonup login --url <server> --token <token> --user <name>  (or set GETONUP_USER)");
+  }
   const access = resolveAccess(cfg);
 
   const target = args._[0];
@@ -169,7 +177,7 @@ async function cmdDeploy(args: Args): Promise<void> {
 
   let result: api.DeployResult;
   try {
-    result = await api.deploy(url, token, { id, title: title || null, description, type, files }, access);
+    result = await api.deploy(url, token, { id, deployed_by: user, title: title || null, description, type, files }, access);
   } catch (e) {
     const ae = e as api.ApiError;
     if (ae.status === 401) {
@@ -226,8 +234,9 @@ async function cmdList(args: Args): Promise<void> {
   }
   for (const d of deploys) {
     const when = (d.created_at || "").replace("T", " ").replace(/\..*/, "");
+    const deployedBy = d.deployed_by || "unknown";
     process.stdout.write(
-      `${c.cyan(d.id.padEnd(10))} ${c.dim((d.type || "static").padEnd(7))} ${c.dim(when)}  ${d.title || ""}\n` +
+      `${c.cyan(d.id.padEnd(10))} ${c.dim((d.type || "static").padEnd(7))} ${c.dim(when)} ${c.dim(`by ${deployedBy}`)}  ${d.title || ""}\n` +
         `  ${url.replace(/\/+$/, "")}/s/${d.id}\n`,
     );
   }
@@ -252,7 +261,7 @@ async function cmdOpen(args: Args): Promise<void> {
   const idOrUrl = args._[0];
   if (!idOrUrl) err("usage: getonup open <id|url>");
   const isUrl = /^https?:\/\//.test(idOrUrl);
-  if (!isUrl && !url) err("not configured. Run: getonup login --url <server> --token <token>  (or pass a full URL)");
+  if (!isUrl && !url) err("not configured. Run: getonup login --url <server> --token <token> --user <name>  (or pass a full URL)");
   const full = isUrl ? idOrUrl : `${url!.replace(/\/+$/, "")}/s/${idOrUrl}`;
   openInBrowser(full);
   process.stdout.write(full + "\n");
@@ -261,10 +270,11 @@ async function cmdOpen(args: Args): Promise<void> {
 async function cmdWhoami(args: Args): Promise<void> {
   const selector = profileFlag(args);
   const name = await activeProfileName(selector);
-  const { url, token, accessClientId, accessClientSecret } = await loadConfig(selector);
+  const { url, token, user, accessClientId, accessClientSecret } = await loadConfig(selector);
   process.stdout.write(`profile: ${name || c.dim("(not set)")}\n`);
   process.stdout.write(`server:  ${url || c.dim("(not set)")}\n`);
   process.stdout.write(`token:   ${token ? c.dim("configured") : c.dim("(not set)")}\n`);
+  process.stdout.write(`user:    ${user || c.dim("(not set)")}\n`);
   if (accessClientId || accessClientSecret) {
     process.stdout.write(`access:  ${accessClientId && accessClientSecret ? c.dim("service token configured") : c.red("incomplete (set both id and secret)")}\n`);
   }
@@ -274,7 +284,7 @@ async function cmdProfiles(): Promise<void> {
   const { profiles, default: def } = await listProfiles();
   const names = Object.keys(profiles);
   if (!names.length) {
-    process.stdout.write(c.dim("no profiles yet. Run: getonup login --url <server> --token <token> [--profile <name>]\n"));
+    process.stdout.write(c.dim("no profiles yet. Run: getonup login --url <server> --token <token> --user <name> [--profile <name>]\n"));
     return;
   }
   for (const name of names) {
@@ -288,7 +298,7 @@ function help(): void {
   process.stdout.write(`${c.bold("getonup")} — your AI artifact, live in seconds.
 
 ${c.bold("Usage")}
-  getonup login --url <server> --token <token>   [--profile <name>] [--default]
+  getonup login --url <server> --token <token> --user <name>   [--profile <name>] [--default]
                                 [--access-client-id <id>] [--access-client-secret <secret>]   ${c.dim("# behind Cloudflare Access")}
   getonup deploy <file|dir|->   [--name <title>] [--id <slug>] [--index-file <file>] [--type html|react|vue|js|markdown|static]
                                 [--no-wrap] [--no-tailwind] [--open] [--json] [--quiet] [--profile <name>]
@@ -309,7 +319,7 @@ ${c.bold("Examples")}
   getonup deploy ./site --index-file home.html   ${c.dim("# pick the homepage when a folder has several HTML files")}
   getonup serve counter.tsx --open --watch   ${c.dim("# instant local preview, live reload, no deploy")}
 
-Config lives in ~/.config/getonup/config.json, or env GETONUP_URL / GETONUP_TOKEN.
+Config lives in ~/.config/getonup/config.json, or env GETONUP_URL / GETONUP_TOKEN / GETONUP_USER.
 Multiple servers? Give each a named profile (getonup login --profile <name>), pick one per command
 with --profile <name> or GETONUP_PROFILE, and see them all with getonup profiles.
 Behind Cloudflare Access? Add a service token: GETONUP_ACCESS_CLIENT_ID / GETONUP_ACCESS_CLIENT_SECRET

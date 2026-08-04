@@ -42,7 +42,7 @@ The CLI is published on npm. To publish to an existing getonup server:
 
 ```bash
 npm i -g getonup                  # or run it ad-hoc with: npx getonup <args>
-getonup login --url https://pages.example.com --token <token>
+getonup login --url https://pages.example.com --token <token> --user "Your Name"
 getonup deploy counter.tsx
 ```
 
@@ -63,11 +63,11 @@ npm run setup        # builds + links the getonup CLI, writes a local deploy tok
 npm run dev          # serves at http://localhost:8787  (Ctrl-C to stop)
 ```
 
-`npm run setup` prints a ready-to-run `getonup login` line with your generated token. In a second
-terminal:
+`npm run setup` prints a `getonup login` line with your generated token; replace its user-name
+placeholder. In a second terminal:
 
 ```bash
-getonup login --url http://localhost:8787 --token <token-from-setup>
+getonup login --url http://localhost:8787 --token <token-from-setup> --user "Your Name"
 getonup deploy examples/counter.tsx        # auto-wrapped React → http://localhost:8787/s/<id>
 getonup serve  examples/counter.tsx        # …or just preview it — no server, no token
 ```
@@ -124,6 +124,7 @@ The point of getonup: your coding agent publishes its own work. Add this to your
 ## Publishing artifacts
 To share a web artifact (HTML page, React/Vue component, or built static site) as a live URL,
 run: `getonup deploy <file-or-dir>` and give the user the printed URL.
+- Before deploying, `getonup whoami` must show a user; re-run `getonup login --url <server> --token <token> --user <name>` or set `GETONUP_USER`.
 - Single components are auto-wrapped (React/Vue/Tailwind) — just point at the .tsx/.vue/.html.
 - Use `--json` to parse the result.
 ```
@@ -136,7 +137,7 @@ over stdio to any MCP-aware agent:
 
 ```json
 { "mcpServers": { "getonup": { "command": "getonup", "args": ["mcp"],
-  "env": { "GETONUP_URL": "https://pages.example.com", "GETONUP_TOKEN": "your-token" } } } }
+  "env": { "GETONUP_URL": "https://pages.example.com", "GETONUP_TOKEN": "your-token", "GETONUP_USER": "Your Name" } } } }
 ```
 
 ---
@@ -144,7 +145,8 @@ over stdio to any MCP-aware agent:
 ## The `getonup` command
 
 `getonup` is the CLI. Config lives in `~/.config/getonup/config.json`, or pass `GETONUP_URL` /
-`GETONUP_TOKEN` env vars (handy for CI and agents). Deploying to more than one server? Give each a
+`GETONUP_TOKEN` / `GETONUP_USER` env vars (handy for CI and agents). Every new deploy records the
+resolved user name as public, self-reported attribution. Deploying to more than one server? Give each a
 named [profile](docs/CLI.md#profiles) and switch with `--profile <name>` (or `GETONUP_PROFILE`). From
 the repo without installing: `npm run getonup -- <args>`.
 

@@ -34,7 +34,8 @@ prek run --all-files      # optional: run every hook against the whole repo
 
 (Plain `pre-commit install` works too if you have that instead.)
 
-`npm run setup` prints a ready-to-run `getonup login` line with the generated token. Then:
+`npm run setup` prints a `getonup login` line with the generated token; replace its `<your-name>`
+placeholder to configure deployment attribution. Then:
 
 ```bash
 getonup deploy examples/counter.tsx --open      # or, without building/linking:

@@ -81,8 +81,9 @@ HTML page, a React/Vue component, or a built static site.
 
 ### Setup (once per machine)
 
-The user runs `getonup login --url <server> --token <token>` once (or exports `GETONUP_URL`
-and `GETONUP_TOKEN`). Check with `getonup whoami` — if it shows a server, you're ready.
+The user runs `getonup login --url <server> --token <token> --user <name>` once (or exports
+`GETONUP_URL`, `GETONUP_TOKEN`, and `GETONUP_USER`). Check with `getonup whoami` — if it shows a
+server and user, you're ready. The name is self-reported and appears publicly beside deployments.
 
 ### To publish
 
@@ -141,5 +142,5 @@ profiles with `getonup login --profile <name> …`.
 ### Or use the MCP server
 
 Instead of the CLI, run `getonup mcp` and register it as an MCP server (stdio). It exposes
-`deploy_artifact`, `list_deploys`, and `remove_deploy` tools; set `GETONUP_URL` and
-`GETONUP_TOKEN` in its env.
+`deploy_artifact`, `list_deploys`, and `remove_deploy` tools; set `GETONUP_URL`, `GETONUP_TOKEN`,
+and `GETONUP_USER` in its env.

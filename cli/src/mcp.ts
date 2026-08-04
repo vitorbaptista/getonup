@@ -5,9 +5,9 @@
  * shelling out to the CLI. Hand-rolled minimal JSON-RPC 2.0 (newline-delimited) so the CLI
  * stays dependency-free. Tools: deploy_artifact, list_deploys, remove_deploy.
  *
- * Configure in an agent (env carries the server + token):
+ * Configure in an agent (env carries the server, token, and self-reported user):
  *   { "mcpServers": { "getonup": { "command": "getonup", "args": ["mcp"],
- *       "env": { "GETONUP_URL": "https://…", "GETONUP_TOKEN": "…" } } } }
+ *       "env": { "GETONUP_URL": "https://…", "GETONUP_TOKEN": "…", "GETONUP_USER": "Vitor" } } } }
  */
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, relative, sep, extname, basename } from "node:path";
@@ -125,27 +125,34 @@ const TOOLS = [
 async function callTool(name: string, args: any): Promise<{ content: { type: string; text: string }[]; isError: boolean }> {
   // All tools need a configured server.
   const cfg = await loadConfig();
-  const { url, token } = cfg;
+  const { url, token, user } = cfg;
   if (!url) {
     return toolResult(
-      "getonup is not configured. Set GETONUP_URL (and GETONUP_TOKEN) in this MCP server's env, or run `getonup login` first.",
+      "getonup is not configured. Set GETONUP_URL, GETONUP_TOKEN, and GETONUP_USER in this MCP server's env, or run `getonup login --url <server> --token <token> --user <name>` first.",
       true,
     );
   }
-  const access = resolveAccess(cfg);
 
   if (name === "deploy_artifact") {
+    if (!user?.trim()) {
+      return toolResult(
+        "getonup deployment user is not configured. Set GETONUP_USER in this MCP server's env, or run `getonup login --url <server> --token <token> --user <name>` first.",
+        true,
+      );
+    }
+    const access = resolveAccess(cfg);
     const { files, type, title } = await collect(args || {});
     const entry = files.find((f) => f.path === "index.html");
     const description = entry && entry.encoding === "utf8" ? describeHtml(entry.content, title) : undefined;
-    const r = await api.deploy(url, token, { title, type, files, description }, access);
+    const r = await api.deploy(url, token, { deployed_by: user, title, type, files, description }, access);
     return toolResult(`Deployed. Live URL: ${r.url}\nid: ${r.id} · files: ${r.files.length} · ${r.bytes} bytes`);
   }
+  const access = resolveAccess(cfg);
   if (name === "list_deploys") {
     const { deploys } = await api.list(url, token, access);
     if (!deploys.length) return toolResult("No deploys yet.");
     return toolResult(
-      deploys.map((d: any) => `${d.id}  ${d.type || "static"}  ${d.title || ""}  →  ${url.replace(/\/+$/, "")}/s/${d.id}`).join("\n"),
+      deploys.map((d: any) => `${d.id}  ${d.type || "static"}  by ${d.deployed_by || "unknown"}  ${d.title || ""}  →  ${url.replace(/\/+$/, "")}/s/${d.id}`).join("\n"),
     );
   }
   if (name === "remove_deploy") {

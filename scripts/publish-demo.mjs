@@ -8,7 +8,7 @@
  * so they don't accumulate, then publishes fresh. Deploy IDs are assigned by the server per run,
  * so the /s/<id> URLs change each time — the stable entry point is the homepage (`/`).
  *
- *   GETONUP_URL=http://localhost:8787 GETONUP_TOKEN=… node scripts/publish-demo.mjs
+ *   GETONUP_URL=http://localhost:8787 GETONUP_TOKEN=… GETONUP_USER="Vitor" node scripts/publish-demo.mjs
  *   (or: npm run demo, after `npm run dev` is up)
  */
 import { readFile } from "node:fs/promises";
@@ -18,6 +18,7 @@ import { dirname, join } from "node:path";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = (process.env.GETONUP_URL || "http://localhost:8787").replace(/\/+$/, "");
 const TOKEN = process.env.GETONUP_TOKEN || "";
+const USER = process.env.GETONUP_USER || "";
 const TITLE_PREFIX = "getonup — ";
 
 // [key, display name, one-line description] — one entry per landings/<key>.html. The description
@@ -60,6 +61,7 @@ async function apiReq(method, path, body) {
 async function deployHtml(file, title, description) {
   const html = await readFile(join(ROOT, file), "utf8");
   const { id } = await apiReq("POST", "/api/deploy", {
+    deployed_by: USER,
     title,
     description,
     type: "html",
@@ -87,7 +89,7 @@ async function cleanupPrevious() {
 }
 
 async function main() {
-  if (!TOKEN) throw new Error("set GETONUP_TOKEN (and GETONUP_URL) — the demo deploys to your getonup server");
+  if (!TOKEN || !USER.trim()) throw new Error("set GETONUP_TOKEN, GETONUP_USER, and GETONUP_URL — the demo deploys to your getonup server");
 
   process.stdout.write(`Publishing demo to ${BASE} …\n`);
   await cleanupPrevious();
