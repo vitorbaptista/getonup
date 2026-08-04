@@ -6,6 +6,8 @@ All notable changes to getonup are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-08-05
+
 ### Changed
 - **`config.json` is validated, and a file that doesn't match is an error.** Unparseable JSON, a
   non-object root, wrong field types, a non-object profile entry, and misspelled keys (`profile`
@@ -148,7 +150,8 @@ All notable changes to getonup are recorded here. The format follows
 Initial release: the `getonup` CLI (`deploy`/`serve`/`list`/`rm`/`open`/`mcp`, auto-wrap for
 HTML/React/Vue/JS) and the single Cloudflare Worker + R2 server.
 
-[Unreleased]: https://github.com/vitorbaptista/getonup/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/vitorbaptista/getonup/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/vitorbaptista/getonup/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/vitorbaptista/getonup/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/vitorbaptista/getonup/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/vitorbaptista/getonup/compare/v0.5.1...v0.6.0
