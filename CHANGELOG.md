@@ -6,6 +6,12 @@ All notable changes to getonup are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- **The deployer name is global, not per-profile.** `config.json` now stores `user` next to
+  `default`, outside `profiles`, so one person's name is shared by every server they log into —
+  `getonup login` for a second profile can omit `--user` and reuse it. A v0.7.0 config with the
+  name inside a profile is not read — re-run `getonup login --user <name>` once.
+
 ## [0.7.0] — 2026-08-04
 
 ### Added

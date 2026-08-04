@@ -21,7 +21,8 @@ See [Deploy behind Cloudflare Access](./SELF-HOSTING.md#deploy-behind-cloudflare
 
 ### `getonup login --url <server> --token <token> --user <name>`  ·  `[--profile <name>] [--default]`
 Save the server URL, deploy token, and self-reported deployer name to
-`~/.config/getonup/config.json`. Sanity-checks that the
+`~/.config/getonup/config.json`. The user name is stored **globally** — one person, every profile —
+so later logins can omit `--user` and reuse it. Sanity-checks that the
 server is reachable and warns if its deploy API is disabled. For instances behind Cloudflare Access,
 add `--access-client-id <id> --access-client-secret <secret>` to store a service token too.
 `login` writes exactly what you pass — it's declarative, so re-run it with every flag you want kept
@@ -120,19 +121,20 @@ To deploy to **multiple servers**, store each as a named profile. `config.json` 
 ```json
 {
   "default": "main",
+  "user": "Vitor",
   "profiles": {
-    "main":  { "url": "https://main.example",  "token": "…", "user": "Vitor" },
-    "client": { "url": "https://client.example", "token": "…", "user": "Vitor" }
+    "main":  { "url": "https://main.example",  "token": "…" },
+    "client": { "url": "https://client.example", "token": "…" }
   }
 }
 ```
 
 ```bash
 getonup login --url https://main.example   --token … --user "Vitor" --profile main     # first → becomes default
-getonup login --url https://client.example --token … --user "Vitor" --profile client
+getonup login --url https://client.example --token … --profile client                  # reuses the saved user
 getonup deploy report.html                       # → main (the default)
 getonup deploy report.html --profile client      # → client, just this once
-getonup login --url https://client.example --token … --user "Vitor" --profile client --default   # make client the default
+getonup login --url https://client.example --token … --profile client --default   # make client the default
 getonup profiles                                 # see them all, * marks the default
 ```
 
@@ -141,8 +143,9 @@ the `GETONUP_PROFILE` env var; `--profile` wins over the env var, which wins ove
 The `GETONUP_URL` / `GETONUP_TOKEN` / `GETONUP_USER` / `GETONUP_ACCESS_*` env vars still override the resolved profile
 field-by-field, so CI can keep injecting a token while the rest comes from a profile. A pre-profiles
 flat `config.json` keeps working untouched — it's read as a single profile named `default`, and is
-rewritten into the format above the next time you `login`. Historical profiles without `user` still
-load, but deployment requires `GETONUP_USER` or re-running the full `login` command with `--user`.
+rewritten into the format above the next time you `login`. The `user` sits next to `default`, outside
+`profiles`; a config without one still loads, but deploying then requires `GETONUP_USER` or a
+`login --user <name>`.
 To delete a profile, edit `config.json`.
 
 ## Auto-wrap quick reference

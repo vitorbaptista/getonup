@@ -88,11 +88,17 @@ test("`login --user` persists the user and `whoami` displays it", async () => {
     const login = await runCli(["login", "--url", url, "--token", "tok", "--user", "Vitor"], env);
     assert.equal(login.code, 0, login.stderr);
     const onDisk = JSON.parse(await readFile(join(dir, "config.json"), "utf8"));
-    assert.equal(onDisk.profiles.default.user, "Vitor");
+    assert.equal(onDisk.user, "Vitor"); // global, not under the profile
+    assert.equal(onDisk.profiles.default.user, undefined);
 
     const whoami = await runCli(["whoami"], env);
     assert.equal(whoami.code, 0, whoami.stderr);
     assert.match(whoami.stdout, /user:\s+Vitor/);
+
+    // a later login for another server reuses the global user and shares it
+    const second = await runCli(["login", "--url", url, "--token", "tok2", "--profile", "other"], env);
+    assert.equal(second.code, 0, second.stderr);
+    assert.match((await runCli(["whoami", "--profile", "other"], env)).stdout, /user:\s+Vitor/);
   } finally {
     server.close();
     await rm(dir, { recursive: true, force: true });
