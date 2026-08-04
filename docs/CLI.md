@@ -148,6 +148,12 @@ rewritten into the format above the next time you `login`. The `user` sits next 
 `login --user <name>`.
 To delete a profile, edit `config.json`.
 
+`config.json` is validated on every command. A file that doesn't match the shape above — bad JSON,
+a wrong field type, a misspelled key — is an error naming the file and listing every problem, not a
+silent fall back to "not configured". Since `login` reads the file too, the quickest fix for a badly
+broken one is to delete it and log in again. Running with no config file at all, on `GETONUP_*`
+alone, is always fine.
+
 ## Auto-wrap quick reference
 
 | Input | Result |

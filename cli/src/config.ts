@@ -50,11 +50,6 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
 
 const ROOT_KEYS = ["default", "user", "profiles", ...PROFILE_KEYS] as const;
 
-/** v0.7.0 stored the deployer name inside each profile; v0.8.0 moved it next to `default` and
- *  stopped reading the old position (see CHANGELOG). Such a file is still a config we recognise,
- *  so accept and ignore the stale key — rejecting it would lock out anyone upgrading from 0.7. */
-const PROFILE_KEYS_IN = [...PROFILE_KEYS, "user"] as const;
-
 /** Every command reads the config, `login` included (saveProfile reads before it writes), so a
  *  broken file locks the CLI out entirely — every config error has to say how to get back in. */
 const RECOVERY = "fix the file, or delete it and run `getonup login` again.";
@@ -100,8 +95,8 @@ function validate(parsed: unknown): string[] {
         if (!isPlainObject(profile)) {
           problems.push(`profiles.${name}: expected an object, got ${describe(profile)}`);
         } else {
-          strings(profile, PROFILE_KEYS_IN, `profiles.${name}.`);
-          unknown(profile, PROFILE_KEYS_IN, `profiles.${name}.`);
+          strings(profile, PROFILE_KEYS, `profiles.${name}.`);
+          unknown(profile, PROFILE_KEYS, `profiles.${name}.`);
         }
       }
     }
