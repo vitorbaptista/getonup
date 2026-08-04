@@ -68,19 +68,19 @@ function validate(parsed: unknown): string[] {
     }
   };
 
-  // Type-check every key we understand wherever it appears — checking only the ones the
-  // chosen branch happens to read lets a typo'd value through in the other shape.
-  strings(parsed, ["default", "user", ...PROFILE_KEYS], "");
+  // Any key we don't know is a misspelling — "profile" for "profiles", "tokne" for "token".
+  // Ignoring it is the quiet failure this whole check exists to prevent: the credential you
+  // typed is dropped and the CLI just says it isn't configured.
+  const unknown = (obj: Record<string, unknown>, allowed: readonly string[], prefix: string) => {
+    for (const k of Object.keys(obj)) {
+      if (!allowed.includes(k)) problems.push(`${prefix}${k}: unknown key (expected ${allowed.join(", ")})`);
+    }
+  };
 
-  // A file with nothing we can read from — no `profiles`, no legacy keys — but with keys we
-  // don't recognise is almost certainly a misspelling (e.g. "profile"). Left alone it reads as
-  // "nothing configured", quietly losing every profile in it. Unknown keys are fine otherwise,
-  // so a config written by a newer CLI still works here.
-  const usable = parsed.profiles !== undefined || PROFILE_KEYS.some((k) => parsed[k] !== undefined);
-  const unknown = Object.keys(parsed).filter((k) => !(ROOT_KEYS as readonly string[]).includes(k));
-  if (!usable && unknown.length) {
-    problems.push(`nothing configured, and these keys aren't recognised: ${unknown.join(", ")} — did you mean "profiles"?`);
-  }
+  // Check every key we understand wherever it appears — checking only the ones the chosen
+  // branch happens to read lets a typo'd value through in the other shape.
+  strings(parsed, ["default", "user", ...PROFILE_KEYS], "");
+  unknown(parsed, ROOT_KEYS, "");
 
   if (parsed.profiles !== undefined) {
     // Both shapes at once is ambiguous about which credentials win, so don't guess.
@@ -96,6 +96,7 @@ function validate(parsed: unknown): string[] {
           problems.push(`profiles.${name}: expected an object, got ${describe(profile)}`);
         } else {
           strings(profile, PROFILE_KEYS, `profiles.${name}.`);
+          unknown(profile, PROFILE_KEYS, `profiles.${name}.`);
         }
       }
     }
@@ -116,7 +117,7 @@ export async function readConfigFile(): Promise<ConfigFile> {
     raw = await readFile(path, "utf8");
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === "ENOENT") return { profiles: {} }; // no config file yet
-    throw new Error(`cannot read config at ${path}: ${(e as Error).message}`);
+    throw new Error(`cannot read config at ${path}: ${(e as Error).message}\n${RECOVERY}`);
   }
 
   if (!raw.trim()) return { profiles: {} }; // an empty file reads as "nothing configured"

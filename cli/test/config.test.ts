@@ -351,24 +351,27 @@ test("wrong types on known keys are rejected, in whichever shape they appear", a
   });
 });
 
-test("a file with no recognised keys is rejected, not read as 'nothing configured'", async () => {
+test("misspelled keys are rejected rather than silently dropped", async () => {
   await withTmp(async (dir) => {
     await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
-      // "profile" instead of "profiles" — the old code silently lost every profile here
-      await writeFile(
-        join(dir, "config.json"),
-        JSON.stringify({ default: "main", profile: { main: { url: "https://x.example" } } }),
-      );
-      await assert.rejects(() => loadConfig(), /aren't recognised: profile — did you mean "profiles"\?/);
+      const bad: Array<[unknown, RegExp]> = [
+        // "profile" for "profiles" — the old code read this as "nothing configured"
+        [{ default: "main", profile: { main: { url: "https://x.example" } } }, /^ {2}profile: unknown key/m],
+        // a typo'd key next to a valid one: the credential is dropped, auth then fails opaquely
+        [{ url: "https://x.example", tokne: "secret" }, /^ {2}tokne: unknown key/m],
+        // ...including inside a profile
+        [
+          { default: "main", profiles: { main: { url: "https://x.example", tokne: "secret" } } },
+          /^ {2}profiles\.main\.tokne: unknown key/m,
+        ],
+      ];
+      for (const [content, pattern] of bad) {
+        await writeFile(join(dir, "config.json"), JSON.stringify(content));
+        await assert.rejects(() => loadConfig(), pattern, `should reject ${JSON.stringify(content)}`);
+      }
       // an empty object is still fine — it says "nothing configured", unambiguously
       await writeFile(join(dir, "config.json"), "{}");
       assert.equal((await loadConfig()).url, undefined);
-      // ...and so is an unknown key on a config we CAN read: a newer CLI's file still works
-      await writeFile(
-        join(dir, "config.json"),
-        JSON.stringify({ default: "main", profiles: { main: { url: "https://main.example" } }, futureKey: 1 }),
-      );
-      assert.equal((await loadConfig()).url, "https://main.example");
     });
   });
 });
@@ -390,6 +393,8 @@ test("a config that cannot be read at all fails loudly (not just a missing one)"
     await mkdir(join(dir, "config.json")); // a directory where the file should be → EISDIR
     await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
       await assert.rejects(() => loadConfig(), /cannot read config at .*config\.json/);
+      // it's a lockout like any other config error, so it gets the same way out
+      await assert.rejects(() => loadConfig(), /delete it and run `getonup login` again/);
     });
   });
 });
