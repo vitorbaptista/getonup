@@ -6,6 +6,10 @@ All notable changes to getonup are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+- The homepage footer shows the running server's version, served from `/api/index`. The project
+  version now comes from `cli/package.json` alone — the server no longer hardcodes its own.
+
 ### Changed
 - **The deployer name is global, not per-profile.** `config.json` now stores `user` next to
   `default`, outside `profiles`, so one person's name is shared by every server they log into —

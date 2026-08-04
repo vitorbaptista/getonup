@@ -14,6 +14,10 @@
  * lives in the CLI; the server just stores bytes and serves them.
  */
 
+// One version for the whole project: the CLI's package.json, which the release tag must match.
+// Bundled in at build time by wrangler/esbuild.
+import { version as VERSION } from "../../cli/package.json";
+
 export interface Env {
   BUCKET: R2Bucket;
   ASSETS: Fetcher;
@@ -29,7 +33,6 @@ export interface Env {
   GETONUP_FRAME_ANCESTORS?: string;
 }
 
-const VERSION = "0.1.0";
 const DEFAULT_MAX_BYTES = 20 * 1024 * 1024; // 20 MB total per deploy
 const DEFAULT_MAX_FILES = 300;
 
@@ -403,7 +406,7 @@ async function handleIndex(env: Env): Promise<Response> {
     created_at: m?.created_at ?? null,
     bytes: typeof m?.bytes === "number" ? m.bytes : null,
   }));
-  return json({ deploys });
+  return json({ version: VERSION, deploys });
 }
 
 async function handleDelete(req: Request, env: Env, id: string): Promise<Response> {

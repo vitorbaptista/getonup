@@ -58,7 +58,7 @@
       <div id="app"><p class="note" id="status">Loading…</p></div>
 
       <footer>
-        getonup · MIT · self-hosted · scale-to-zero —
+        getonup<span class="mono" id="version"></span> · MIT · self-hosted · scale-to-zero —
         <a href="https://github.com/vitorbaptista/getonup">source</a>
       </footer>
     </main>
@@ -165,7 +165,12 @@
 
       fetch("/api/index", { headers: { accept: "application/json" } })
         .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-        .then((data) => render(Array.isArray(data && data.deploys) ? data.deploys : []))
+        .then((data) => {
+          // The running server's version, from the same response (no extra request).
+          const v = data && typeof data.version === "string" ? data.version.trim() : "";
+          if (v) document.getElementById("version").textContent = " v" + v;
+          render(Array.isArray(data && data.deploys) ? data.deploys : []);
+        })
         .catch(() => {
           document.getElementById("app").innerHTML =
             '<p class="note">Couldn’t load the index. Try reloading.</p>';

@@ -1,5 +1,6 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { unstable_dev } from "wrangler";
 import * as api from "../../cli/src/api.js";
 import handler from "../src/index.js";
@@ -141,6 +142,18 @@ test("a deploy with no description surfaces description: null on the index", asy
   const { id } = (await r.json()) as { id: string };
   const { deploys } = (await (await fetch(`${base}/api/index`)).json()) as { deploys: any[] };
   assert.equal(deploys.find((d) => d.id === id)?.description, null);
+});
+
+test("/api/index carries the server version, matching /api/health, for the footer", async () => {
+  const { version } = (await (await fetch(`${base}/api/index`)).json()) as { version: string };
+  const health = (await (await fetch(`${base}/api/health`)).json()) as { version: string };
+  // cli/package.json is the single source of truth for the project version.
+  const pkg = JSON.parse(await readFile(new URL("../../cli/package.json", import.meta.url), "utf8"));
+  assert.equal(version, pkg.version);
+  assert.equal(version, health.version);
+
+  const html = await (await fetch(base + "/")).text();
+  assert.match(html, /getElementById\("version"\)\.textContent = " v" \+ v/);
 });
 
 test("/api/list still requires a token, while /api/index does not", async () => {

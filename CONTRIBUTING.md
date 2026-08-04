@@ -58,8 +58,9 @@ runs the tests, creates the GitHub Release (auto-generated notes), then publishe
 CLI to npm via OIDC trusted publishing. The tag must match the `version` in `cli/package.json`.
 To cut a release:
 
-1. Bump `version` in `cli/package.json` and move the `## [Unreleased]` notes in
-   [`CHANGELOG.md`](./CHANGELOG.md) under the new version heading.
+1. Bump `version` in `cli/package.json` — the single source of truth, also reported by the
+   server (`/api/health`, `/api/index`, and the homepage footer) — and move the
+   `## [Unreleased]` notes in [`CHANGELOG.md`](./CHANGELOG.md) under the new version heading.
 2. Commit and merge to `main`.
 3. `git tag vX.Y.Z && git push origin vX.Y.Z` — the workflow handles the GitHub Release and
    `npm publish` from there.
