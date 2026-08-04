@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile, readFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig, resolveAccess, saveProfile, listProfiles, activeProfileName } from "../src/config.js";
@@ -287,6 +287,20 @@ test("the invalid-config error says how to recover, since login is blocked too",
       await assert.rejects(() => loadConfig(), /delete it and run `getonup login` again/);
       // saveProfile reads before it writes, so `login` can't repair a broken file on its own.
       await assert.rejects(() => saveProfile("main", { url: "https://x.example" }), /invalid config/);
+      // unparseable JSON is just as much a lockout, so it needs the same way out
+      await writeFile(join(dir, "config.json"), "{ not valid json");
+      await assert.rejects(() => loadConfig(), /delete it and run `getonup login` again/);
+    });
+  });
+});
+
+test("saveProfile refuses '__proto__' rather than reporting a save that stored nothing", async () => {
+  await withTmp(async (dir) => {
+    await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
+      await assert.rejects(() => saveProfile("__proto__", { url: "https://x.example" }), /not a usable profile name/);
+      // every other Object.prototype name assigns normally and round-trips
+      await saveProfile("constructor", { url: "https://c.example" });
+      assert.equal((await loadConfig("constructor")).url, "https://c.example");
     });
   });
 });
@@ -314,7 +328,7 @@ test("a profile named after an Object.prototype member is not mistaken for a rea
   });
 });
 
-test("wrong types on known keys are rejected", async () => {
+test("wrong types on known keys are rejected, in whichever shape they appear", async () => {
   await withTmp(async (dir) => {
     await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
       const bad: Array<[unknown, RegExp]> = [
@@ -325,11 +339,57 @@ test("wrong types on known keys are rejected", async () => {
         [{ profiles: [] }, /profiles: expected an object, got an array/],
         [{ profiles: { main: { token: 42 } } }, /profiles\.main\.token: expected a string, got a number/],
         [{ url: "https://x.example", token: false }, /token: expected a string, got a boolean/],
+        // ...including keys the branch that gets taken doesn't itself read
+        [{ default: 42, url: "https://legacy.example" }, /default: expected a string, got a number/],
+        [{ profiles: { main: {} }, token: 42 }, /token: expected a string, got a number/],
       ];
       for (const [content, pattern] of bad) {
         await writeFile(join(dir, "config.json"), JSON.stringify(content));
         await assert.rejects(() => loadConfig(), pattern, `should reject ${JSON.stringify(content)}`);
       }
+    });
+  });
+});
+
+test("a file with no recognised keys is rejected, not read as 'nothing configured'", async () => {
+  await withTmp(async (dir) => {
+    await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
+      // "profile" instead of "profiles" — the old code silently lost every profile here
+      await writeFile(
+        join(dir, "config.json"),
+        JSON.stringify({ default: "main", profile: { main: { url: "https://x.example" } } }),
+      );
+      await assert.rejects(() => loadConfig(), /aren't recognised: profile — did you mean "profiles"\?/);
+      // an empty object is still fine — it says "nothing configured", unambiguously
+      await writeFile(join(dir, "config.json"), "{}");
+      assert.equal((await loadConfig()).url, undefined);
+      // ...and so is an unknown key on a config we CAN read: a newer CLI's file still works
+      await writeFile(
+        join(dir, "config.json"),
+        JSON.stringify({ default: "main", profiles: { main: { url: "https://main.example" } }, futureKey: 1 }),
+      );
+      assert.equal((await loadConfig()).url, "https://main.example");
+    });
+  });
+});
+
+test("mixing legacy top-level keys with profiles is rejected as ambiguous", async () => {
+  await withTmp(async (dir) => {
+    await writeFile(
+      join(dir, "config.json"),
+      JSON.stringify({ url: "https://legacy.example", token: "t", profiles: { main: { url: "https://main.example" } } }),
+    );
+    await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
+      await assert.rejects(() => loadConfig(), /url, token: legacy top-level key\(s\) alongside "profiles"/);
+    });
+  });
+});
+
+test("a config that cannot be read at all fails loudly (not just a missing one)", async () => {
+  await withTmp(async (dir) => {
+    await mkdir(join(dir, "config.json")); // a directory where the file should be → EISDIR
+    await withEnv({ GETONUP_CONFIG_DIR: dir, ...CLEAN_ENV }, async () => {
+      await assert.rejects(() => loadConfig(), /cannot read config at .*config\.json/);
     });
   });
 });

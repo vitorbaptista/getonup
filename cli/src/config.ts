@@ -48,6 +48,12 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === "object" && !Array.isArray(v);
 }
 
+const ROOT_KEYS = ["default", "user", "profiles", ...PROFILE_KEYS] as const;
+
+/** Every command reads the config, `login` included (saveProfile reads before it writes), so a
+ *  broken file locks the CLI out entirely — every config error has to say how to get back in. */
+const RECOVERY = "fix the file, or delete it and run `getonup login` again.";
+
 /** Check the parsed JSON against the shape we expect, collecting every problem so a
  *  hand-edited file reports all its mistakes at once rather than one per run. */
 function validate(parsed: unknown): string[] {
@@ -62,8 +68,26 @@ function validate(parsed: unknown): string[] {
     }
   };
 
+  // Type-check every key we understand wherever it appears — checking only the ones the
+  // chosen branch happens to read lets a typo'd value through in the other shape.
+  strings(parsed, ["default", "user", ...PROFILE_KEYS], "");
+
+  // A file with nothing we can read from — no `profiles`, no legacy keys — but with keys we
+  // don't recognise is almost certainly a misspelling (e.g. "profile"). Left alone it reads as
+  // "nothing configured", quietly losing every profile in it. Unknown keys are fine otherwise,
+  // so a config written by a newer CLI still works here.
+  const usable = parsed.profiles !== undefined || PROFILE_KEYS.some((k) => parsed[k] !== undefined);
+  const unknown = Object.keys(parsed).filter((k) => !(ROOT_KEYS as readonly string[]).includes(k));
+  if (!usable && unknown.length) {
+    problems.push(`nothing configured, and these keys aren't recognised: ${unknown.join(", ")} — did you mean "profiles"?`);
+  }
+
   if (parsed.profiles !== undefined) {
-    strings(parsed, ["default", "user"], "");
+    // Both shapes at once is ambiguous about which credentials win, so don't guess.
+    const stray = PROFILE_KEYS.filter((k) => parsed[k] !== undefined);
+    if (stray.length) {
+      problems.push(`${stray.join(", ")}: legacy top-level key(s) alongside "profiles" — move them into a profile`);
+    }
     if (!isPlainObject(parsed.profiles)) {
       problems.push(`profiles: expected an object, got ${describe(parsed.profiles)}`);
     } else {
@@ -75,9 +99,6 @@ function validate(parsed: unknown): string[] {
         }
       }
     }
-  } else {
-    // Legacy flat config: `user` is a plain key alongside url/token/….
-    strings(parsed, [...PROFILE_KEYS, "user"], "");
   }
   return problems;
 }
@@ -104,17 +125,12 @@ export async function readConfigFile(): Promise<ConfigFile> {
   try {
     parsed = JSON.parse(raw);
   } catch (e) {
-    throw new Error(`invalid config at ${path}: not valid JSON (${(e as Error).message})`);
+    throw new Error(`invalid config at ${path}: not valid JSON (${(e as Error).message})\n${RECOVERY}`);
   }
 
   const problems = validate(parsed);
   if (problems.length) {
-    // Every command reads the config, `login` included, so a broken file locks the CLI out
-    // entirely — always say how to get back in.
-    throw new Error(
-      `invalid config at ${path}:\n  ${problems.join("\n  ")}\n` +
-        `fix the file, or delete it and run \`getonup login\` again.`,
-    );
+    throw new Error(`invalid config at ${path}:\n  ${problems.join("\n  ")}\n${RECOVERY}`);
   }
 
   const obj = parsed as Record<string, unknown>;
@@ -211,6 +227,10 @@ export async function saveProfile(
   opts: { makeDefault?: boolean; user?: string } = {},
 ): Promise<string> {
   const file = await readConfigFile();
+  // Plain assignment of "__proto__" hits Object.prototype's setter and stores nothing, so
+  // login would report success having saved no profile. It's the only such name — every other
+  // Object.prototype member is a data property that assignment shadows normally.
+  if (name === "__proto__") throw new Error(`"__proto__" is not a usable profile name — pick another.`);
   file.profiles[name] = profile;
   if (opts.makeDefault || !file.default) file.default = name;
   if (opts.user) file.user = opts.user;
