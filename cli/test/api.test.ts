@@ -29,7 +29,7 @@ function captureFetch(): { headers: () => Record<string, string>; restore: () =>
 test("a non-JSON HTML error body collapses to a status, not the dumped page", async () => {
   const restore = stubFetch(500, "<html><body>" + "x".repeat(1000) + "</body></html>", "text/html");
   try {
-    await assert.rejects(deploy("https://x.example", "tok", { files: [] }), (e: ApiError) => {
+    await assert.rejects(deploy("https://x.example", "tok", { deployed_by: "Test User", files: [] }), (e: ApiError) => {
       assert.equal(e.status, 500);
       assert.equal(e.message, "HTTP 500");
       return true;
@@ -46,7 +46,7 @@ test("a Cloudflare Access HTML interstitial fails even when it returns 200", asy
     "text/html",
   );
   try {
-    await assert.rejects(deploy("https://x.example", "tok", { files: [] }), (e: ApiError) => {
+    await assert.rejects(deploy("https://x.example", "tok", { deployed_by: "Test User", files: [] }), (e: ApiError) => {
       assert.equal(e.status, 200);
       assert.match(e.message, /Cloudflare Access blocked https:\/\/x\.example\/api\/deploy/);
       assert.match(e.message, /GETONUP_ACCESS_CLIENT_ID/);
@@ -61,7 +61,7 @@ test("a Cloudflare Access HTML interstitial fails even when it returns 200", asy
 test("a 2xx non-JSON response fails instead of masquerading as a deploy result", async () => {
   const restore = stubFetch(200, "<html><body>not the API</body></html>", "text/html");
   try {
-    await assert.rejects(deploy("https://x.example", "tok", { files: [] }), (e: ApiError) => {
+    await assert.rejects(deploy("https://x.example", "tok", { deployed_by: "Test User", files: [] }), (e: ApiError) => {
       assert.equal(e.status, 200);
       assert.equal(e.message, "HTTP 200");
       return true;
@@ -74,7 +74,7 @@ test("a 2xx non-JSON response fails instead of masquerading as a deploy result",
 test("a non-JSON plain-text error is surfaced but truncated to <=300 chars", async () => {
   const restore = stubFetch(400, "boom ".repeat(100));
   try {
-    await assert.rejects(deploy("https://x.example", "tok", { files: [] }), (e: ApiError) => {
+    await assert.rejects(deploy("https://x.example", "tok", { deployed_by: "Test User", files: [] }), (e: ApiError) => {
       assert.equal(e.status, 400);
       assert.ok(e.message.length <= 300, `expected <=300, got ${e.message.length}`);
       return true;
@@ -87,7 +87,7 @@ test("a non-JSON plain-text error is surfaced but truncated to <=300 chars", asy
 test("a JSON error surfaces the error field", async () => {
   const restore = stubFetch(401, JSON.stringify({ error: "unauthorized" }), "application/json");
   try {
-    await assert.rejects(deploy("https://x.example", "tok", { files: [] }), (e: ApiError) => {
+    await assert.rejects(deploy("https://x.example", "tok", { deployed_by: "Test User", files: [] }), (e: ApiError) => {
       assert.equal(e.status, 401);
       assert.equal(e.message, "unauthorized");
       return true;
@@ -100,7 +100,7 @@ test("a JSON error surfaces the error field", async () => {
 test("an Access service token is sent as CF-Access-Client-* headers", async () => {
   const cap = captureFetch();
   try {
-    await deploy("https://x.example", "tok", { files: [] }, { clientId: "cid.access", clientSecret: "csec" });
+    await deploy("https://x.example", "tok", { deployed_by: "Test User", files: [] }, { clientId: "cid.access", clientSecret: "csec" });
     const h = cap.headers();
     assert.equal(h["authorization"], "Bearer tok");
     assert.equal(h["cf-access-client-id"], "cid.access");
@@ -113,7 +113,7 @@ test("an Access service token is sent as CF-Access-Client-* headers", async () =
 test("no Access token → no CF-Access-Client-* headers", async () => {
   const cap = captureFetch();
   try {
-    await deploy("https://x.example", "tok", { files: [] });
+    await deploy("https://x.example", "tok", { deployed_by: "Test User", files: [] });
     const h = cap.headers();
     assert.equal(h["cf-access-client-id"], undefined);
     assert.equal(h["cf-access-client-secret"], undefined);

@@ -22,7 +22,8 @@ scale-to-zero → **static-only MVP**, dynamic deferred.
 ## 1. What it does (user / agent flow)
 
 1. **Install once:** `npm i -g getonup` (or `npx getonup …`, or a single binary via
-   `curl … | sh`). Configure: `getonup login --url https://pages.example.com --token <T>`.
+   `curl … | sh`). Configure:
+   `getonup login --url https://pages.example.com --token <T> --user "Your Name"`.
 2. **An agent (or you) builds an artifact** — a `.html`, a single `.jsx/.tsx`, a `.vue`, a
    `.js`, or a built static folder.
 3. **Publish:** `getonup deploy artifact.tsx` → the CLI auto-detects the type, **auto-wraps**
@@ -102,11 +103,12 @@ Detect input type and produce a single self-contained `index.html` (+ any siblin
 
 ## 4. Server (`server/`, one Worker)
 
-- **`POST /api/deploy`** (Bearer `GETONUP_DEPLOY_TOKEN`): body = a small manifest + files
+- **`POST /api/deploy`** (Bearer `GETONUP_DEPLOY_TOKEN`): body = a small manifest with required
+  `deployed_by` + files
   (single HTML inline, or a `multipart`/tar/zip for multi-file). Validate token, total-size
   cap, file count, path-safety (no `..`). Generate a short random `id` (e.g. 8 url-safe
   chars). Write each file to R2 at `<id>/<path>`; write `<id>/_meta.json`
-  (`{id,title,type,files,bytes,created_at}`). Return `{ id, url }`.
+  (`{id,deployed_by,title,description,type,files,bytes,created_at}`). Return `{ id, url }`.
 - **`GET /s/:id` and `GET /s/:id/*`**: look up R2 object (`/s/:id` → `<id>/index.html`).
   Stream the body with the right `Content-Type` (from stored metadata/extension),
   `Cache-Control`, and security headers (`X-Content-Type-Options: nosniff`,
@@ -127,8 +129,8 @@ Detect input type and produce a single self-contained `index.html` (+ any siblin
 
 ## 5. CLI (`cli/`, Node + TypeScript)
 
-- **Commands:** `login` (save `{url, token}` to `~/.config/getonup/config.json`, or read
-  `GETONUP_URL`/`GETONUP_TOKEN` env), `deploy <path|->`, `list`, `open <id>`, `rm <id>`,
+- **Commands:** `login` (save `{url, token, user}` to `~/.config/getonup/config.json`, or read
+  `GETONUP_URL`/`GETONUP_TOKEN`/`GETONUP_USER` env), `deploy <path|->`, `list`, `open <id>`, `rm <id>`,
   `whoami`/`config`.
 - **`deploy`:** resolve input → detect type → auto-wrap → collect files → `POST /api/deploy`
   → print the URL (plain on stdout for piping; `--json` for agents; `--open` to launch).

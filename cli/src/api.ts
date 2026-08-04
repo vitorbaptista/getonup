@@ -7,6 +7,7 @@ export interface DeployFile {
 
 export interface DeployBody {
   id?: string;
+  deployed_by: string;
   title?: string | null;
   /** Auto-generated one-line summary (see cli/src/describe.ts); omitted when none was derived. */
   description?: string | null;
@@ -19,6 +20,17 @@ export interface DeployResult {
   url: string;
   files: string[];
   bytes: number;
+}
+
+export interface Deployment {
+  id: string;
+  deployed_by?: string;
+  title?: string | null;
+  description?: string | null;
+  type?: string;
+  files?: string[];
+  bytes?: number | null;
+  created_at?: string | null;
 }
 
 export interface ApiError extends Error {
@@ -44,7 +56,7 @@ function isCloudflareAccessHtml(text: string, responseUrl: string): boolean {
 
 function nonJsonError(url: string, path: string, res: Response, text: string): string {
   if (isCloudflareAccessHtml(text, res.url)) {
-    return `Cloudflare Access blocked ${base(url)}${path}. Set GETONUP_ACCESS_CLIENT_ID and GETONUP_ACCESS_CLIENT_SECRET, or run \`getonup login --access-client-id <id> --access-client-secret <secret>\`.`;
+    return `Cloudflare Access blocked ${base(url)}${path}. Set GETONUP_ACCESS_CLIENT_ID and GETONUP_ACCESS_CLIENT_SECRET, or re-run \`getonup login\` with --url, --token, --user, --access-client-id, and --access-client-secret.`;
   }
 
   const trimmed = text.trimStart();
@@ -107,7 +119,7 @@ export function deploy(url: string, token: string | undefined, body: DeployBody,
   }, access);
 }
 
-export function list(url: string, token: string | undefined, access?: Access): Promise<{ deploys: any[] }> {
+export function list(url: string, token: string | undefined, access?: Access): Promise<{ deploys: Deployment[] }> {
   return call(url, token, "/api/list", { method: "GET" }, access);
 }
 

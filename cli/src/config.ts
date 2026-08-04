@@ -3,10 +3,11 @@ import { join } from "node:path";
 import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
 import type { Access } from "./api.js";
 
-/** One server's credentials. */
+/** One server's CLI configuration. */
 export interface Profile {
   url?: string;
   token?: string;
+  user?: string;
   // Optional Cloudflare Access service-token, for instances put behind Access (Zero Trust).
   accessClientId?: string;
   accessClientSecret?: string;
@@ -22,7 +23,7 @@ export interface ConfigFile {
   profiles: Record<string, Profile>;
 }
 
-const PROFILE_KEYS = ["url", "token", "accessClientId", "accessClientSecret"] as const;
+const PROFILE_KEYS = ["url", "token", "user", "accessClientId", "accessClientSecret"] as const;
 
 function configDir(): string {
   if (process.env.GETONUP_CONFIG_DIR) return process.env.GETONUP_CONFIG_DIR;
@@ -34,7 +35,7 @@ function configPath(): string {
   return join(configDir(), "config.json");
 }
 
-/** Read the on-disk config, normalising a legacy flat `{ url, token, … }` file into the
+/** Read the on-disk config, normalising a legacy flat `{ url, token, user, … }` file into the
  *  profile shape (as a single profile named "default"). A missing/malformed/empty file
  *  yields an empty profile set. The flat→profiles migration is in-memory; it's persisted
  *  the next time a profile is written. */
@@ -106,6 +107,7 @@ function overlayEnv(p: Profile): Config {
   return {
     url: process.env.GETONUP_URL || p.url,
     token: process.env.GETONUP_TOKEN || p.token,
+    user: process.env.GETONUP_USER || p.user,
     accessClientId: process.env.GETONUP_ACCESS_CLIENT_ID || p.accessClientId,
     accessClientSecret: process.env.GETONUP_ACCESS_CLIENT_SECRET || p.accessClientSecret,
   };

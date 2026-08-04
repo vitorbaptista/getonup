@@ -46,12 +46,12 @@ process.stdout.write(`
        npm run dev
 
   2. In another terminal, point the CLI at it and publish an artifact:
-       getonup login --url http://localhost:8787 --token ${token}
+       getonup login --url http://localhost:8787 --token ${token} --user <your-name>
        getonup deploy ./path/to/artifact.html        # → prints a live /s/<id> URL
        getonup serve  ./path/to/artifact.html         # …or preview with no server at all
 
   3. (Optional) publish the demo landings to your local server (they appear on the live index at /):
-       GETONUP_URL=http://localhost:8787 GETONUP_TOKEN=${token} npm run demo
+       GETONUP_URL=http://localhost:8787 GETONUP_TOKEN=${token} GETONUP_USER=<your-name> npm run demo
 
   The token lives in server/.dev.vars (gitignored). If \`getonup\` isn't on your PATH, this setup
   tried to link it; otherwise run \`npm link --workspace cli\`, or use \`npm run getonup -- <args>\`.

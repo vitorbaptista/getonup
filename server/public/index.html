@@ -151,6 +151,11 @@
         if (t) when.append(el("span", null, SHORT[t.getUTCMonth()] + " " + t.getUTCDate()));
         // Show the id chip only when a title is the visible label (else the link already shows the id).
         if (id && title) { if (t) when.append(document.createTextNode(" · ")); when.append(el("span", "id mono", id)); }
+        const deployedBy = typeof d.deployed_by === "string" ? d.deployed_by.trim() : "";
+        if (deployedBy) {
+          if (when.childNodes.length) when.append(document.createTextNode(" · "));
+          when.append(el("span", "by", "by " + deployedBy));
+        }
         li.append(when);
 
         const desc = (d.description || "").trim();
