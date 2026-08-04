@@ -36,36 +36,121 @@ function configPath(): string {
   return join(configDir(), "config.json");
 }
 
+/** What a value actually is, for an error message: "null", "an array", "a number", … */
+function describe(v: unknown): string {
+  if (v === null) return "null";
+  if (Array.isArray(v)) return "an array";
+  const t = typeof v;
+  return t === "object" ? "an object" : `a ${t}`;
+}
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+const ROOT_KEYS = ["default", "user", "profiles", ...PROFILE_KEYS] as const;
+
+/** v0.7.0 stored the deployer name inside each profile; v0.8.0 moved it next to `default` and
+ *  stopped reading the old position (see CHANGELOG). Such a file is still a config we recognise,
+ *  so accept and ignore the stale key — rejecting it would lock out anyone upgrading from 0.7. */
+const PROFILE_KEYS_IN = [...PROFILE_KEYS, "user"] as const;
+
+/** Every command reads the config, `login` included (saveProfile reads before it writes), so a
+ *  broken file locks the CLI out entirely — every config error has to say how to get back in. */
+const RECOVERY = "fix the file, or delete it and run `getonup login` again.";
+
+/** Check the parsed JSON against the shape we expect, collecting every problem so a
+ *  hand-edited file reports all its mistakes at once rather than one per run. */
+function validate(parsed: unknown): string[] {
+  const problems: string[] = [];
+  if (!isPlainObject(parsed)) return [`expected an object, got ${describe(parsed)}`];
+
+  const strings = (obj: Record<string, unknown>, keys: readonly string[], prefix: string) => {
+    for (const k of keys) {
+      if (obj[k] !== undefined && typeof obj[k] !== "string") {
+        problems.push(`${prefix}${k}: expected a string, got ${describe(obj[k])}`);
+      }
+    }
+  };
+
+  // Any key we don't know is a misspelling — "profile" for "profiles", "tokne" for "token".
+  // Ignoring it is the quiet failure this whole check exists to prevent: the credential you
+  // typed is dropped and the CLI just says it isn't configured.
+  const unknown = (obj: Record<string, unknown>, allowed: readonly string[], prefix: string) => {
+    for (const k of Object.keys(obj)) {
+      if (!allowed.includes(k)) problems.push(`${prefix}${k}: unknown key (expected ${allowed.join(", ")})`);
+    }
+  };
+
+  // Check every key we understand wherever it appears — checking only the ones the chosen
+  // branch happens to read lets a typo'd value through in the other shape.
+  strings(parsed, ["default", "user", ...PROFILE_KEYS], "");
+  unknown(parsed, ROOT_KEYS, "");
+
+  if (parsed.profiles !== undefined) {
+    // Both shapes at once is ambiguous about which credentials win, so don't guess.
+    const stray = PROFILE_KEYS.filter((k) => parsed[k] !== undefined);
+    if (stray.length) {
+      problems.push(`${stray.join(", ")}: legacy top-level key(s) alongside "profiles" — move them into a profile`);
+    }
+    if (!isPlainObject(parsed.profiles)) {
+      problems.push(`profiles: expected an object, got ${describe(parsed.profiles)}`);
+    } else {
+      for (const [name, profile] of Object.entries(parsed.profiles)) {
+        if (!isPlainObject(profile)) {
+          problems.push(`profiles.${name}: expected an object, got ${describe(profile)}`);
+        } else {
+          strings(profile, PROFILE_KEYS_IN, `profiles.${name}.`);
+          unknown(profile, PROFILE_KEYS_IN, `profiles.${name}.`);
+        }
+      }
+    }
+  }
+  return problems;
+}
+
 /** Read the on-disk config, normalising a legacy flat `{ url, token, user, … }` file into the
- *  profile shape (as a single profile named "default"). A missing/malformed/empty file
- *  yields an empty profile set. The flat→profiles migration is in-memory; it's persisted
- *  the next time a profile is written. */
+ *  profile shape (as a single profile named "default"). A missing file yields an empty profile
+ *  set — getonup works fine with no config at all, driven purely by GETONUP_* env vars. Anything
+ *  else that doesn't match the expected shape is an error: silently ignoring it would deploy to
+ *  the wrong server, or to none, with no hint why. The flat→profiles migration is in-memory;
+ *  it's persisted the next time a profile is written. */
 export async function readConfigFile(): Promise<ConfigFile> {
+  const path = configPath();
+  let raw: string;
+  try {
+    raw = await readFile(path, "utf8");
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return { profiles: {} }; // no config file yet
+    throw new Error(`cannot read config at ${path}: ${(e as Error).message}\n${RECOVERY}`);
+  }
+
+  if (!raw.trim()) return { profiles: {} }; // an empty file reads as "nothing configured"
+
   let parsed: unknown;
   try {
-    parsed = JSON.parse(await readFile(configPath(), "utf8"));
-  } catch {
-    return { profiles: {} }; // no config file yet, or malformed
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    throw new Error(`invalid config at ${path}: not valid JSON (${(e as Error).message})\n${RECOVERY}`);
   }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return { profiles: {} };
+
+  const problems = validate(parsed);
+  if (problems.length) {
+    throw new Error(`invalid config at ${path}:\n  ${problems.join("\n  ")}\n${RECOVERY}`);
+  }
+
   const obj = parsed as Record<string, unknown>;
-  if (obj.profiles && typeof obj.profiles === "object" && !Array.isArray(obj.profiles)) {
-    // Drop any corrupt (non-object) profile entry rather than crash later — `profiles` is the
-    // command you'd run to diagnose a hand-broken config, so it must survive one.
-    const profiles: Record<string, Profile> = {};
-    for (const [k, v] of Object.entries(obj.profiles as Record<string, unknown>)) {
-      if (v && typeof v === "object" && !Array.isArray(v)) profiles[k] = v as Profile;
-    }
+  if (obj.profiles !== undefined) {
     return {
       // An empty-string default is "unset", not a profile named "".
-      default: typeof obj.default === "string" && obj.default ? obj.default : undefined,
-      user: typeof obj.user === "string" && obj.user ? obj.user : undefined,
-      profiles,
+      default: (obj.default as string | undefined) || undefined,
+      user: (obj.user as string | undefined) || undefined,
+      profiles: obj.profiles as Record<string, Profile>,
     };
   }
   // Legacy flat config → a single "default" profile.
   const flat: Profile = {};
-  for (const k of PROFILE_KEYS) if (typeof obj[k] === "string") flat[k] = obj[k] as string;
+  for (const k of PROFILE_KEYS) if (obj[k] !== undefined) flat[k] = obj[k] as string;
   if (Object.keys(flat).length) return { default: "default", profiles: { default: flat } };
   return { profiles: {} };
 }
@@ -88,13 +173,16 @@ async function writeConfigFile(file: ConfigFile): Promise<string> {
  *  dangling `default` (pointing at a deleted profile) degrades to "no active profile" so
  *  recovery commands like `whoami`/`profiles` still work. */
 function resolveName(file: ConfigFile, selector?: string): string | undefined {
+  // hasOwn, not a truthiness check: names like "constructor" or "toString" find something on
+  // Object.prototype, which would make a typo resolve to an empty profile instead of erroring.
+  const exists = (name: string) => Object.hasOwn(file.profiles, name);
   const explicit = (selector ?? process.env.GETONUP_PROFILE) || undefined;
   if (explicit) {
-    if (file.profiles[explicit]) return explicit;
+    if (exists(explicit)) return explicit;
     const names = Object.keys(file.profiles);
     throw new Error(`unknown profile: "${explicit}". Configured: ${names.length ? names.join(", ") : "(none)"}`);
   }
-  if (file.default && file.profiles[file.default]) return file.default;
+  if (file.default && exists(file.default)) return file.default;
   return undefined;
 }
 
@@ -145,6 +233,10 @@ export async function saveProfile(
   opts: { makeDefault?: boolean; user?: string } = {},
 ): Promise<string> {
   const file = await readConfigFile();
+  // Plain assignment of "__proto__" hits Object.prototype's setter and stores nothing, so
+  // login would report success having saved no profile. It's the only such name — every other
+  // Object.prototype member is a data property that assignment shadows normally.
+  if (name === "__proto__") throw new Error(`"__proto__" is not a usable profile name — pick another.`);
   file.profiles[name] = profile;
   if (opts.makeDefault || !file.default) file.default = name;
   if (opts.user) file.user = opts.user;
