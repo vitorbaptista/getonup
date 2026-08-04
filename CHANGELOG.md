@@ -6,6 +6,21 @@ All notable changes to getonup are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-08-04
+
+### Added
+- **Deployment attribution.** Every deploy now records a self-reported deployer name, shown
+  publicly next to the artifact on the instance's index. Set it with `getonup login --user <name>`
+  or the `GETONUP_USER` env var (which overrides the stored profile); `getonup whoami` shows the
+  resolved user. The name is required — `deploy` and the MCP `deploy_artifact` tool fail with a
+  pointer to `login --user` / `GETONUP_USER` when it's missing — and the server rejects a deploy
+  without a non-empty `deployed_by` of at most 100 characters.
+
+### Changed
+- `getonup login` now takes `--user <name>`, and existing configs need it added (or `GETONUP_USER`
+  set) before the next deploy. Attribution is **not** authentication: the shared deploy token
+  remains the trust boundary, and the name is informational, stored in R2 metadata, and public.
+
 ## [0.6.0] — 2026-06-23
 
 ### Fixed
@@ -106,7 +121,8 @@ All notable changes to getonup are recorded here. The format follows
 Initial release: the `getonup` CLI (`deploy`/`serve`/`list`/`rm`/`open`/`mcp`, auto-wrap for
 HTML/React/Vue/JS) and the single Cloudflare Worker + R2 server.
 
-[Unreleased]: https://github.com/vitorbaptista/getonup/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/vitorbaptista/getonup/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/vitorbaptista/getonup/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/vitorbaptista/getonup/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/vitorbaptista/getonup/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/vitorbaptista/getonup/compare/v0.4.0...v0.5.0
